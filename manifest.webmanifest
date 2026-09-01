@@ -1,0 +1,36 @@
+{
+  "name": "光纤激光光斑计算器",
+  "short_name": "光斑计算",
+  "description": "根据光纤直径、准直镜和聚焦镜参数计算激光光斑大小、功率密度、焦深等参数，附带光路模拟动画",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f1a",
+  "theme_color": "#0b0f1a",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity", "education"],
+  "icons": [
+    {
+      "src": "icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "光斑计算",
+      "short_name": "计算",
+      "url": "./index.html",
+      "icons": [{ "src": "icon-1024.png", "sizes": "1024x1024" }]
+    }
+  ]
+}
