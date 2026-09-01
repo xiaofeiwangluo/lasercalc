@@ -1344,6 +1344,82 @@
     font-family: inherit;
   }
   .update-card .up-btn:active { opacity: 0.85; }
+
+  /* 版本更新记录 */
+  .changelog-card {
+    padding: 24px 20px;
+  }
+  .changelog-card h3 {
+    margin-bottom: 2px;
+  }
+  .cl-item {
+    position: relative;
+    padding: 12px 0 12px 18px;
+    border-left: 2px solid var(--border-2);
+    margin-left: 6px;
+  }
+  .cl-item:first-of-type {
+    border-left-color: var(--laser);
+  }
+  .cl-item::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 18px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--border-2);
+  }
+  .cl-item:first-of-type::before {
+    background: var(--laser);
+    border-color: var(--laser);
+    box-shadow: 0 0 8px var(--laser-glow);
+  }
+  .cl-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .cl-ver {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .cl-item:first-of-type .cl-ver {
+    color: var(--laser-2);
+  }
+  .cl-date {
+    font-size: 10px;
+    color: var(--text-3);
+  }
+  .cl-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cl-list li {
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.6;
+    padding-left: 14px;
+    position: relative;
+    margin-bottom: 3px;
+  }
+  .cl-list li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 7px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--cyan);
+    opacity: 0.7;
+  }
 </style>
 </head>
 <body>
@@ -1372,7 +1448,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.0</div>
+    <div class="splash-version">v1.4.1</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -1382,13 +1458,21 @@
         <h1><span class="dot"></span>光纤激光光斑计算器</h1>
         <div class="subtitle">Fiber Laser Spot Calculator</div>
       </div>
-      <button class="about-btn" id="aboutBtn" aria-label="关于">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="16" x2="12" y2="12"/>
-          <line x1="12" y1="8" x2="12.01" y2="8"/>
-        </svg>
-      </button>
+      <div style="display:flex; gap:8px;">
+        <button class="about-btn" id="changelogBtn" aria-label="版本更新记录" title="版本更新记录">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </button>
+        <button class="about-btn" id="aboutBtn" aria-label="关于">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -1864,7 +1948,7 @@
         </svg>
       </div>
       <div class="about-app-name">光纤激光光斑计算器</div>
-      <div class="about-version">Version 1.4.0</div>
+      <div class="about-version">Version 1.4.1</div>
       <div class="about-divider"></div>
       <div class="about-row">
         <span class="ar-label">发布人</span>
@@ -1872,7 +1956,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.0</span>
+        <span class="ar-value">v1.4.1</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -1885,24 +1969,79 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4 更新说明 -->
+  <!-- 首次登录：v1.4.1 更新说明 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.1</span></h3>
       <div class="up-sub">本应用现已支持在线自动更新</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">新增在线更新</b>：应用已接入云端，后续功能升级无需重新安装，打开即可自动获取最新版本。</span>
+        <span><b style="color:var(--text)">新增版本更新记录</b>：点击顶部时钟图标，可查看全部历史版本的更新内容。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span>已部署云端页面（GitHub Pages），断网时自动回退到本地内置版本，不影响离线使用。</span>
+        <span><b style="color:var(--text)">新增在线更新</b>：应用已接入云端，后续功能升级无需重新安装，打开即可自动获取最新版本。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
+        <span>已部署云端页面（GitHub Pages），断网时自动回退到本地内置版本，不影响离线使用。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">4</span>
         <span>保留 v1.3 全部能力：铝合金/铜合金材料库、离焦熔深演化、焊接方向与速度仿真。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
+    </div>
+  </div>
+
+  <!-- 版本更新记录 -->
+  <div class="update-modal" id="changelogModal">
+    <div class="update-card changelog-card">
+      <h3>版本更新记录</h3>
+      <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.1</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>新增「版本更新记录」：顶部时间按钮可随时查看全部历史版本更新内容。</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.1</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>新增在线自动更新：应用接入云端（GitHub Pages），功能升级无需重新安装，打开即可自动获取最新版本。</li>
+          <li>断网时自动回退本地内置版本，不影响离线使用。</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.3.0</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>焊接仿真新增铝合金（1060/3003/5052/5083/6061/6063/7075）与铜合金（T2紫铜/C1020/H62黄铜/C5191磷青铜/QBe2铍铜）牌号材料库，内置吸收率与导热修正。</li>
+          <li>预估熔深新增不同离焦量下的熔深演化计算与参考表（-4~+4mm）。</li>
+          <li>熔深动态演化动画增加焊接方向与速度显示。</li>
+          <li>取消热影响区动态演化，动画更聚焦熔池与匙孔。</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.2.0</span><span class="cl-date">2026-08</span></div>
+        <ul class="cl-list">
+          <li>新增「高能激光焊接仿真」：光斑直径、功率密度、热线能量、预估熔深计算与熔深动态演化动画。</li>
+          <li>新增启动动画：创新连接 · 赋能智造未来。</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.1.0</span><span class="cl-date">2026-08</span></div>
+        <ul class="cl-list">
+          <li>新增不同离焦情况下的光斑大小计算：离焦光斑直径、功率密度、焦深范围与参考表。</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.0.0</span><span class="cl-date">2026-08</span></div>
+        <ul class="cl-list">
+          <li>首个版本：光纤直径 × 准直镜/聚焦镜光斑计算，功率密度、焦深、线能量密度等参数。</li>
+          <li>光路模拟动画、常用参数库。</li>
+        </ul>
+      </div>
+      <button class="up-btn" id="changelogClose">关闭</button>
     </div>
   </div>
 
@@ -3117,7 +3256,7 @@
   // ===== 首次登录更新说明（只显示一次） =====
   function maybeShowUpdate() {
     try {
-      const seen = localStorage.getItem('fslc_seen_v140');
+      const seen = localStorage.getItem('fslc_seen_v141');
       if (seen) return;
       // 启动动画结束后再弹出
       setTimeout(() => {
@@ -3128,13 +3267,13 @@
   $('updateClose').addEventListener('click', () => {
     $('updateModal').classList.remove('show');
     try {
-      localStorage.setItem('fslc_seen_v140', '1');
+      localStorage.setItem('fslc_seen_v141', '1');
     } catch (e) {}
   });
   $('updateModal').addEventListener('click', (e) => {
     if (e.target.id === 'updateModal') {
       $('updateModal').classList.remove('show');
-      try { localStorage.setItem('fslc_seen_v140', '1'); } catch (e) {}
+      try { localStorage.setItem('fslc_seen_v141', '1'); } catch (e) {}
     }
   });
 
@@ -3186,6 +3325,17 @@
   });
   $('aboutModal').addEventListener('click', (e) => {
     if (e.target.id === 'aboutModal') $('aboutModal').classList.remove('show');
+  });
+
+  // ===== 版本更新记录弹窗 =====
+  $('changelogBtn').addEventListener('click', () => {
+    $('changelogModal').classList.add('show');
+  });
+  $('changelogClose').addEventListener('click', () => {
+    $('changelogModal').classList.remove('show');
+  });
+  $('changelogModal').addEventListener('click', (e) => {
+    if (e.target.id === 'changelogModal') $('changelogModal').classList.remove('show');
   });
 
   // ===== PWA 安装支持 =====
