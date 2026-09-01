@@ -1,0 +1,3258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="光斑计算">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-1024.png">
+<link rel="icon" type="image/png" href="icon-1024.png">
+<title>光纤激光光斑计算器</title>
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --bg-2: #0f1524;
+    --card: #131a2b;
+    --card-2: #182138;
+    --border: #1f2b45;
+    --border-2: #2a3a5c;
+    --text: #e0e6f0;
+    --text-2: #8a96ad;
+    --text-3: #5a6680;
+    --laser: #ff5722;
+    --laser-2: #ff9800;
+    --laser-glow: rgba(255, 87, 34, 0.35);
+    --cyan: #00bcd4;
+    --cyan-glow: rgba(0, 188, 212, 0.25);
+    --green: #26c281;
+    --red: #ef5350;
+    --radius: 14px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ===== 顶部栏 ===== */
+  .topbar {
+    flex-shrink: 0;
+    padding: 16px 20px 12px;
+    background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+  }
+  .topbar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar h1 .dot {
+    width: 8px; height: 8px;
+    background: var(--laser);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--laser-glow), 0 0 16px var(--laser-glow);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+  .topbar .subtitle {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+  .about-btn {
+    background: var(--card-2);
+    border: 1px solid var(--border-2);
+    color: var(--text-2);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .about-btn:active {
+    background: var(--laser);
+    color: #fff;
+    border-color: var(--laser);
+  }
+
+  /* ===== 关于弹窗 ===== */
+  .about-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+  }
+  .about-modal.show { display: flex; }
+  .about-card {
+    background: var(--card);
+    border: 1px solid var(--border-2);
+    border-radius: 18px;
+    padding: 28px 24px 20px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .about-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    margin: 0 auto 14px;
+    background: linear-gradient(135deg, #1a2340, #0d1424);
+    border: 1px solid var(--border-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .about-icon svg { width: 40px; height: 40px; }
+  .about-app-name {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .about-version {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-bottom: 16px;
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .about-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 14px 0;
+  }
+  .about-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 13px;
+  }
+  .about-row .ar-label {
+    color: var(--text-3);
+  }
+  .about-row .ar-value {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .about-row .ar-value.publisher {
+    color: var(--laser-2);
+    font-size: 15px;
+  }
+  .about-desc {
+    font-size: 12px;
+    color: var(--text-3);
+    line-height: 1.7;
+    margin-top: 14px;
+    text-align: left;
+  }
+  .about-close {
+    margin-top: 18px;
+    width: 100%;
+    padding: 11px;
+    background: var(--laser);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .about-close:active { opacity: 0.8; }
+
+  /* ===== 主内容区 ===== */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    padding-bottom: 90px;
+  }
+  .content::-webkit-scrollbar { width: 0; }
+
+  .view { display: none; animation: fadeIn 0.25s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== 卡片 ===== */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: var(--laser);
+    border-radius: 2px;
+  }
+
+  /* ===== 输入组 ===== */
+  .input-group {
+    margin-bottom: 12px;
+  }
+  .input-group:last-child { margin-bottom: 0; }
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .input-label .unit {
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .input-row input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--border-2);
+    border-radius: 2px;
+    outline: none;
+  }
+  .input-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px; height: 18px;
+    background: var(--laser);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--laser-glow);
+    border: 2px solid var(--bg);
+  }
+  .input-row input[type="number"] {
+    width: 80px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 14px;
+    font-family: "SF Mono", "Consolas", monospace;
+    padding: 8px 10px;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-row input[type="number"]:focus {
+    border-color: var(--laser);
+  }
+  .input-row input[type="number"]::-webkit-inner-spin-button,
+  .input-row input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* ===== 结果展示 ===== */
+  .result-hero {
+    text-align: center;
+    padding: 20px 16px;
+    background: linear-gradient(135deg, rgba(255,87,34,0.08) 0%, rgba(0,188,212,0.05) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 30%, var(--laser-glow) 0%, transparent 50%);
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .result-hero .label {
+    font-size: 12px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  .result-hero .value {
+    font-size: 42px;
+    font-weight: 800;
+    font-family: "SF Mono", "Consolas", monospace;
+    background: linear-gradient(135deg, var(--laser-2), var(--laser));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    position: relative;
+  }
+  .result-hero .value .unit {
+    font-size: 18px;
+    font-weight: 500;
+    -webkit-text-fill-color: var(--text-2);
+    margin-left: 4px;
+  }
+  .result-hero .formula {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 8px;
+    font-family: "SF Mono", "Consolas", monospace;
+    position: relative;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .result-item {
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+  .result-item .r-label {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .result-item .r-value {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: "SF Mono", "Consolas", monospace;
+    color: var(--cyan);
+  }
+  .result-item .r-value .r-unit {
+    font-size: 11px;
+    color: var(--text-3);
+    font-weight: 400;
+    margin-left: 3px;
+  }
+  .result-item.full { grid-column: 1 / -1; }
+
+  /* ===== 底部导航 ===== */
+  .tabbar {
+    flex-shrink: 0;
+    display: flex;
+    background: var(--bg-2);
+    border-top: 1px solid var(--border);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+  }
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 0;
+    cursor: pointer;
+    color: var(--text-3);
+    transition: color 0.2s;
+    border: none;
+    background: none;
+    font-size: 11px;
+    font-family: inherit;
+  }
+  .tab.active { color: var(--laser); }
+  .tab svg { width: 22px; height: 22px; }
+  .tab.active svg { filter: drop-shadow(0 0 4px var(--laser-glow)); }
+
+  /* ===== 模拟视图 ===== */
+  .sim-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .sim-canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: #060a14;
+  }
+  #simCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .sim-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .sim-btn {
+    background: var(--laser);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.2s;
+  }
+  .sim-btn:active { opacity: 0.8; }
+  .sim-btn.secondary {
+    background: var(--card-2);
+    color: var(--text-2);
+    border: 1px solid var(--border-2);
+  }
+  .sim-speed {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .sim-speed select {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .sim-info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-2);
+  }
+  .sim-info-item {
+    text-align: center;
+  }
+  .sim-info-item .si-label {
+    font-size: 10px;
+    color: var(--text-3);
+  }
+  .sim-info-item .si-value {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: "SF Mono", "Consolas", monospace;
+    color: var(--cyan);
+  }
+
+  /* ===== 参数库 ===== */
+  .lib-section { margin-bottom: 14px; }
+  .lib-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 8px;
+    padding-left: 4px;
+  }
+  .lib-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lib-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .lib-item:active {
+    border-color: var(--laser);
+    background: var(--card-2);
+  }
+  .lib-item .li-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .lib-item .li-spec {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .lib-item .li-arrow {
+    color: var(--text-3);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .lib-item .li-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(0,188,212,0.15);
+    color: var(--cyan);
+    font-weight: 600;
+  }
+
+  .toast {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(20, 28, 48, 0.95);
+    border: 1px solid var(--border-2);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    backdrop-filter: blur(10px);
+  }
+  .toast.show { opacity: 1; }
+
+  .hint {
+    font-size: 11px;
+    color: var(--text-3);
+    padding: 0 4px;
+    margin-top: -6px;
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+  }
+
+  /* ===== 离焦分析 ===== */
+  .defocus-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(0,188,212,0.08) 0%, rgba(255,87,34,0.05) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .defocus-hero .dh-left .dh-label {
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .defocus-hero .dh-left .dh-value {
+    font-size: 28px;
+    font-weight: 800;
+    font-family: "SF Mono", "Consolas", monospace;
+    color: var(--cyan);
+    line-height: 1.2;
+  }
+  .defocus-hero .dh-left .dh-value .unit {
+    font-size: 14px;
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  .defocus-hero .dh-right {
+    text-align: right;
+  }
+  .defocus-hero .dh-right .dh-pd-label {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  .defocus-hero .dh-right .dh-pd {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: "SF Mono", "Consolas", monospace;
+    color: var(--laser-2);
+  }
+  .defocus-hero .dh-right .dh-pd .unit {
+    font-size: 11px;
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  .defocus-ratio {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-top: 2px;
+  }
+  .defocus-ratio .ratio-val {
+    color: var(--green);
+    font-weight: 700;
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+
+  .defocus-chart-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #060a14;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  #defocusChart {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .defocus-table {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .defocus-cell {
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+  }
+  .defocus-cell .dc-z {
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .defocus-cell .dc-d {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: "SF Mono", "Consolas", monospace;
+    color: var(--text);
+    margin-top: 2px;
+  }
+  .defocus-cell.focus {
+    border-color: var(--laser);
+    background: rgba(255,87,34,0.1);
+  }
+  .defocus-cell.focus .dc-d {
+    color: var(--laser-2);
+  }
+
+  /* ===== 安装提示横幅 ===== */
+  .install-banner {
+    display: none;
+    position: fixed;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #1a2340, #131a2b);
+    border: 1px solid var(--laser);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px var(--laser-glow);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .install-banner.show { display: block; }
+  .install-banner .ib-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .install-banner .ib-title .ib-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--laser);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .install-banner .ib-desc {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: 10px;
+  }
+  .install-banner .ib-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .install-banner .ib-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+  }
+  .install-banner .ib-btn.install {
+    background: var(--laser);
+    color: #fff;
+  }
+  .install-banner .ib-btn.dismiss {
+    background: var(--card-2);
+    color: var(--text-2);
+    border: 1px solid var(--border-2);
+  }
+
+  /* iOS 安装引导遮罩 */
+  .ios-guide {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 300;
+    padding: 40px 24px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .ios-guide.show { display: flex; }
+  .ios-guide .ig-arrow {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+  }
+  .ios-guide .ig-content {
+    max-width: 320px;
+  }
+  .ios-guide h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    color: var(--laser-2);
+  }
+  .ios-guide p {
+    font-size: 15px;
+    color: var(--text-2);
+    line-height: 1.8;
+    margin-bottom: 12px;
+  }
+  .ios-guide .ig-close {
+    margin-top: 24px;
+    padding: 10px 32px;
+    background: var(--laser);
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ===== 启动动画 (Splash) ===== */
+  .splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: radial-gradient(ellipse at 50% 40%, #0d1730 0%, #060a14 60%, #02040a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+  }
+  .splash.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .splash-logo {
+    width: 108px;
+    height: 108px;
+    margin-bottom: 30px;
+    position: relative;
+    animation: logoFloat 3s ease-in-out infinite;
+  }
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .splash-logo svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 18px var(--laser-glow)) drop-shadow(0 0 40px rgba(0,188,212,0.2));
+  }
+  .splash-logo::after {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 24px;
+    border: 1px solid rgba(0, 188, 212, 0.15);
+    animation: ringPulse 2.4s ease-out infinite;
+  }
+  @keyframes ringPulse {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    70% { transform: scale(1.15); opacity: 0; }
+    100% { transform: scale(1.15); opacity: 0; }
+  }
+  .splash-beam {
+    width: 220px;
+    height: 2px;
+    margin-bottom: 34px;
+    position: relative;
+    overflow: visible;
+    opacity: 0;
+    animation: beamReveal 1.6s ease forwards;
+  }
+  @keyframes beamReveal {
+    0% { opacity: 0; width: 0; }
+    40% { opacity: 1; width: 180px; }
+    100% { opacity: 0.9; width: 220px; }
+  }
+  .splash-beam .beam-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--laser), var(--laser-2), transparent);
+    border-radius: 2px;
+    box-shadow: 0 0 12px var(--laser-glow);
+  }
+  .splash-beam .beam-pulse {
+    position: absolute;
+    top: -3px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 14px 4px var(--laser-glow);
+    animation: beamPulse 1.8s linear infinite;
+  }
+  @keyframes beamPulse {
+    0% { left: 0%; opacity: 1; }
+    90% { opacity: 1; }
+    100% { left: 96%; opacity: 0; }
+  }
+  .splash-slogan {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 6px;
+  }
+  .splash-slogan .char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(16px);
+    background: linear-gradient(180deg, #ffffff 0%, #ffd0b8 60%, var(--laser-2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .splash-slogan .char.show {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  }
+  .splash-sub {
+    font-size: 13px;
+    color: var(--text-3);
+    letter-spacing: 2px;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeInSlow 1.2s ease 1.2s forwards;
+  }
+  @keyframes fadeInSlow {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .splash-loader {
+    width: 120px;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .splash-loader .bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--laser), var(--laser-2));
+    border-radius: 3px;
+    animation: loadBar 2.2s ease-in-out forwards;
+    box-shadow: 0 0 8px var(--laser-glow);
+  }
+  @keyframes loadBar {
+    0% { width: 0%; }
+    60% { width: 75%; }
+    100% { width: 100%; }
+  }
+  .splash-version {
+    position: absolute;
+    bottom: 40px;
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 1px;
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+
+  /* ===== 焊接仿真 ===== */
+  .weld-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .weld-mode-badge.keyhole {
+    background: rgba(255,87,34,0.12);
+    border: 1px solid var(--laser);
+    color: var(--laser-2);
+  }
+  .weld-mode-badge.conduction {
+    background: rgba(0,188,212,0.12);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+  }
+  .weld-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(255,87,34,0.1) 0%, rgba(255,152,0,0.05) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .weld-hero::after {
+    content: '';
+    position: absolute;
+    top: -60%; right: -30%;
+    width: 90%; height: 200%;
+    background: radial-gradient(circle, var(--laser-glow) 0%, transparent 60%);
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .weld-hero .wh-left .wh-label {
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .weld-hero .wh-left .wh-value {
+    font-size: 34px;
+    font-weight: 800;
+    font-family: "SF Mono", "Consolas", monospace;
+    background: linear-gradient(135deg, var(--laser-2), var(--laser));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+  .weld-hero .wh-left .wh-value .unit {
+    font-size: 14px;
+    -webkit-text-fill-color: var(--text-2);
+    font-weight: 400;
+  }
+  .weld-hero .wh-right {
+    text-align: right;
+    position: relative;
+  }
+  .weld-hero .wh-right .wh-sub-label {
+    font-size: 10px;
+    color: var(--text-3);
+  }
+  .weld-hero .wh-right .wh-sub {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+
+  .weld-canvas-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #05080f;
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  #weldCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .weld-canvas-wrap .wc-tag {
+    position: absolute;
+    top: 10px; left: 12px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1px;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .weld-canvas-wrap .wc-legend {
+    position: absolute;
+    bottom: 8px; left: 12px;
+    display: flex;
+    gap: 12px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.5);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .weld-canvas-wrap .wc-legend .lg {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .weld-canvas-wrap .wc-legend .lg .dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .weld-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .weld-btn {
+    background: var(--laser);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .weld-btn:active { opacity: 0.8; }
+  .weld-btn.secondary {
+    background: var(--card-2);
+    color: var(--text-2);
+    border: 1px solid var(--border-2);
+  }
+  .weld-speed-select {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .weld-speed-select select {
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .weld-dict {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .weld-dict .wd-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 8px;
+  }
+  .weld-dict .wd-item {
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.8;
+    padding-left: 16px;
+    position: relative;
+  }
+  .weld-dict .wd-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 10px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+  }
+
+  /* 材料选择 */
+  .weld-material-select {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ff9800' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  .weld-material-select optgroup {
+    background: var(--bg-2);
+    color: var(--text-3);
+    font-size: 12px;
+  }
+  .weld-material-select option {
+    background: var(--bg-2);
+    color: var(--text);
+  }
+
+  /* 离焦熔深 */
+  .weld-defocus-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin: 10px 0 12px;
+  }
+  .wd-item2 {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .wd-item2 .wd2-label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .wd-item2 .wd2-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .wd-item2 .wd2-value.hot {
+    color: var(--laser-2);
+  }
+  .weld-ref-table {
+    overflow-x: auto;
+  }
+  .weld-ref-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    min-width: 420px;
+  }
+  .weld-ref-table th, .weld-ref-table td {
+    border: 1px solid var(--border);
+    padding: 6px 4px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .weld-ref-table th {
+    background: var(--bg-2);
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .weld-ref-table td:first-child {
+    color: var(--text-2);
+    text-align: left;
+    padding-left: 8px;
+  }
+  .weld-model-note {
+    font-size: 10px;
+    color: var(--text-3);
+    line-height: 1.6;
+    margin-top: 8px;
+    padding: 8px;
+    background: var(--bg-2);
+    border-left: 2px solid var(--cyan);
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* 首次登录更新说明 */
+  .update-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    padding: 20px;
+  }
+  .update-modal.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  .update-card {
+    width: 100%;
+    max-width: 360px;
+    background: var(--bg);
+    border: 1px solid var(--border-2);
+    border-radius: 20px;
+    padding: 24px 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .update-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .update-card h3 .vtag {
+    font-size: 11px;
+    background: var(--laser);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: "SF Mono", monospace;
+  }
+  .update-card .up-sub {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-bottom: 14px;
+  }
+  .update-card .up-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+  .update-card .up-item .up-num {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(0,188,212,0.15);
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .update-card .up-item .up-tag {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: var(--laser-2);
+    border: 1px solid var(--laser);
+    border-radius: 4px;
+    padding: 0 4px;
+    height: 16px;
+    line-height: 15px;
+    margin-top: 1px;
+  }
+  .update-card .up-btn {
+    width: 100%;
+    background: var(--laser);
+    color: #fff;
+    border: none;
+    border-radius: 22px;
+    padding: 11px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+    font-family: inherit;
+  }
+  .update-card .up-btn:active { opacity: 0.85; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 启动动画 ===== -->
+  <div class="splash" id="splash">
+    <div class="splash-logo">
+      <svg viewBox="0 0 1024 1024" fill="none">
+        <rect width="1024" height="1024" rx="220" fill="#0d1424" stroke="#1f2b45" stroke-width="6"/>
+        <ellipse cx="380" cy="512" rx="60" ry="150" fill="none" stroke="#00bcd4" stroke-width="20"/>
+        <ellipse cx="640" cy="512" rx="60" ry="150" fill="none" stroke="#00bcd4" stroke-width="20"/>
+        <line x1="170" y1="512" x2="330" y2="512" stroke="#ff5722" stroke-width="24" stroke-linecap="round"/>
+        <line x1="420" y1="512" x2="600" y2="512" stroke="#ff9800" stroke-width="15" stroke-linecap="round"/>
+        <line x1="680" y1="512" x2="820" y2="512" stroke="#ffb74d" stroke-width="10" stroke-linecap="round"/>
+        <circle cx="870" cy="512" r="38" fill="#fff3e0"/>
+        <circle cx="870" cy="512" r="60" fill="#ff9800" opacity="0.3"/>
+      </svg>
+    </div>
+    <div class="splash-beam">
+      <div class="beam-line"></div>
+      <div class="beam-pulse"></div>
+    </div>
+    <div class="splash-slogan" id="splashSlogan">
+      <span class="char">创</span><span class="char">新</span><span class="char">连</span><span class="char">接</span><span class="char">赋</span><span class="char">能</span><span class="char">智</span><span class="char">造</span><span class="char">未</span><span class="char">来</span>
+    </div>
+    <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
+    <div class="splash-loader"><div class="bar"></div></div>
+    <div class="splash-version">v1.3.0</div>
+  </div>
+
+  <!-- 顶部栏 -->
+  <header class="topbar">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <h1><span class="dot"></span>光纤激光光斑计算器</h1>
+        <div class="subtitle">Fiber Laser Spot Calculator</div>
+      </div>
+      <button class="about-btn" id="aboutBtn" aria-label="关于">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主内容 -->
+  <main class="content" id="content">
+
+    <!-- ===== 视图1：计算器 ===== -->
+    <section class="view active" id="view-calc">
+      <!-- 核心结果 -->
+      <div class="result-hero">
+        <div class="label">聚焦光斑直径</div>
+        <div class="value"><span id="rSpot">0</span><span class="unit">μm</span></div>
+        <div class="formula">d = 光纤芯径 × (f聚焦 / f准直)</div>
+      </div>
+
+      <!-- 光纤参数 -->
+      <div class="card">
+        <div class="card-title">光纤参数</div>
+        <div class="input-group">
+          <div class="input-label"><span>光纤芯径</span><span class="unit">μm</span></div>
+          <div class="input-row">
+            <input type="range" id="fiberDia" min="20" max="600" value="100" step="5">
+            <input type="number" id="fiberDiaNum" value="100" min="1" max="2000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>数值孔径 NA</span><span class="unit">—</span></div>
+          <div class="input-row">
+            <input type="range" id="fiberNA" min="0.02" max="0.3" value="0.12" step="0.01">
+            <input type="number" id="fiberNANum" value="0.12" min="0.01" max="1" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <!-- 光学系统 -->
+      <div class="card">
+        <div class="card-title">光学系统</div>
+        <div class="input-group">
+          <div class="input-label"><span>准直镜焦距</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="fCol" min="30" max="200" value="100" step="5">
+            <input type="number" id="fColNum" value="100" min="1" max="500">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>聚焦镜焦距</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="fFoc" min="50" max="400" value="200" step="5">
+            <input type="number" id="fFocNum" value="200" min="1" max="1000">
+          </div>
+        </div>
+      </div>
+
+      <!-- 激光参数 -->
+      <div class="card">
+        <div class="card-title">激光参数</div>
+        <div class="input-group">
+          <div class="input-label"><span>激光功率</span><span class="unit">W</span></div>
+          <div class="input-row">
+            <input type="range" id="power" min="50" max="6000" value="1000" step="50">
+            <input type="number" id="powerNum" value="1000" min="1" max="50000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>激光波长</span><span class="unit">nm</span></div>
+          <div class="input-row">
+            <input type="range" id="wavelength" min="800" max="1100" value="1064" step="1">
+            <input type="number" id="wavelengthNum" value="1064" min="100" max="10000">
+          </div>
+        </div>
+      </div>
+
+      <!-- 详细结果 -->
+      <div class="card">
+        <div class="card-title">计算结果</div>
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="r-label">放大倍率</div>
+            <div class="r-value"><span id="rMag">0</span><span class="r-unit">×</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">准直光束直径</div>
+            <div class="r-value"><span id="rColDia">0</span><span class="r-unit">mm</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">功率密度</div>
+            <div class="r-value"><span id="rPowerDensity">0</span><span class="r-unit">W/mm²</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">焦深 (DOF)</div>
+            <div class="r-value"><span id="rDof">0</span><span class="r-unit">mm</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">光纤发散角(全角)</div>
+            <div class="r-value"><span id="rDivergence">0</span><span class="r-unit">°</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">衍射极限光斑</div>
+            <div class="r-value"><span id="rDiff">0</span><span class="r-unit">μm</span></div>
+          </div>
+          <div class="result-item full">
+            <div class="r-label">线能量密度 (P/v, v=10mm/s)</div>
+            <div class="r-value"><span id="rLineEnergy">0</span><span class="r-unit">J/mm</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 离焦光斑分析 -->
+      <div class="card">
+        <div class="card-title">离焦光斑分析</div>
+        <div class="input-group">
+          <div class="input-label"><span>离焦量（正值=焦点在工件内，负值=焦点在工件上方）</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="defocus" min="-10" max="10" value="0" step="0.1">
+            <input type="number" id="defocusNum" value="0" min="-50" max="50" step="0.1">
+          </div>
+        </div>
+        <div class="defocus-hero">
+          <div class="dh-left">
+            <div class="dh-label">离焦处光斑直径</div>
+            <div class="dh-value"><span id="rDefocusSpot">0</span><span class="unit">μm</span></div>
+            <div class="defocus-ratio">vs 焦点：<span class="ratio-val" id="rDefocusRatio">1.00</span>×</div>
+          </div>
+          <div class="dh-right">
+            <div class="dh-pd-label">功率密度</div>
+            <div class="dh-pd"><span id="rDefocusPD">0</span><span class="unit">W/mm²</span></div>
+          </div>
+        </div>
+        <div class="defocus-chart-wrap">
+          <canvas id="defocusChart"></canvas>
+        </div>
+        <div class="defocus-table" id="defocusTable"></div>
+      </div>
+
+      <div class="hint">
+        注：光斑直径按几何光学成像公式计算（光纤芯经光学系统放大/缩小）。实际光斑还受衍射极限、像差、光束质量M²影响，本工具取几何光斑与衍射光斑的较大值作为工程参考。焦深按高斯光束瑞利长度2倍估算。离焦光斑基于高斯光束传播模型 d(z)=d₀√(1+(z/z_R)²) 计算。
+      </div>
+    </section>
+
+    <!-- ===== 视图2：光路模拟 ===== -->
+    <section class="view" id="view-sim">
+      <div class="sim-container">
+        <div class="sim-canvas-wrap">
+          <canvas id="simCanvas"></canvas>
+        </div>
+        <div class="sim-controls">
+          <button class="sim-btn" id="btnPlay">暂停</button>
+          <button class="sim-btn secondary" id="btnReset">重置</button>
+          <div class="sim-speed">
+            <span>速度</span>
+            <select id="simSpeed">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+          </div>
+        </div>
+        <div class="sim-info">
+          <div class="sim-info-item">
+            <div class="si-label">光斑直径</div>
+            <div class="si-value"><span id="simSpot">0</span>μm</div>
+          </div>
+          <div class="sim-info-item">
+            <div class="si-label">放大倍率</div>
+            <div class="si-value"><span id="simMag">0</span>×</div>
+          </div>
+          <div class="sim-info-item">
+            <div class="si-label">功率密度</div>
+            <div class="si-value"><span id="simPD">0</span>W/mm²</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">光路说明</div>
+        <div style="font-size:13px; color:var(--text-2); line-height:1.8;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span style="width:12px;height:12px;border-radius:50%;background:var(--laser);display:inline-block;box-shadow:0 0 6px var(--laser-glow);"></span>
+            <span>激光光束（粒子流示意传播方向）</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span style="width:12px;height:12px;border-radius:2px;background:var(--cyan);display:inline-block;"></span>
+            <span>光学透镜（准直镜 / 聚焦镜）</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:12px;height:3px;background:var(--text-2);display:inline-block;"></span>
+            <span>工件（右侧，光斑按相对比例显示）</span>
+          </div>
+          <div class="divider"></div>
+          <div style="font-size:12px; color:var(--text-3);">
+            光束从光纤端面以发散角输出，经准直镜变为平行光，再经聚焦镜会聚至工件表面形成光斑。调整计算器参数可实时查看光路变化。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 视图3：参数库 ===== -->
+    <section class="view" id="view-lib">
+      <div class="lib-section">
+        <div class="lib-section-title">常用光纤</div>
+        <div class="lib-list" id="fiberList"></div>
+      </div>
+      <div class="lib-section">
+        <div class="lib-section-title">常用准直镜</div>
+        <div class="lib-list" id="colList"></div>
+      </div>
+      <div class="lib-section">
+        <div class="lib-section-title">常用聚焦镜 / 场镜</div>
+        <div class="lib-list" id="focList"></div>
+      </div>
+      <div class="hint">点击任意参数可快速填入计算器。</div>
+    </section>
+
+    <!-- ===== 视图4：高能激光焊接仿真 ===== -->
+    <section class="view" id="view-weld">
+      <!-- 焊接模式 + 熔深结果 -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="weld-mode-badge keyhole" id="weldModeBadge">深熔匙孔模式</span>
+        <span style="font-size:11px; color:var(--text-3);">高能热动力学 · 匙孔仿真</span>
+      </div>
+
+      <div class="weld-hero">
+        <div class="wh-left">
+          <div class="wh-label">预估熔深 · 工艺修正参考</div>
+          <div class="wh-value"><span id="weldEst">0</span><span class="unit"> mm</span></div>
+        </div>
+        <div class="wh-right">
+          <div class="wh-sub-label">纯理论推演</div>
+          <div class="wh-sub"><span id="weldTheory">0</span> mm</div>
+        </div>
+      </div>
+
+      <!-- 焊接仿真动画 -->
+      <div class="weld-canvas-wrap">
+        <span class="wc-tag">LASER WELDING SIMULATION · 熔深动态演化</span>
+        <canvas id="weldCanvas"></canvas>
+        <div class="wc-legend">
+          <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+          <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
+          <span class="lg"><span class="dot" style="background:#1a2340;"></span>母材</span>
+        </div>
+      </div>
+
+      <!-- 动画控制 -->
+      <div class="weld-controls">
+        <button class="weld-btn" id="weldPlay">暂停</button>
+        <button class="weld-btn secondary" id="weldReset">重置</button>
+        <div class="weld-speed-select">
+          <span>速度</span>
+          <select id="weldSpeed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 光学系统硬件配置 -->
+      <div class="card">
+        <div class="card-title">光学系统硬件配置</div>
+        <div class="input-group">
+          <div class="input-label"><span>激光总功率 P</span><span class="unit">W</span></div>
+          <div class="input-row">
+            <input type="range" id="wP" min="500" max="20000" value="5500" step="100">
+            <input type="number" id="wPNum" value="5500" min="100" max="50000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>光纤芯径 D_core</span><span class="unit">μm</span></div>
+          <div class="input-row">
+            <input type="range" id="wCore" min="20" max="600" value="50" step="10">
+            <input type="number" id="wCoreNum" value="50" min="5" max="2000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>准直镜焦距 fc</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="wFc" min="30" max="200" value="60" step="5">
+            <input type="number" id="wFcNum" value="60" min="10" max="500">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>聚焦镜焦距 ff</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="wFf" min="50" max="500" value="300" step="5">
+            <input type="number" id="wFfNum" value="300" min="20" max="1000">
+          </div>
+        </div>
+      </div>
+
+      <!-- 运动学与工件材质 -->
+      <div class="card">
+        <div class="card-title">运动学与工件材质</div>
+        <div class="input-group">
+          <div class="input-label"><span>工件材料</span><span class="unit" id="wMatSpec">钢 · k=16</span></div>
+          <select class="weld-material-select" id="wMaterial">
+            <optgroup label="—— 钢/不锈钢 ——">
+              <option value="steel" selected>碳钢 / 不锈钢（基准）</option>
+            </optgroup>
+            <optgroup label="—— 铝合金 ——">
+              <option value="al1060">铝合金 1060（工业纯铝）</option>
+              <option value="al3003">铝合金 3003（Al-Mn）</option>
+              <option value="al5052">铝合金 5052（Al-Mg）</option>
+              <option value="al5083">铝合金 5083（Al-Mg）</option>
+              <option value="al6061">铝合金 6061（Al-Mg-Si）</option>
+              <option value="al6063">铝合金 6063（Al-Mg-Si）</option>
+              <option value="al7075">铝合金 7075（Al-Zn）</option>
+            </optgroup>
+            <optgroup label="—— 铜及铜合金 ——">
+              <option value="cu_t2">T2 紫铜 / C1100（纯铜）</option>
+              <option value="cu_c1020">C1020 无氧铜</option>
+              <option value="cu_h62">H62 黄铜（Cu-Zn）</option>
+              <option value="cu_c5191">C5191 磷青铜</option>
+              <option value="cu_qbe2">QBe2 铍铜</option>
+            </optgroup>
+          </select>
+          <div class="input-group">
+            <div class="input-label"><span>焊接速度 V</span><span class="unit">mm/s</span></div>
+            <div class="input-row">
+              <input type="range" id="wV" min="5" max="300" value="70" step="5">
+              <input type="number" id="wVNum" value="70" min="1" max="1000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>材料吸收率 η</span><span class="unit" id="wEtaHint">推荐 0.40</span></div>
+            <div class="input-row">
+              <input type="range" id="wEta" min="0.02" max="0.9" value="0.4" step="0.01">
+              <input type="number" id="wEtaNum" value="0.4" min="0.01" max="1" step="0.01">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 离焦与熔深 -->
+      <div class="card">
+        <div class="card-title">离焦量 · 熔深演化</div>
+        <div class="input-group">
+          <div class="input-label"><span>离焦量 Δf</span><span class="unit">mm（负=焦点深入工件）</span></div>
+          <div class="input-row">
+            <input type="range" id="wDefocus" min="-10" max="10" value="0" step="0.5">
+            <input type="number" id="wDefocusNum" value="0" min="-20" max="20" step="0.5">
+          </div>
+        </div>
+        <div class="weld-defocus-grid">
+          <div class="wd-item2">
+            <span class="wd2-label">焦点熔深（Δf=0）</span>
+            <span class="wd2-value" id="wD0">0 mm</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">当前离焦熔深</span>
+            <span class="wd2-value hot" id="wDcur">0 mm</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">熔深衰减比</span>
+            <span class="wd2-value" id="wDRatio">100%</span>
+          </div>
+        </div>
+        <div class="weld-ref-table">
+          <table>
+            <thead>
+              <tr><th>离焦量 Δf</th><th>-4mm</th><th>-2mm</th><th>-1mm</th><th>0</th><th>+1mm</th><th>+2mm</th><th>+4mm</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>预估熔深</td>
+                <td id="wT_m4">—</td><td id="wT_m2">—</td><td id="wT_m1">—</td><td id="wT_0">—</td>
+                <td id="wT_p1">—</td><td id="wT_p2">—</td><td id="wT_p4">—</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="weld-model-note">模型：高斯光束传播 d(z)=d₀√(1+(z/zR)²)，熔深 ∝ 功率密度^0.6；zR 取 2.2~3.0mm（焊接聚焦系统经验值），负离焦熔深略优，正离焦衰减更快 —— 参考《大功率光纤激光焊接工艺参数对熔深的影响》（光学学报）、《基于响应曲面法的铝合金激光封边焊接》（焊接学报）等文献。</div>
+        </div>
+      </div>
+
+      <!-- 实时物理推演 -->
+      <div class="card">
+        <div class="card-title">实时物理推演</div>
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="r-label">焦点光斑直径</div>
+            <div class="r-value"><span id="wSpot">0</span><span class="r-unit">μm</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">焦点功率密度</div>
+            <div class="r-value"><span id="wDensity">0</span><span class="r-unit">W/cm²</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">有效热线能量</div>
+            <div class="r-value"><span id="wHeat">0</span><span class="r-unit">J/mm</span></div>
+          </div>
+          <div class="result-item">
+            <div class="r-label">纯理论推演熔深</div>
+            <div class="r-value"><span id="wTheory2">0</span><span class="r-unit">mm</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工艺速查字典 -->
+      <div class="weld-dict">
+        <div class="wd-title">工艺速查字典</div>
+        <div class="wd-item">1. 激光总功率 (P)：系统热输入源头。提升功率可增加熔深；但在低速状态下易导致咬边或烧穿。</div>
+        <div class="wd-item">2. 光纤芯径 (D_core)：极小值约束。芯径越小越容易聚焦出高能光斑，是突破 10⁶ W/cm² 激发匙孔效应的核心瓶颈。</div>
+        <div class="wd-item">3. 速度与衰减：低速时热量将出现非线性横向损耗，不再向下穿透。本引擎已包含低速传导惩罚模型。</div>
+      </div>
+
+      <div class="hint">
+        深熔模式：功率密度突破 10⁶ W/cm²，成功激发高能匙孔效应。仿真模型基于热动力学与匙孔机理推演，仅供工程参考。
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 底部导航 -->
+  <nav class="tabbar">
+    <button class="tab active" data-view="calc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2"/>
+        <line x1="8" y1="6" x2="16" y2="6"/>
+        <line x1="8" y1="10" x2="10" y2="10"/>
+        <line x1="12" y1="10" x2="14" y2="10"/>
+        <line x1="16" y1="10" x2="16" y2="10"/>
+        <line x1="8" y1="14" x2="10" y2="14"/>
+        <line x1="12" y1="14" x2="14" y2="14"/>
+        <line x1="16" y1="14" x2="16" y2="14"/>
+        <line x1="8" y1="18" x2="10" y2="18"/>
+        <line x1="12" y1="18" x2="16" y2="18"/>
+      </svg>
+      <span>计算</span>
+    </button>
+    <button class="tab" data-view="sim">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <span>光路</span>
+    </button>
+    <button class="tab" data-view="weld">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 L12 8"/>
+        <path d="M12 16 L12 22"/>
+        <path d="M2 12 L8 12"/>
+        <path d="M16 12 L22 12"/>
+        <circle cx="12" cy="12" r="3.5"/>
+        <circle cx="12" cy="12" r="7.5" stroke-dasharray="2 2"/>
+      </svg>
+      <span>焊接</span>
+    </button>
+    <button class="tab" data-view="lib">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+      <span>参数库</span>
+    </button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- 关于弹窗 -->
+  <div class="about-modal" id="aboutModal">
+    <div class="about-card">
+      <div class="about-icon">
+        <svg viewBox="0 0 1024 1024" fill="none">
+          <rect width="1024" height="1024" rx="180" fill="#0b0f1a"/>
+          <ellipse cx="380" cy="512" rx="55" ry="140" fill="none" stroke="#00bcd4" stroke-width="18"/>
+          <ellipse cx="640" cy="512" rx="55" ry="140" fill="none" stroke="#00bcd4" stroke-width="18"/>
+          <line x1="180" y1="512" x2="340" y2="512" stroke="#ff5722" stroke-width="22" stroke-linecap="round"/>
+          <line x1="420" y1="512" x2="600" y2="512" stroke="#ff9800" stroke-width="14" stroke-linecap="round"/>
+          <line x1="680" y1="512" x2="820" y2="512" stroke="#ff9800" stroke-width="10" stroke-linecap="round"/>
+          <circle cx="870" cy="512" r="35" fill="#fff3e0"/>
+          <circle cx="870" cy="512" r="55" fill="#ff9800" opacity="0.3"/>
+        </svg>
+      </div>
+      <div class="about-app-name">光纤激光光斑计算器</div>
+      <div class="about-version">Version 1.3.0</div>
+      <div class="about-divider"></div>
+      <div class="about-row">
+        <span class="ar-label">发布人</span>
+        <span class="ar-value publisher">肖飞</span>
+      </div>
+      <div class="about-row">
+        <span class="ar-label">版本</span>
+        <span class="ar-value">v1.3.0</span>
+      </div>
+      <div class="about-row">
+        <span class="ar-label">适用平台</span>
+        <span class="ar-value">Android / iOS / Web</span>
+      </div>
+      <div class="about-desc">
+        本应用用于光纤激光焊接工艺中的光学参数计算与仿真，支持光斑直径、功率密度、焦深、离焦光斑等参数的实时计算，附光路模拟动画与高能激光焊接熔深仿真。仅供工程参考，实际焊接参数请结合工艺验证。
+      </div>
+      <button class="about-close" id="aboutClose">知道了</button>
+    </div>
+  </div>
+
+  <!-- 首次登录：v1.3 更新说明 -->
+  <div class="update-modal" id="updateModal">
+    <div class="update-card">
+      <h3>版本更新 <span class="vtag">v1.3</span></h3>
+      <div class="up-sub">本次更新带来焊接仿真的全面升级</div>
+      <div class="up-item">
+        <span class="up-num">1</span>
+        <span>焊接仿真新增<span class="up-tag">铝合金</span><span class="up-tag">铜合金</span>牌号材料库，内置各牌号吸收率与导热修正，选择材料自动匹配工艺参数。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">2</span>
+        <span>预估熔深新增不同离焦量（Δf）下的熔深演化计算与参考表，负离焦/正离焦熔深差异一目了然。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">3</span>
+        <span>熔深动态演化动画增加焊接方向与速度显示，仿真更贴近真实工艺。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">4</span>
+        <span>取消热影响区动态演化，熔深动画更聚焦熔池与匙孔的清晰呈现。</span>
+      </div>
+      <button class="up-btn" id="updateClose">开始使用</button>
+    </div>
+  </div>
+
+  <!-- 安装提示横幅 -->
+  <div class="install-banner" id="installBanner">
+    <div class="ib-title">
+      <span class="ib-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </span>
+      安装到手机
+    </div>
+    <div class="ib-desc">将本应用安装到主屏幕，离线可用，像原生APP一样运行</div>
+    <div class="ib-actions">
+      <button class="ib-btn dismiss" id="ibDismiss">稍后</button>
+      <button class="ib-btn install" id="ibInstall">立即安装</button>
+    </div>
+  </div>
+
+  <!-- iOS 安装引导 -->
+  <div class="ios-guide" id="iosGuide">
+    <div class="ig-content">
+      <h3>添加到主屏幕</h3>
+      <p>1. 点击底部中间的分享按钮 <strong style="color:var(--laser-2)">↑</strong></p>
+      <p>2. 向下滑动，选择 <strong style="color:var(--laser-2)">「添加到主屏幕」</strong></p>
+      <p>3. 点击右上角「添加」即可完成安装</p>
+      <button class="ig-close" id="igClose">我知道了</button>
+    </div>
+    <svg class="ig-arrow" viewBox="0 0 60 60" fill="none">
+      <path d="M30 50 V20 M18 32 L30 18 L42 32" stroke="#ff9800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="30" cy="52" r="4" fill="#ff9800"/>
+    </svg>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== 状态 =====
+  const state = {
+    fiberDia: 100,      // μm
+    fiberNA: 0.12,
+    fCol: 100,          // mm
+    fFoc: 200,          // mm
+    power: 1000,        // W
+    wavelength: 1064,   // nm
+    defocus: 0,         // mm 离焦量
+    simPlaying: true,
+    simSpeed: 1,
+    simTime: 0,
+    // 焊接仿真参数
+    wP: 5500,           // W
+    wCore: 50,          // μm
+    wFc: 60,            // mm
+    wFf: 300,           // mm
+    wV: 70,             // mm/s
+    wEta: 0.4,
+    wMaterial: 'steel', // 材料牌号
+    wDefocus: 0,        // mm 离焦量
+    weldPlaying: true,
+    weldSpeed: 1,
+    weldTime: 0
+  };
+
+  // ===== 材料库（1064nm 光纤激光 · 深熔焊接有效吸收率） =====
+  // η：深熔匙孔模式下的有效吸收率（文献参考：铝合金初始吸收率约15-25%，
+  //    匙孔形成后显著升高；铜对红外激光初始吸收率仅2-5%，深熔后约15-20%）
+  // k：材料导热率 W/(m·K)，用于导热修正（高导热材料热量散失快，同线能量熔深更浅）
+  // 导热修正因子 λ = (k_ref/k)^0.5，k_ref=16 为不锈钢基准（与基础公式一致，λ=1）
+  const MATERIALS = {
+    steel:   { name: '碳钢/不锈钢', group: '钢',  eta: 0.40, k: 16,   note: '基准材料' },
+    al1060:  { name: '1060 纯铝',   group: '铝合金', eta: 0.22, k: 235, note: '工业纯铝，导热极高' },
+    al3003:  { name: '3003',        group: '铝合金', eta: 0.25, k: 190, note: 'Al-Mn系' },
+    al5052:  { name: '5052',        group: '铝合金', eta: 0.28, k: 138, note: 'Al-Mg系' },
+    al5083:  { name: '5083',        group: '铝合金', eta: 0.30, k: 125, note: 'Al-Mg系' },
+    al6061:  { name: '6061',        group: '铝合金', eta: 0.30, k: 167, note: 'Al-Mg-Si系' },
+    al6063:  { name: '6063',        group: '铝合金', eta: 0.30, k: 200, note: 'Al-Mg-Si系' },
+    al7075:  { name: '7075',        group: '铝合金', eta: 0.32, k: 130, note: 'Al-Zn系，高强' },
+    cu_t2:   { name: 'T2 紫铜',     group: '铜',  eta: 0.15, k: 401, note: 'C1100 纯铜，导热极高' },
+    cu_c1020:{ name: 'C1020 无氧铜',group: '铜',  eta: 0.15, k: 398, note: '高导电导热' },
+    cu_h62:  { name: 'H62 黄铜',    group: '铜',  eta: 0.20, k: 116, note: 'Cu-Zn系，含锌提高吸收' },
+    cu_c5191:{ name: 'C5191 磷青铜',group: '铜',  eta: 0.18, k: 62,  note: 'Cu-Sn-P系' },
+    cu_qbe2: { name: 'QBe2 铍铜',   group: '铜',  eta: 0.22, k: 105, note: 'Cu-Be系，高强高导' }
+  };
+
+  // ===== 工具函数 =====
+  function $(id) { return document.getElementById(id); }
+
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  function fmt(num, dec) {
+    if (dec === undefined) dec = 2;
+    if (!isFinite(num)) return '—';
+    return Number(num.toFixed(dec)).toString();
+  }
+
+  // ===== 计算核心 =====
+  function calculate() {
+    const dFiber = state.fiberDia;        // μm
+    const na = state.fiberNA;
+    const fC = state.fCol;                // mm
+    const fF = state.fFoc;                // mm
+    const P = state.power;                // W
+    const lambda = state.wavelength * 1e-6; // nm → mm
+
+    // 放大倍率
+    const M = fF / fC;
+
+    // 几何光斑直径 (μm)
+    const dGeo = dFiber * M;
+
+    // 准直后光束直径 (mm): D = 2 * fC * NA
+    const Dcol = 2 * fC * na;
+
+    // 衍射极限光斑直径 (μm): d = 4 * λ * fF / (π * Dcol)
+    let dDiff = 0;
+    if (Dcol > 0) {
+      dDiff = (4 * lambda * fF / (Math.PI * Dcol)) * 1000; // mm → μm
+    }
+
+    // 实际光斑取较大值
+    const dSpot = Math.max(dGeo, dDiff);
+
+    // 功率密度 (W/mm²): I = P / (π * (d/2)²), d in mm
+    const dSpotMm = dSpot / 1000;
+    const I = P / (Math.PI * Math.pow(dSpotMm / 2, 2));
+
+    // 焦深 DOF (mm): 2 * z_R = 2 * π * w0² / λ, w0 = dSpot/2
+    const w0 = dSpotMm / 2;
+    const dof = 2 * Math.PI * w0 * w0 / lambda;
+
+    // 发散角全角 (度): 2 * arcsin(NA)
+    const divergence = 2 * Math.asin(Math.min(na, 1)) * 180 / Math.PI;
+
+    // 线能量密度 (J/mm), 默认速度10mm/s
+    const lineEnergy = P / 10;
+
+    // ===== 离焦光斑计算 =====
+    // 高斯光束模型: d(z) = d0 * sqrt(1 + (z/zR)^2)
+    const w0_um = dSpot / 2;                    // 束腰半径 μm
+    const lambda_um = state.wavelength / 1000;  // 波长 μm
+    const zR_um = Math.PI * w0_um * w0_um / lambda_um; // 瑞利长度 μm
+    const zR_mm = zR_um / 1000;                 // 瑞利长度 mm
+
+    // 几何模型: 会聚半角 tan(theta) = Dcol / (2*fF)
+    const tanTheta = Dcol / (2 * fF);
+
+    // 计算指定离焦量处的光斑
+    function spotAtDefocus(z_mm) {
+      // 高斯模型
+      const dGauss = dSpot * Math.sqrt(1 + Math.pow(z_mm / zR_mm, 2));
+      // 几何模型（多模光纤更接近几何传播）
+      const dGeoDef = dSpot + 2 * Math.abs(z_mm) * tanTheta * 1000;
+      // 取较大值（工程保守估计）
+      return Math.max(dGauss, dGeoDef);
+    }
+
+    const dDefocus = spotAtDefocus(state.defocus);
+    const dDefocusMm = dDefocus / 1000;
+    const defocusPD = P / (Math.PI * Math.pow(dDefocusMm / 2, 2));
+    const defocusRatio = dDefocus / dSpot;
+
+    return { M, dGeo, Dcol, dDiff, dSpot, I, dof, divergence, lineEnergy,
+             zR_mm, tanTheta, dDefocus, defocusPD, defocusRatio, spotAtDefocus };
+  }
+
+  function updateResults() {
+    const r = calculate();
+    $('rSpot').textContent = fmt(r.dSpot, 1);
+    $('rMag').textContent = fmt(r.M, 2);
+    $('rColDia').textContent = fmt(r.Dcol, 2);
+    $('rPowerDensity').textContent = fmt(r.I, 0);
+    $('rDof').textContent = fmt(r.dof, 3);
+    $('rDivergence').textContent = fmt(r.divergence, 2);
+    $('rDiff').textContent = fmt(r.dDiff, 2);
+    $('rLineEnergy').textContent = fmt(r.lineEnergy, 1);
+
+    // 离焦结果
+    $('rDefocusSpot').textContent = fmt(r.dDefocus, 1);
+    $('rDefocusPD').textContent = fmt(r.defocusPD, 0);
+    $('rDefocusRatio').textContent = fmt(r.defocusRatio, 2);
+
+    $('simSpot').textContent = fmt(r.dSpot, 1);
+    $('simMag').textContent = fmt(r.M, 2);
+    $('simPD').textContent = fmt(r.I, 0);
+
+    // 绘制离焦曲线和参考表
+    drawDefocusChart(r);
+    renderDefocusTable(r);
+  }
+
+  // ===== 离焦曲线绘制 =====
+  function drawDefocusChart(r) {
+    const canvas = $('defocusChart');
+    if (!canvas) return;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const w = rect.width, h = rect.height;
+    const padL = 44, padR = 16, padT = 16, padB = 28;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    // 离焦范围：根据焦深自适应，最小±5mm
+    const zRange = Math.max(5, Math.min(15, r.zR_mm * 2));
+    const zMin = -zRange, zMax = zRange;
+
+    // 计算曲线数据，找最大值
+    const pts = [];
+    let dMax = 0;
+    for (let i = 0; i <= 100; i++) {
+      const z = zMin + (zMax - zMin) * i / 100;
+      const d = r.spotAtDefocus(z);
+      pts.push({ z, d });
+      if (d > dMax) dMax = d;
+    }
+    dMax = dMax * 1.1;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // 网格
+    ctx.strokeStyle = 'rgba(31, 43, 69, 0.5)';
+    ctx.lineWidth = 0.5;
+    ctx.fillStyle = '#5a6680';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+
+    // 横轴刻度
+    const zTicks = [-zRange, -zRange/2, 0, zRange/2, zRange];
+    zTicks.forEach(z => {
+      const x = padL + (z - zMin) / (zMax - zMin) * plotW;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
+      ctx.fillText(z.toFixed(1), x, h - 10);
+    });
+
+    // 纵轴刻度
+    ctx.textAlign = 'right';
+    const dTicks = 4;
+    for (let i = 0; i <= dTicks; i++) {
+      const d = dMax * i / dTicks;
+      const y = padT + plotH - (d / dMax) * plotH;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+      ctx.fillText(d.toFixed(0), padL - 6, y + 3);
+    }
+
+    // 轴标签
+    ctx.fillStyle = '#8a96ad';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('离焦量 (mm)', padL + plotW / 2, h - 2);
+    ctx.save();
+    ctx.translate(12, padT + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('光斑直径 (μm)', 0, 0);
+    ctx.restore();
+
+    // 焦深区域（±zR）
+    const zR = Math.min(r.zR_mm, zRange);
+    const xZR_L = padL + (-zR - zMin) / (zMax - zMin) * plotW;
+    const xZR_R = padL + (zR - zMin) / (zMax - zMin) * plotW;
+    ctx.fillStyle = 'rgba(0, 188, 212, 0.06)';
+    ctx.fillRect(xZR_L, padT, xZR_R - xZR_L, plotH);
+
+    // 绘制曲线
+    ctx.beginPath();
+    ctx.strokeStyle = '#ff5722';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(255, 87, 34, 0.4)';
+    ctx.shadowBlur = 6;
+    pts.forEach((p, i) => {
+      const x = padL + (p.z - zMin) / (zMax - zMin) * plotW;
+      const y = padT + plotH - (p.d / dMax) * plotH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 焦点标记（z=0）
+    const x0 = padL + (0 - zMin) / (zMax - zMin) * plotW;
+    const y0 = padT + plotH - (r.dSpot / dMax) * plotH;
+    ctx.fillStyle = '#ff9800';
+    ctx.beginPath(); ctx.arc(x0, y0, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff9800';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('焦点 ' + fmt(r.dSpot, 0) + 'μm', x0 + 6, y0 - 6);
+
+    // 当前离焦位置标记
+    const zc = Math.max(zMin, Math.min(zMax, state.defocus));
+    const xc = padL + (zc - zMin) / (zMax - zMin) * plotW;
+    const yc = padT + plotH - (r.spotAtDefocus(zc) / dMax) * plotH;
+    ctx.strokeStyle = 'rgba(0, 188, 212, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(xc, padT); ctx.lineTo(xc, padT + plotH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#00bcd4';
+    ctx.beginPath(); ctx.arc(xc, yc, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#00bcd4';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(xc, yc, 8, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // ===== 离焦参考表 =====
+  function renderDefocusTable(r) {
+    const table = $('defocusTable');
+    if (!table) return;
+    const zVals = [-5, -2, 0, 2, 5];
+    table.innerHTML = '';
+    zVals.forEach(z => {
+      const d = r.spotAtDefocus(z);
+      const cell = document.createElement('div');
+      cell.className = 'defocus-cell' + (z === 0 ? ' focus' : '');
+      cell.innerHTML = '<div class="dc-z">' + (z > 0 ? '+' : '') + z + 'mm</div>' +
+                       '<div class="dc-d">' + fmt(d, 0) + 'μm</div>';
+      table.appendChild(cell);
+    });
+  }
+
+  // ===== 输入绑定 =====
+  function bindInput(rangeId, numId, key, parser) {
+    const range = $(rangeId);
+    const num = $(numId);
+    parser = parser || parseFloat;
+
+    range.addEventListener('input', () => {
+      state[key] = parser(range.value);
+      num.value = range.value;
+      updateResults();
+    });
+    num.addEventListener('input', () => {
+      let v = parser(num.value);
+      if (isNaN(v)) return;
+      state[key] = v;
+      // 不反向设range，因为可能超出range范围，但保持range同步到最近值
+      const min = parseFloat(range.min);
+      const max = parseFloat(range.max);
+      if (v >= min && v <= max) range.value = v;
+      updateResults();
+    });
+  }
+
+  bindInput('fiberDia', 'fiberDiaNum', 'fiberDia');
+  bindInput('fiberNA', 'fiberNANum', 'fiberNA');
+  bindInput('fCol', 'fColNum', 'fCol');
+  bindInput('fFoc', 'fFocNum', 'fFoc');
+  bindInput('power', 'powerNum', 'power');
+  bindInput('wavelength', 'wavelengthNum', 'wavelength');
+  bindInput('defocus', 'defocusNum', 'defocus');
+
+  // ===== Tab 切换 =====
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      tab.classList.add('active');
+      const view = tab.dataset.view;
+      $('view-' + view).classList.add('active');
+      $('content').scrollTop = 0;
+      if (view === 'sim') {
+        resizeCanvas();
+        if (!simAnimId) startSim();
+      }
+      if (view === 'weld') {
+        resizeWeldCanvas();
+        if (!weldAnimId) startWeldSim();
+      }
+    });
+  });
+
+  // ===== 光路模拟 Canvas =====
+  const canvas = $('simCanvas');
+  const ctx = canvas.getContext('2d');
+  let simAnimId = null;
+  let particles = [];
+  let dpr = window.devicePixelRatio || 1;
+
+  function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  window.addEventListener('resize', () => {
+    if ($('view-sim').classList.contains('active')) resizeCanvas();
+    if ($('view-calc').classList.contains('active')) updateResults();
+    if ($('view-weld').classList.contains('active')) resizeWeldCanvas();
+  });
+
+  // 光路布局（归一化坐标 0-1）
+  function getLayout() {
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+    return {
+      w, h,
+      fiberX: w * 0.08,
+      colX: w * 0.32,
+      focX: w * 0.62,
+      workX: w * 0.92,
+      centerY: h * 0.5
+    };
+  }
+
+  function spawnParticle() {
+    const L = getLayout();
+    // 从光纤端面出发，y在光纤芯径范围内
+    const fiberRadiusPx = Math.min(L.h * 0.12, 20 + state.fiberDia * 0.05);
+    const y = L.centerY + (Math.random() - 0.5) * fiberRadiusPx * 2;
+    particles.push({
+      x: L.fiberX,
+      y: y,
+      startY: y,
+      phase: 'diverge', // diverge -> collimate -> focus -> hit
+      speed: 0,
+      life: 1
+    });
+  }
+
+  function updateParticles(dt) {
+    const L = getLayout();
+    const r = calculate();
+    const speed = (L.w * 0.003) * state.simSpeed * dt;
+
+    // 发散半角（像素级，示意）
+    const divergeSlope = state.fiberNA * 3; // 放大显示
+    // 准直光束半径
+    const colRadius = Math.min(L.h * 0.18, Math.max(8, r.Dcol * 1.2));
+    // 光斑半径（工件上，按相对比例但有最小显示尺寸）
+    const spotRadius = Math.max(2, Math.min(L.h * 0.08, r.dSpot * 0.04));
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+
+      if (p.phase === 'diverge') {
+        p.x += speed;
+        // 从光纤到准直镜，线性发散
+        const t = (p.x - L.fiberX) / (L.colX - L.fiberX);
+        const dir = p.startY > L.centerY ? 1 : (p.startY < L.centerY ? -1 : (Math.random() > 0.5 ? 1 : -1));
+        p.y = p.startY + dir * divergeSlope * (p.x - L.fiberX) * 0.3;
+        if (p.y < L.centerY - colRadius) p.y = L.centerY - colRadius;
+        if (p.y > L.centerY + colRadius) p.y = L.centerY + colRadius;
+        if (p.x >= L.colX) {
+          p.phase = 'collimate';
+          // 锁定到准直光束范围内
+          if (p.y > L.centerY + colRadius) p.y = L.centerY + colRadius;
+          if (p.y < L.centerY - colRadius) p.y = L.centerY - colRadius;
+        }
+      } else if (p.phase === 'collimate') {
+        p.x += speed * 1.2;
+        // 平行光，y基本不变，微小抖动
+        p.y += (Math.random() - 0.5) * 0.3;
+        if (p.x >= L.focX) p.phase = 'focus';
+      } else if (p.phase === 'focus') {
+        p.x += speed;
+        // 向中心会聚
+        const t = (p.x - L.focX) / (L.workX - L.focX);
+        p.y = p.y + (L.centerY - p.y) * Math.min(1, t * 0.15);
+        if (p.x >= L.workX) {
+          p.phase = 'hit';
+          p.life = 1;
+        }
+      } else if (p.phase === 'hit') {
+        p.life -= dt * 2;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    // 限制粒子数
+    if (particles.length > 200) particles.splice(0, particles.length - 200);
+  }
+
+  function drawSim() {
+    const L = getLayout();
+    const r = calculate();
+    const w = L.w, h = L.h;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // 背景网格
+    ctx.strokeStyle = 'rgba(31, 43, 69, 0.4)';
+    ctx.lineWidth = 0.5;
+    const gridSize = 30;
+    for (let x = 0; x < w; x += gridSize) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 0; y < h; y += gridSize) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // 光轴
+    ctx.strokeStyle = 'rgba(138, 150, 173, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, L.centerY);
+    ctx.lineTo(w, L.centerY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const fiberRadiusPx = Math.min(h * 0.12, 20 + state.fiberDia * 0.05);
+    const colRadius = Math.min(h * 0.18, Math.max(8, r.Dcol * 1.2));
+    const spotRadius = Math.max(2, Math.min(h * 0.08, r.dSpot * 0.04));
+    const divergeSlope = state.fiberNA * 3;
+
+    // ===== 绘制光束区域（渐变填充） =====
+    // 发散段
+    const grad1 = ctx.createLinearGradient(L.fiberX, 0, L.colX, 0);
+    grad1.addColorStop(0, 'rgba(255, 87, 34, 0.12)');
+    grad1.addColorStop(1, 'rgba(255, 87, 34, 0.06)');
+    ctx.fillStyle = grad1;
+    ctx.beginPath();
+    ctx.moveTo(L.fiberX, L.centerY - fiberRadiusPx);
+    ctx.lineTo(L.colX, L.centerY - colRadius);
+    ctx.lineTo(L.colX, L.centerY + colRadius);
+    ctx.lineTo(L.fiberX, L.centerY + fiberRadiusPx);
+    ctx.closePath();
+    ctx.fill();
+
+    // 平行段
+    ctx.fillStyle = 'rgba(255, 87, 34, 0.07)';
+    ctx.fillRect(L.colX, L.centerY - colRadius, L.focX - L.colX, colRadius * 2);
+
+    // 会聚段
+    const grad2 = ctx.createLinearGradient(L.focX, 0, L.workX, 0);
+    grad2.addColorStop(0, 'rgba(255, 87, 34, 0.07)');
+    grad2.addColorStop(1, 'rgba(255, 152, 0, 0.15)');
+    ctx.fillStyle = grad2;
+    ctx.beginPath();
+    ctx.moveTo(L.focX, L.centerY - colRadius);
+    ctx.lineTo(L.workX, L.centerY - spotRadius);
+    ctx.lineTo(L.workX, L.centerY + spotRadius);
+    ctx.lineTo(L.focX, L.centerY + colRadius);
+    ctx.closePath();
+    ctx.fill();
+
+    // ===== 绘制光纤 =====
+    ctx.fillStyle = '#1a2340';
+    ctx.strokeStyle = '#2a3a5c';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(L.fiberX - 22, L.centerY - fiberRadiusPx - 4, 22, (fiberRadiusPx + 4) * 2, 3);
+    ctx.fill(); ctx.stroke();
+    // 纤芯
+    ctx.fillStyle = '#ff5722';
+    ctx.fillRect(L.fiberX - 3, L.centerY - fiberRadiusPx * 0.4, 3, fiberRadiusPx * 0.8);
+    // 标签
+    ctx.fillStyle = '#8a96ad';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('光纤', L.fiberX - 11, L.centerY + fiberRadiusPx + 18);
+
+    // ===== 绘制准直镜 =====
+    drawLens(L.colX, L.centerY, colRadius + 8, '准直镜', '#00bcd4');
+
+    // ===== 绘制聚焦镜 =====
+    drawLens(L.focX, L.centerY, colRadius + 8, '聚焦镜', '#00bcd4');
+
+    // ===== 绘制工件 =====
+    ctx.fillStyle = '#2a3a5c';
+    ctx.fillRect(L.workX - 2, L.centerY - h * 0.35, 4, h * 0.7);
+    ctx.fillStyle = '#3a4a6c';
+    ctx.fillRect(L.workX + 2, L.centerY - h * 0.35, 8, h * 0.7);
+    // 工件标签
+    ctx.fillStyle = '#8a96ad';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('工件', L.workX + 6, L.centerY + h * 0.35 + 16);
+
+    // ===== 绘制光斑（工件上） =====
+    const spotGrad = ctx.createRadialGradient(L.workX, L.centerY, 0, L.workX, L.centerY, spotRadius * 2);
+    spotGrad.addColorStop(0, 'rgba(255, 200, 100, 0.9)');
+    spotGrad.addColorStop(0.3, 'rgba(255, 152, 0, 0.6)');
+    spotGrad.addColorStop(0.6, 'rgba(255, 87, 34, 0.3)');
+    spotGrad.addColorStop(1, 'rgba(255, 87, 34, 0)');
+    ctx.fillStyle = spotGrad;
+    ctx.beginPath();
+    ctx.arc(L.workX, L.centerY, spotRadius * 2, 0, Math.PI * 2);
+    ctx.fill();
+    // 光斑核心
+    ctx.fillStyle = 'rgba(255, 230, 180, 0.95)';
+    ctx.beginPath();
+    ctx.arc(L.workX, L.centerY, spotRadius * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 光斑尺寸标注
+    ctx.strokeStyle = 'rgba(255, 152, 0, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(L.workX - 14, L.centerY - spotRadius);
+    ctx.lineTo(L.workX - 6, L.centerY - spotRadius);
+    ctx.moveTo(L.workX - 14, L.centerY + spotRadius);
+    ctx.lineTo(L.workX - 6, L.centerY + spotRadius);
+    ctx.moveTo(L.workX - 10, L.centerY - spotRadius);
+    ctx.lineTo(L.workX - 10, L.centerY + spotRadius);
+    ctx.stroke();
+    ctx.fillStyle = '#ff9800';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmt(r.dSpot, 0) + 'μm', L.workX - 16, L.centerY + 3);
+
+    // ===== 绘制粒子 =====
+    for (const p of particles) {
+      if (p.phase === 'hit') {
+        ctx.globalAlpha = p.life * 0.8;
+        ctx.fillStyle = '#ffc864';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2 + (1 - p.life) * 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = p.phase === 'focus' ? '#ffab40' : '#ff7043';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        // 拖尾
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(p.x - 3, p.y, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // 焦距标注
+    ctx.fillStyle = '#5a6680';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('f=' + state.fCol + 'mm', (L.fiberX + L.colX) / 2, h - 8);
+    ctx.fillText('f=' + state.fFoc + 'mm', (L.focX + L.workX) / 2, h - 8);
+  }
+
+  function drawLens(x, cy, halfH, label, color) {
+    // 透镜主体（双凸示意）
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'rgba(0, 188, 212, 0.08)';
+    ctx.beginPath();
+    ctx.moveTo(x, cy - halfH);
+    ctx.quadraticCurveTo(x + 6, cy, x, cy + halfH);
+    ctx.quadraticCurveTo(x - 6, cy, x, cy - halfH);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // 标签
+    ctx.fillStyle = '#8a96ad';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, cy - halfH - 8);
+  }
+
+  let lastTime = 0;
+  function simLoop(timestamp) {
+    if (!state.simPlaying) {
+      simAnimId = requestAnimationFrame(simLoop);
+      return;
+    }
+    const dt = Math.min((timestamp - lastTime) / 16.67, 3) || 1;
+    lastTime = timestamp;
+    state.simTime += dt;
+
+    // 生成粒子
+    if (Math.random() < 0.4 * state.simSpeed) {
+      spawnParticle();
+      if (Math.random() < 0.3) spawnParticle();
+    }
+
+    updateParticles(dt);
+    drawSim();
+    simAnimId = requestAnimationFrame(simLoop);
+  }
+
+  function startSim() {
+    if (simAnimId) return;
+    resizeCanvas();
+    lastTime = performance.now();
+    simAnimId = requestAnimationFrame(simLoop);
+  }
+
+  // 模拟控制
+  $('btnPlay').addEventListener('click', () => {
+    state.simPlaying = !state.simPlaying;
+    $('btnPlay').textContent = state.simPlaying ? '暂停' : '播放';
+  });
+  $('btnReset').addEventListener('click', () => {
+    particles = [];
+    state.simTime = 0;
+  });
+  $('simSpeed').addEventListener('change', (e) => {
+    state.simSpeed = parseFloat(e.target.value);
+  });
+
+  // ===== 参数库 =====
+  const fiberData = [
+    { name: '标准通信光纤', spec: '芯径 9μm / NA 0.14', dia: 9, na: 0.14 },
+    { name: '小芯径激光光纤', spec: '芯径 25μm / NA 0.06', dia: 25, na: 0.06 },
+    { name: '常用激光光纤', spec: '芯径 50μm / NA 0.12', dia: 50, na: 0.12 },
+    { name: '中芯径激光光纤', spec: '芯径 100μm / NA 0.12', dia: 100, na: 0.12 },
+    { name: '大芯径激光光纤', spec: '芯径 200μm / NA 0.22', dia: 200, na: 0.22 },
+    { name: '超大芯径光纤', spec: '芯径 400μm / NA 0.22', dia: 400, na: 0.22 },
+    { name: '高功率传输光纤', spec: '芯径 600μm / NA 0.22', dia: 600, na: 0.22 }
+  ];
+
+  const colData = [
+    { name: '短焦准直镜', spec: '焦距 50mm', f: 50 },
+    { name: '标准准直镜', spec: '焦距 75mm', f: 75 },
+    { name: '常用准直镜', spec: '焦距 100mm', f: 100 },
+    { name: '长焦准直镜', spec: '焦距 125mm', f: 125 },
+    { name: '长焦准直镜', spec: '焦距 150mm', f: 150 }
+  ];
+
+  const focData = [
+    { name: '短焦聚焦镜', spec: '焦距 120mm', f: 120 },
+    { name: '标准聚焦镜', spec: '焦距 150mm', f: 150 },
+    { name: '常用聚焦镜', spec: '焦距 200mm', f: 200 },
+    { name: '长焦聚焦镜', spec: '焦距 255mm (F-theta)', f: 255 },
+    { name: '长焦聚焦镜', spec: '焦距 300mm', f: 300 },
+    { name: '远心场镜', spec: '焦距 330mm (F-theta)', f: 330 }
+  ];
+
+  function renderLib() {
+    const fiberList = $('fiberList');
+    fiberList.innerHTML = '';
+    fiberData.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'lib-item';
+      el.innerHTML = '<div><div class="li-name">' + item.name + '</div><div class="li-spec">' + item.spec + '</div></div><span class="li-arrow">›</span>';
+      el.addEventListener('click', () => {
+        setFiber(item.dia, item.na);
+        showToast('已填入：' + item.name);
+      });
+      fiberList.appendChild(el);
+    });
+
+    const colList = $('colList');
+    colList.innerHTML = '';
+    colData.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'lib-item';
+      el.innerHTML = '<div><div class="li-name">' + item.name + '</div><div class="li-spec">' + item.spec + '</div></div><span class="li-arrow">›</span>';
+      el.addEventListener('click', () => {
+        setFCol(item.f);
+        showToast('已填入准直镜：' + item.f + 'mm');
+      });
+      colList.appendChild(el);
+    });
+
+    const focList = $('focList');
+    focList.innerHTML = '';
+    focData.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'lib-item';
+      el.innerHTML = '<div><div class="li-name">' + item.name + '</div><div class="li-spec">' + item.spec + '</div></div><span class="li-arrow">›</span>';
+      el.addEventListener('click', () => {
+        setFFoc(item.f);
+        showToast('已填入聚焦镜：' + item.f + 'mm');
+      });
+      focList.appendChild(el);
+    });
+  }
+
+  function setFiber(dia, na) {
+    state.fiberDia = dia;
+    state.fiberNA = na;
+    $('fiberDia').value = Math.min(Math.max(dia, 20), 600);
+    $('fiberDiaNum').value = dia;
+    $('fiberNA').value = Math.min(Math.max(na, 0.02), 0.3);
+    $('fiberNANum').value = na;
+    updateResults();
+  }
+  function setFCol(f) {
+    state.fCol = f;
+    $('fCol').value = Math.min(Math.max(f, 30), 200);
+    $('fColNum').value = f;
+    updateResults();
+  }
+  function setFFoc(f) {
+    state.fFoc = f;
+    $('fFoc').value = Math.min(Math.max(f, 50), 400);
+    $('fFocNum').value = f;
+    updateResults();
+  }
+
+  // ===== 高能激光焊接仿真 =====
+  // 离焦-熔深模型（经验模型）：
+  // 高斯光束传播 d(z)=d₀√(1+(z/zR)²)，功率密度 I(z)∝1/(1+(z/zR)²)
+  // 熔深近似 ∝ 功率密度^0.6 → D(z)=D₀·[1/(1+(z/zR)²)]^0.6
+  // zR：负离焦（焦点深入工件）取 3.0mm，正离焦取 2.2mm
+  //   —— 依据：光学学报《大功率光纤激光焊接过程中工艺参数对熔深和气孔的影响》(2013)，
+  //            焊接学报《基于响应曲面法的铝合金激光封边焊接》(2021)，
+  //            Arcus CNC《Laser Welding Beam Focus》(2026) 等：0或小负离焦熔深最大，
+  //            正离焦因功率密度降低熔深快速衰减。
+  function defocusModel(z) {
+    const zR = z < 0 ? 3.0 : 2.2;
+    const Iratio = 1 / (1 + Math.pow(z / zR, 2));
+    return Math.pow(Iratio, 0.6);
+  }
+
+  function weldCalculate() {
+    const P = state.wP;
+    const core = state.wCore;
+    const fc = state.wFc;
+    const ff = state.wFf;
+    const V = state.wV;
+    const eta = state.wEta;
+    const def = state.wDefocus;
+    const mat = MATERIALS[state.wMaterial];
+
+    // 焦点光斑直径 (µm)
+    const d = core * ff / fc;
+    // 焦点功率密度 (W/cm²)
+    const r_cm = (d / 2) / 10000; // µm → cm
+    const area_cm2 = Math.PI * r_cm * r_cm;
+    const density = area_cm2 > 0 ? P / area_cm2 : 0;
+    // 有效热线能量 (J/mm)
+    const heat = P * eta / V;
+    // 焊接模式判定：功率密度 > 1e6 W/cm² 深熔匙孔
+    const keyhole = density > 1e6;
+    // 纯理论推演熔深 (mm)
+    const K = keyhole ? 80 : 15;
+    const theory = K * P * eta / (V * d);
+    // 预估熔深（工艺修正）
+    const correction = 1 - Math.exp(-V / 25);
+    const cap = P / 400;
+    const est = Math.min(theory * correction, cap);
+    // 导热修正：高导热材料（铝/铜）热量散失快，同线能量熔深更浅
+    // λ = (k_ref/k)^0.5，k_ref = 16 W/m·K（不锈钢基准，λ=1 保持基础公式不变）
+    const kRef = 16;
+    const lambda = Math.sqrt(kRef / mat.k);
+    const estMat = est * lambda;
+    const theoryMat = theory * lambda;
+    // 离焦-熔深：当前离焦下的熔深（相对焦点）
+    const fDef = defocusModel(def);
+    const estDef = estMat * fDef;
+
+    return {
+      d, density, heat, keyhole, theory, theoryMat,
+      est, estMat, estDef, fDef, def,
+      lambda, matName: mat.name, matGroup: mat.group, matNote: mat.note
+    };
+  }
+
+  function updateWeld() {
+    const r = weldCalculate();
+    $('weldEst').textContent = fmt(r.estDef, 2);
+    $('weldTheory').textContent = fmt(r.theoryMat, 2);
+    $('wSpot').textContent = fmt(r.d, 1);
+    $('wDensity').textContent = fmtScientific(r.density);
+    $('wHeat').textContent = fmt(r.heat, 2);
+    $('wTheory2').textContent = fmt(r.theoryMat, 2);
+
+    // 离焦熔深显示
+    $('wD0').textContent = fmt(r.estMat, 2) + ' mm';
+    $('wDcur').textContent = fmt(r.estDef, 2) + ' mm';
+    $('wDRatio').textContent = Math.round(r.fDef * 100) + '%';
+
+    // 离焦参考表（-4/-2/-1/0/+1/+2/+4 mm）
+    const refPts = [-4, -2, -1, 0, 1, 2, 4];
+    refPts.forEach(z => {
+      const el = $('wT_' + (z < 0 ? 'm' + Math.abs(z) : 'p' + z));
+      if (el) el.textContent = fmt(r.estMat * defocusModel(z), 2);
+    });
+
+    const badge = $('weldModeBadge');
+    if (r.keyhole) {
+      badge.className = 'weld-mode-badge keyhole';
+      badge.textContent = '深熔匙孔模式';
+    } else {
+      badge.className = 'weld-mode-badge conduction';
+      badge.textContent = '热传导模式';
+    }
+  }
+
+  function fmtScientific(num) {
+    if (!isFinite(num)) return '—';
+    if (num >= 1e6) {
+      const exp = Math.floor(Math.log10(num));
+      const mant = num / Math.pow(10, exp);
+      return mant.toFixed(2) + 'e+' + exp;
+    }
+    return fmt(num, 0);
+  }
+
+  // 焊接仿真输入绑定
+  function bindWeldInput(rangeId, numId, key) {
+    const range = $(rangeId);
+    const num = $(numId);
+    range.addEventListener('input', () => {
+      state[key] = parseFloat(range.value);
+      num.value = range.value;
+      updateWeld();
+    });
+    num.addEventListener('input', () => {
+      const v = parseFloat(num.value);
+      if (isNaN(v)) return;
+      state[key] = v;
+      const min = parseFloat(range.min);
+      const max = parseFloat(range.max);
+      if (v >= min && v <= max) range.value = v;
+      updateWeld();
+    });
+  }
+
+  bindWeldInput('wP', 'wPNum', 'wP');
+  bindWeldInput('wCore', 'wCoreNum', 'wCore');
+  bindWeldInput('wFc', 'wFcNum', 'wFc');
+  bindWeldInput('wFf', 'wFfNum', 'wFf');
+  bindWeldInput('wV', 'wVNum', 'wV');
+  bindWeldInput('wEta', 'wEtaNum', 'wEta');
+  bindWeldInput('wDefocus', 'wDefocusNum', 'wDefocus');
+
+  // 材料选择：自动设置推荐吸收率并更新显示
+  function applyMaterial(mid) {
+    const mat = MATERIALS[mid];
+    if (!mat) return;
+    state.wMaterial = mid;
+    state.wEta = mat.eta;
+    $('wEta').value = mat.eta;
+    $('wEtaNum').value = mat.eta;
+    $('wMatSpec').textContent = mat.group + ' · k=' + mat.k + ' W/m·K';
+    $('wEtaHint').textContent = '推荐 ' + mat.eta.toFixed(2) + '（' + mat.note + '）';
+    updateWeld();
+  }
+  $('wMaterial').addEventListener('change', (e) => {
+    applyMaterial(e.target.value);
+    showToast('已应用 ' + MATERIALS[e.target.value].name + ' 材料参数');
+  });
+  applyMaterial('steel');
+
+  // 焊接仿真动画 Canvas
+  const weldCanvas = $('weldCanvas');
+  const wctx = weldCanvas.getContext('2d');
+  let weldAnimId = null;
+
+  function resizeWeldCanvas() {
+    const rect = weldCanvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    weldCanvas.width = rect.width * dpr;
+    weldCanvas.height = rect.height * dpr;
+    wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function drawWeld() {
+    const rect = weldCanvas.parentElement.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    const r = weldCalculate();
+    wctx.clearRect(0, 0, w, h);
+
+    // 工件截面：上方为空气，下方为母材
+    const workTop = h * 0.30;
+    const workBottom = h * 0.92;
+    const workH = workBottom - workTop;
+
+    // 母材背景（金属）
+    const grad = wctx.createLinearGradient(0, workTop, 0, workBottom);
+    grad.addColorStop(0, '#1a2340');
+    grad.addColorStop(1, '#10182c');
+    wctx.fillStyle = grad;
+    wctx.fillRect(0, workTop, w, workH);
+
+    // 工件表面线
+    wctx.strokeStyle = 'rgba(138, 150, 173, 0.5)';
+    wctx.lineWidth = 1;
+    wctx.beginPath();
+    wctx.moveTo(0, workTop);
+    wctx.lineTo(w, workTop);
+    wctx.stroke();
+
+    // 时间演化
+    const t = state.weldTime;
+    const depthNorm = Math.min(r.estDef / 15, 1); // 归一化熔深（0-1），15mm为显示上限
+    const grow = Math.min(t / 2.5, 1); // 2.5s 内生长到目标深度
+
+    // 焊接方向：焊接头向右移动，熔池向左拖尾
+    // 熔池中心随焊接方向反向偏移（体现运动拖尾）
+    const dirShift = -w * 0.045 * Math.min(t / 1.5, 1); // 熔池向左偏移
+    const weldX = w / 2 + dirShift;
+
+    // 熔池（Molten pool）
+    const meltDepth = (workH * depthNorm * grow);
+    const meltWidth = w * 0.10;
+    const poolGrad = wctx.createLinearGradient(weldX, workTop, weldX, workTop + meltDepth);
+    poolGrad.addColorStop(0, 'rgba(255, 120, 60, 0.95)');
+    poolGrad.addColorStop(0.5, 'rgba(255, 87, 34, 0.9)');
+    poolGrad.addColorStop(1, 'rgba(200, 50, 20, 0.7)');
+    wctx.fillStyle = poolGrad;
+    wctx.beginPath();
+    wctx.moveTo(weldX - meltWidth, workTop);
+    wctx.quadraticCurveTo(weldX, workTop + meltDepth * 1.1, weldX + meltWidth, workTop);
+    wctx.closePath();
+    wctx.fill();
+
+    // 熔池拖尾（沿焊接方向反方向拉长，体现焊缝）
+    wctx.fillStyle = 'rgba(255, 100, 45, 0.35)';
+    wctx.beginPath();
+    wctx.moveTo(weldX - meltWidth, workTop);
+    wctx.quadraticCurveTo(weldX - meltWidth - w * 0.09, workTop + meltDepth * 0.6, weldX - meltWidth - w * 0.11, workTop);
+    wctx.closePath();
+    wctx.fill();
+
+    // 匙孔（Keyhole）- 深熔模式时显示
+    if (r.keyhole) {
+      const khDepth = (workH * depthNorm * grow) * 0.8;
+      const khWidth = Math.max(w * 0.012, w * 0.03 * (1 - depthNorm * 0.5));
+      const khGrad = wctx.createLinearGradient(weldX - khWidth, 0, weldX + khWidth, 0);
+      khGrad.addColorStop(0, 'rgba(255, 220, 160, 0)');
+      khGrad.addColorStop(0.5, 'rgba(255, 200, 120, 0.95)');
+      khGrad.addColorStop(1, 'rgba(255, 220, 160, 0)');
+      wctx.fillStyle = khGrad;
+      // 匙孔带轻微摆动
+      const sway = Math.sin(state.weldTime * 3) * w * 0.003;
+      wctx.beginPath();
+      wctx.moveTo(weldX - khWidth + sway, workTop - h * 0.05);
+      wctx.quadraticCurveTo(weldX + sway, workTop + khDepth * 0.5, weldX - khWidth + sway, workTop + khDepth);
+      wctx.quadraticCurveTo(weldX + sway, workTop + khDepth * 0.5, weldX + khWidth + sway, workTop + khDepth);
+      wctx.quadraticCurveTo(weldX + sway, workTop + khDepth * 0.5, weldX + khWidth + sway, workTop - h * 0.05);
+      wctx.closePath();
+      wctx.fill();
+    }
+
+    // 激光束（从上方射入，随焊接方向移动）
+    const beamWidth = Math.max(w * 0.008, w * 0.02);
+    const beamTop = h * 0.04;
+    const beamGrad = wctx.createLinearGradient(0, beamTop, 0, workTop);
+    beamGrad.addColorStop(0, 'rgba(255, 87, 34, 0)');
+    beamGrad.addColorStop(0.3, 'rgba(255, 87, 34, 0.6)');
+    beamGrad.addColorStop(1, 'rgba(255, 152, 0, 0.9)');
+    wctx.fillStyle = beamGrad;
+    wctx.beginPath();
+    wctx.moveTo(weldX - beamWidth, beamTop);
+    wctx.lineTo(weldX + beamWidth, beamTop);
+    wctx.lineTo(weldX + beamWidth * 0.6, workTop);
+    wctx.lineTo(weldX - beamWidth * 0.6, workTop);
+    wctx.closePath();
+    wctx.fill();
+    // 光束中心亮线
+    wctx.strokeStyle = 'rgba(255, 230, 200, 0.7)';
+    wctx.lineWidth = 1;
+    wctx.beginPath();
+    wctx.moveTo(weldX, beamTop);
+    wctx.lineTo(weldX, workTop);
+    wctx.stroke();
+
+    // 激光脉动光晕（焦点处）
+    const pulse = 0.7 + 0.3 * Math.sin(state.weldTime * 8);
+    const glowR = w * 0.05 * (1 + 0.2 * Math.sin(state.weldTime * 5));
+    const glowGrad = wctx.createRadialGradient(weldX, workTop, 0, weldX, workTop, glowR);
+    glowGrad.addColorStop(0, 'rgba(255, 180, 80, ' + (0.8 * pulse) + ')');
+    glowGrad.addColorStop(1, 'rgba(255, 87, 34, 0)');
+    wctx.fillStyle = glowGrad;
+    wctx.beginPath();
+    wctx.arc(weldX, workTop, glowR, 0, Math.PI * 2);
+    wctx.fill();
+
+    // 飞溅粒子（高温熔池飞溅，向焊接方向反方向喷出）
+    if (r.keyhole && Math.random() < 0.12 * state.weldSpeed) {
+      if (!weldSparks) weldSparks = [];
+      weldSparks.push({
+        x: weldX + (Math.random() - 0.5) * w * 0.06,
+        y: workTop - Math.random() * h * 0.05,
+        vx: (Math.random() - 0.5) * 2 - 0.5,
+        vy: -(1 + Math.random() * 2.5),
+        life: 1,
+        r: 1 + Math.random() * 2
+      });
+    }
+    if (weldSparks) {
+      for (let i = weldSparks.length - 1; i >= 0; i--) {
+        const s = weldSparks[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.12;
+        s.life -= 0.02;
+        if (s.life <= 0) { weldSparks.splice(i, 1); continue; }
+        wctx.globalAlpha = s.life;
+        wctx.fillStyle = '#ffb74d';
+        wctx.beginPath();
+        wctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        wctx.fill();
+      }
+      wctx.globalAlpha = 1;
+    }
+
+    // 熔深标注（使用当前离焦熔深）
+    const depthMm = r.estDef;
+    wctx.strokeStyle = 'rgba(255, 152, 0, 0.5)';
+    wctx.lineWidth = 1;
+    wctx.setLineDash([3, 2]);
+    wctx.beginPath();
+    wctx.moveTo(weldX + meltWidth + 8, workTop);
+    wctx.lineTo(weldX + meltWidth + 8, workTop + meltDepth);
+    wctx.stroke();
+    wctx.setLineDash([]);
+    wctx.fillStyle = '#ff9800';
+    wctx.font = 'bold 11px monospace';
+    wctx.textAlign = 'left';
+    wctx.fillText(depthMm.toFixed(1) + ' mm', weldX + meltWidth + 12, workTop + meltDepth / 2 + 4);
+
+    // 焊接方向指示（箭头 + 速度）
+    const dirY = h * 0.16;
+    const arrowX0 = w * 0.62, arrowX1 = w * 0.88;
+    const arrowSpeed = (state.weldSpeed * 0.12 + 0.1);
+    const dashPhase = (state.weldTime * arrowSpeed * 20) % 30;
+    // 运动虚线（向右流动）
+    wctx.strokeStyle = 'rgba(255, 152, 0, 0.35)';
+    wctx.lineWidth = 2;
+    wctx.setLineDash([10, 14]);
+    wctx.lineDashOffset = -dashPhase;
+    wctx.beginPath();
+    wctx.moveTo(arrowX0, dirY);
+    wctx.lineTo(arrowX1, dirY);
+    wctx.stroke();
+    wctx.setLineDash([]);
+    // 箭头
+    wctx.fillStyle = '#ff9800';
+    wctx.beginPath();
+    wctx.moveTo(arrowX1, dirY);
+    wctx.lineTo(arrowX1 - 10, dirY - 5);
+    wctx.lineTo(arrowX1 - 10, dirY + 5);
+    wctx.closePath();
+    wctx.fill();
+    // 方向标签
+    wctx.fillStyle = '#ff9800';
+    wctx.font = 'bold 10px monospace';
+    wctx.textAlign = 'left';
+    wctx.fillText('焊接方向', arrowX0 - 56, dirY + 3);
+    // 速度标签
+    wctx.fillStyle = 'rgba(255,255,255,0.75)';
+    wctx.font = '10px monospace';
+    wctx.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowX0 - 56, dirY + 16);
+
+    // 材料标注
+    wctx.fillStyle = 'rgba(138,150,173,0.8)';
+    wctx.font = '10px monospace';
+    wctx.textAlign = 'right';
+    wctx.fillText(r.matGroup + ' · ' + r.matName, w - 12, h - 10);
+
+    // 模式标注
+    wctx.font = '10px monospace';
+    wctx.fillStyle = r.keyhole ? '#ff9800' : '#00bcd4';
+    wctx.fillText(r.keyhole ? 'KEYHOLE MODE' : 'CONDUCTION MODE', w - 12, h - 24);
+  }
+
+  let weldSparks = null;
+
+  function weldLoop(timestamp) {
+    if (!state.weldPlaying) {
+      weldAnimId = requestAnimationFrame(weldLoop);
+      return;
+    }
+    const dt = Math.min((timestamp - lastWeldTime) / 16.67, 3) || 1;
+    lastWeldTime = timestamp;
+    state.weldTime += dt * 0.016 * state.weldSpeed;
+    drawWeld();
+    weldAnimId = requestAnimationFrame(weldLoop);
+  }
+  let lastWeldTime = 0;
+
+  function startWeldSim() {
+    if (weldAnimId) return;
+    resizeWeldCanvas();
+    lastWeldTime = performance.now();
+    weldAnimId = requestAnimationFrame(weldLoop);
+  }
+
+  // 焊接控制
+  $('weldPlay').addEventListener('click', () => {
+    state.weldPlaying = !state.weldPlaying;
+    $('weldPlay').textContent = state.weldPlaying ? '暂停' : '播放';
+  });
+  $('weldReset').addEventListener('click', () => {
+    state.weldTime = 0;
+    weldSparks = [];
+  });
+  $('weldSpeed').addEventListener('change', (e) => {
+    state.weldSpeed = parseFloat(e.target.value);
+  });
+
+  // ===== 启动动画 =====
+  function runSplash() {
+    const slogan = $('splashSlogan');
+    const chars = slogan.querySelectorAll('.char');
+    chars.forEach((c, i) => {
+      setTimeout(() => c.classList.add('show'), 200 + i * 120);
+    });
+    setTimeout(() => {
+      $('splash').classList.add('hidden');
+    }, 2800);
+    setTimeout(() => {
+      $('splash').style.display = 'none';
+    }, 3400);
+  }
+
+  // ===== 首次登录更新说明（只显示一次） =====
+  function maybeShowUpdate() {
+    try {
+      const seen = localStorage.getItem('fslc_seen_v130');
+      if (seen) return;
+      // 启动动画结束后再弹出
+      setTimeout(() => {
+        $('updateModal').classList.add('show');
+      }, 3600);
+    } catch (e) { /* localStorage 不可用时静默跳过 */ }
+  }
+  $('updateClose').addEventListener('click', () => {
+    $('updateModal').classList.remove('show');
+    try {
+      localStorage.setItem('fslc_seen_v130', '1');
+    } catch (e) {}
+  });
+  $('updateModal').addEventListener('click', (e) => {
+    if (e.target.id === 'updateModal') {
+      $('updateModal').classList.remove('show');
+      try { localStorage.setItem('fslc_seen_v130', '1'); } catch (e) {}
+    }
+  });
+
+  // roundRect polyfill
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      if (typeof r === 'number') r = [r, r, r, r];
+      this.beginPath();
+      this.moveTo(x + r[0], y);
+      this.lineTo(x + w - r[1], y);
+      this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+      this.lineTo(x + w, y + h - r[2]);
+      this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+      this.lineTo(x + r[3], y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+      this.lineTo(x, y + r[0]);
+      this.quadraticCurveTo(x, y, x + r[0], y);
+      this.closePath();
+      return this;
+    };
+  }
+
+  // ===== 初始化 =====
+  renderLib();
+  updateResults();
+  updateWeld();
+
+  // 运行启动动画
+  runSplash();
+  // 首次登录更新说明（只显示一次）
+  maybeShowUpdate();
+
+  // 预启动模拟（不可见时也轻量运行，切换时流畅）
+  setTimeout(() => {
+    if ($('view-sim').classList.contains('active')) {
+      startSim();
+    }
+    if ($('view-weld').classList.contains('active')) {
+      startWeldSim();
+    }
+  }, 300);
+
+  // ===== 关于弹窗 =====
+  $('aboutBtn').addEventListener('click', () => {
+    $('aboutModal').classList.add('show');
+  });
+  $('aboutClose').addEventListener('click', () => {
+    $('aboutModal').classList.remove('show');
+  });
+  $('aboutModal').addEventListener('click', (e) => {
+    if (e.target.id === 'aboutModal') $('aboutModal').classList.remove('show');
+  });
+
+  // ===== PWA 安装支持 =====
+  let deferredPrompt = null;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                       navigator.standalone === true;
+
+  // 注册 Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+  // Android/Chrome 安装提示
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isStandalone && !localStorage.getItem('installDismissed')) {
+      setTimeout(() => $('installBanner').classList.add('show'), 2000);
+    }
+  });
+
+  $('ibInstall').addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        $('installBanner').classList.remove('show');
+      }
+      deferredPrompt = null;
+    } else if (isIOS) {
+      $('iosGuide').classList.add('show');
+    } else {
+      showToast('请使用浏览器菜单中的「添加到主屏幕」');
+    }
+  });
+
+  $('ibDismiss').addEventListener('click', () => {
+    $('installBanner').classList.remove('show');
+    localStorage.setItem('installDismissed', '1');
+  });
+
+  $('igClose').addEventListener('click', () => {
+    $('iosGuide').classList.remove('show');
+  });
+
+  // iOS 首次访问提示
+  if (isIOS && !isStandalone && !localStorage.getItem('iosGuideShown')) {
+    setTimeout(() => {
+      $('iosGuide').classList.add('show');
+      localStorage.setItem('iosGuideShown', '1');
+    }, 3000);
+  }
+
+  // 安装成功后隐藏横幅
+  window.addEventListener('appinstalled', () => {
+    $('installBanner').classList.remove('show');
+    deferredPrompt = null;
+  });
+
+})();
+</script>
+</body>
+</html>
