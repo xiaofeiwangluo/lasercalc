@@ -1448,7 +1448,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.1</div>
+    <div class="splash-version">v1.4.2</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -1721,6 +1721,9 @@
       <div class="weld-controls">
         <button class="weld-btn" id="weldPlay">暂停</button>
         <button class="weld-btn secondary" id="weldReset">重置</button>
+        <button class="weld-btn secondary" id="weldSave" title="将当前仿真画面保存为图片">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
+        </button>
         <div class="weld-speed-select">
           <span>速度</span>
           <select id="weldSpeed">
@@ -1803,6 +1806,13 @@
             <div class="input-row">
               <input type="range" id="wEta" min="0.02" max="0.9" value="0.4" step="0.01">
               <input type="number" id="wEtaNum" value="0.4" min="0.01" max="1" step="0.01">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>母材厚度</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="wThick" min="2" max="30" value="10" step="1">
+              <input type="number" id="wThickNum" value="10" min="1" max="60">
             </div>
           </div>
         </div>
@@ -1948,7 +1958,7 @@
         </svg>
       </div>
       <div class="about-app-name">光纤激光光斑计算器</div>
-      <div class="about-version">Version 1.4.1</div>
+      <div class="about-version">Version 1.4.2</div>
       <div class="about-divider"></div>
       <div class="about-row">
         <span class="ar-label">发布人</span>
@@ -1956,7 +1966,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.1</span>
+        <span class="ar-value">v1.4.2</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -1969,26 +1979,22 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.1 更新说明 -->
+  <!-- 首次登录：v1.4.2 更新说明 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.1</span></h3>
-      <div class="up-sub">本应用现已支持在线自动更新</div>
+      <h3>版本更新 <span class="vtag">v1.4.2</span></h3>
+      <div class="up-sub">熔深动态演化全面升级</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">新增版本更新记录</b>：点击顶部时钟图标，可查看全部历史版本的更新内容。</span>
+        <span><b style="color:var(--text)">自定义母材厚度</b>：在「运动学与工件材质」中可设置母材厚度（2-30mm），熔深与厚度同比例显示，直观判断是否熔透。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">新增在线更新</b>：应用已接入云端，后续功能升级无需重新安装，打开即可自动获取最新版本。</span>
+        <span><b style="color:var(--text)">母材颜色贴近工件材料</b>：钢为钢蓝灰、铝合金为银灰、铜为红铜色，仿真画面更真实。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span>已部署云端页面（GitHub Pages），断网时自动回退到本地内置版本，不影响离线使用。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">4</span>
-        <span>保留 v1.3 全部能力：铝合金/铜合金材料库、离焦熔深演化、焊接方向与速度仿真。</span>
+        <span><b style="color:var(--text)">保存图片到本地</b>：点击「保存图片」按钮，将当前仿真画面保存到手机相册（光斑计算器相册文件夹）。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -2000,13 +2006,21 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
-        <div class="cl-head"><span class="cl-ver">v1.4.1</span><span class="cl-date">2026-09</span></div>
+        <div class="cl-head"><span class="cl-ver">v1.4.2</span><span class="cl-date">2026-09</span></div>
         <ul class="cl-list">
-          <li>新增「版本更新记录」：顶部时间按钮可随时查看全部历史版本更新内容。</li>
+          <li>熔深动态演化新增自定义母材厚度（2-30mm），熔深与厚度同比例显示。</li>
+          <li>母材颜色贴近工件材料：钢为钢蓝灰、铝合金为银灰、铜为红铜色。</li>
+          <li>新增「保存图片」：一键将当前仿真画面保存到手机相册。</li>
         </ul>
       </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.1</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>新增「版本更新记录」：顶部时钟按钮可随时查看全部历史版本更新内容。</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.0</span><span class="cl-date">2026-09</span></div>
         <ul class="cl-list">
           <li>新增在线自动更新：应用接入云端（GitHub Pages），功能升级无需重新安装，打开即可自动获取最新版本。</li>
           <li>断网时自动回退本地内置版本，不影响离线使用。</li>
@@ -2982,6 +2996,13 @@
     $('wMatSpec').textContent = mat.group + ' · k=' + mat.k + ' W/m·K';
     $('wEtaHint').textContent = '推荐 ' + mat.eta.toFixed(2) + '（' + mat.note + '）';
     updateWeld();
+    // 同步更新图例中"母材"圆点颜色
+    const lgDot = document.querySelector('.weld-canvas-wrap .wc-legend .lg:nth-child(3) .dot');
+    if (lgDot) {
+      const c = baseColor(mat.group);
+      lgDot.style.background = c[0];
+      lgDot.style.borderColor = c[0];
+    }
   }
   $('wMaterial').addEventListener('change', (e) => {
     applyMaterial(e.target.value);
@@ -3002,21 +3023,31 @@
     wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
+  // 母材颜色：按工件材料类型返回渐变色（更贴近真实材料观感）
+  function baseColor(group) {
+    if (group && group.indexOf('铝') >= 0) return ['#c3c7cc', '#81878e'];   // 铝合金：银灰
+    if (group && group.indexOf('铜') >= 0) return ['#b06a35', '#703d1c'];    // 铜合金：红铜
+    return ['#43536e', '#242f45'];                                          // 钢/不锈钢：钢蓝灰
+  }
+
   function drawWeld() {
     const rect = weldCanvas.parentElement.getBoundingClientRect();
     const w = rect.width, h = rect.height;
     const r = weldCalculate();
     wctx.clearRect(0, 0, w, h);
 
-    // 工件截面：上方为空气，下方为母材
+    // 工件截面：上方为空气，下方为母材（厚度可由用户设置）
     const workTop = h * 0.30;
-    const workBottom = h * 0.92;
-    const workH = workBottom - workTop;
+    const thickMm = Math.max(Number(state.weldThickness) || 10, 1);
+    const pxPerMm = (h * 0.62) / 10; // 基准：10mm 厚母材占据表面线以下 62% 画布高度
+    const workBottom = Math.min(workTop + thickMm * pxPerMm, h * 0.97);
+    const workH = Math.max(workBottom - workTop, 2);
 
-    // 母材背景（金属）
+    // 母材背景（金属，颜色贴近所选工件材料）
+    const matCol = baseColor(r.matGroup);
     const grad = wctx.createLinearGradient(0, workTop, 0, workBottom);
-    grad.addColorStop(0, '#1a2340');
-    grad.addColorStop(1, '#10182c');
+    grad.addColorStop(0, matCol[0]);
+    grad.addColorStop(1, matCol[1]);
     wctx.fillStyle = grad;
     wctx.fillRect(0, workTop, w, workH);
 
@@ -3030,8 +3061,8 @@
 
     // 时间演化
     const t = state.weldTime;
-    const depthNorm = Math.min(r.estDef / 15, 1); // 归一化熔深（0-1），15mm为显示上限
     const grow = Math.min(t / 2.5, 1); // 2.5s 内生长到目标深度
+    const depthMm = r.estDef;
 
     // 焊接方向：焊接头向右移动，熔池向左拖尾
     // 熔池中心随焊接方向反向偏移（体现运动拖尾）
@@ -3039,7 +3070,7 @@
     const weldX = w / 2 + dirShift;
 
     // 熔池（Molten pool）
-    const meltDepth = (workH * depthNorm * grow);
+    const meltDepth = Math.min(depthMm * pxPerMm * grow, workH);
     const meltWidth = w * 0.10;
     const poolGrad = wctx.createLinearGradient(weldX, workTop, weldX, workTop + meltDepth);
     poolGrad.addColorStop(0, 'rgba(255, 120, 60, 0.95)');
@@ -3062,8 +3093,8 @@
 
     // 匙孔（Keyhole）- 深熔模式时显示
     if (r.keyhole) {
-      const khDepth = (workH * depthNorm * grow) * 0.8;
-      const khWidth = Math.max(w * 0.012, w * 0.03 * (1 - depthNorm * 0.5));
+      const khDepth = Math.min(depthMm * pxPerMm * grow * 0.8, workH);
+      const khWidth = Math.max(w * 0.012, w * 0.03 * (1 - Math.min(depthMm / 15, 1) * 0.5));
       const khGrad = wctx.createLinearGradient(weldX - khWidth, 0, weldX + khWidth, 0);
       khGrad.addColorStop(0, 'rgba(255, 220, 160, 0)');
       khGrad.addColorStop(0.5, 'rgba(255, 200, 120, 0.95)');
@@ -3144,7 +3175,6 @@
     }
 
     // 熔深标注（使用当前离焦熔深）
-    const depthMm = r.estDef;
     wctx.strokeStyle = 'rgba(255, 152, 0, 0.5)';
     wctx.lineWidth = 1;
     wctx.setLineDash([3, 2]);
@@ -3238,6 +3268,53 @@
     state.weldSpeed = parseFloat(e.target.value);
   });
 
+  // 母材厚度（影响动画中母材区域高度，熔深与厚度同比例尺可比）
+  function bindThick(sliderId, numId) {
+    const slider = $(sliderId), num = $(numId);
+    const sync = (v) => {
+      state.weldThickness = v;
+      slider.value = v;
+      num.value = v;
+      if (wctx) drawWeld();
+    };
+    slider.addEventListener('input', () => sync(parseFloat(slider.value)));
+    num.addEventListener('change', () => {
+      let v = Math.min(Math.max(parseFloat(num.value) || 10, 1), 60);
+      sync(v);
+    });
+  }
+  state.weldThickness = 10;
+  bindThick('wThick', 'wThickNum');
+
+  // 保存仿真图片到本地
+  $('weldSave').addEventListener('click', () => {
+    // 先暂停动画，保证保存的画面完整
+    state.weldPlaying = false;
+    $('weldPlay').textContent = '播放';
+    drawWeld();
+    let dataUrl;
+    try {
+      dataUrl = weldCanvas.toDataURL('image/png');
+    } catch (e) {
+      showToast('保存失败：图片生成出错');
+      return;
+    }
+    if (window.AndroidBridge && typeof window.AndroidBridge.savePng === 'function') {
+      try {
+        window.AndroidBridge.savePng(dataUrl);
+        showToast('已保存到手机相册 · 光斑计算器');
+        return;
+      } catch (e) { /* 走浏览器下载兜底 */ }
+    }
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = '激光焊接熔深仿真_' + new Date().toISOString().slice(0, 10) + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('已开始保存图片');
+  });
+
   // ===== 启动动画 =====
   function runSplash() {
     const slogan = $('splashSlogan');
@@ -3256,7 +3333,7 @@
   // ===== 首次登录更新说明（只显示一次） =====
   function maybeShowUpdate() {
     try {
-      const seen = localStorage.getItem('fslc_seen_v141');
+      const seen = localStorage.getItem('fslc_seen_v142');
       if (seen) return;
       // 启动动画结束后再弹出
       setTimeout(() => {
@@ -3267,13 +3344,13 @@
   $('updateClose').addEventListener('click', () => {
     $('updateModal').classList.remove('show');
     try {
-      localStorage.setItem('fslc_seen_v141', '1');
+      localStorage.setItem('fslc_seen_v142', '1');
     } catch (e) {}
   });
   $('updateModal').addEventListener('click', (e) => {
     if (e.target.id === 'updateModal') {
       $('updateModal').classList.remove('show');
-      try { localStorage.setItem('fslc_seen_v141', '1'); } catch (e) {}
+      try { localStorage.setItem('fslc_seen_v142', '1'); } catch (e) {}
     }
   });
 
