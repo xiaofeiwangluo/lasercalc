@@ -2004,6 +2004,10 @@
         <span class="up-num">5</span>
         <span><b style="color:var(--text)">薄母材等比例放大</b>：母材厚度较小时，熔深动态演化画面自动等比例放大，薄工件焊接过程也能清晰观察。</span>
       </div>
+      <div class="up-item">
+        <span class="up-num">6</span>
+        <span><b style="color:var(--text)">熔深与母材比例修正</b>：修复厚母材时熔深视觉占比失真的问题，熔深与母材厚度始终按实际比例显示。</span>
+      </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
   </div>
@@ -2021,6 +2025,7 @@
           <li>修复熔深大于母材厚度时熔池形状异常凸出的问题，熔穿时显示背面熔池并标注"熔穿"。</li>
           <li>熔深动态演化标题移至左下角图例上方。</li>
           <li>薄母材等比例放大：母材厚度较小时画面自动放大，薄工件焊接过程清晰可见。</li>
+          <li>修复厚母材时熔深与母材厚度比例失真的问题，熔深按实际比例显示。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -3060,8 +3065,13 @@
     const basePxPerMm = (h * 0.62) / 10; // 基准：10mm 厚母材占据表面线以下 62% 画布高度
     // 母材过小时等比例放大：确保母材至少占据表面线以下 35% 画布高度，薄工件也能看清
     const minWorkH = h * 0.35;
-    const pxPerMm = Math.max(basePxPerMm, minWorkH / Math.max(thickMm, 0.1));
-    const workBottom = Math.min(workTop + thickMm * pxPerMm, h * 0.97);
+    let pxPerMm = Math.max(basePxPerMm, minWorkH / Math.max(thickMm, 0.1));
+    let workBottom = workTop + thickMm * pxPerMm;
+    // 厚板超出画布底部时，按实际可用高度重算比例尺，保证熔深与母材同比例显示
+    if (workBottom > h * 0.97) {
+      pxPerMm = (h * 0.97 - workTop) / thickMm;
+      workBottom = h * 0.97;
+    }
     const workH = Math.max(workBottom - workTop, 2);
 
     // 母材背景（金属，颜色贴近所选工件材料）
