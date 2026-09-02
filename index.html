@@ -2008,6 +2008,14 @@
         <span class="up-num">6</span>
         <span><b style="color:var(--text)">熔深与母材比例修正</b>：修复厚母材时熔深视觉占比失真的问题，熔深与母材厚度始终按实际比例显示。</span>
       </div>
+      <div class="up-item">
+        <span class="up-num">7</span>
+        <span><b style="color:var(--text)">熔池深度显示修正</b>：修复熔池视觉深度仅为实际熔深约一半的问题，熔池最低点与预估熔深精确对应。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">8</span>
+        <span><b style="color:var(--text)">母材厚度标示</b>：熔深动态演化画面左侧新增母材厚度尺寸线与数值标示，直观对比熔深与板厚。</span>
+      </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
   </div>
@@ -2026,6 +2034,8 @@
           <li>熔深动态演化标题移至左下角图例上方。</li>
           <li>薄母材等比例放大：母材厚度较小时画面自动放大，薄工件焊接过程清晰可见。</li>
           <li>修复厚母材时熔深与母材厚度比例失真的问题，熔深按实际比例显示。</li>
+          <li>修复熔池视觉深度仅为实际熔深约一半的问题，熔池最低点与预估熔深精确对应。</li>
+          <li>熔深动态演化左侧新增母材厚度尺寸线与数值标示。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -3090,6 +3100,28 @@
     wctx.lineTo(w, workTop);
     wctx.stroke();
 
+    // 母材厚度标示（左侧尺寸线）
+    const dimX = w * 0.055;
+    wctx.strokeStyle = 'rgba(160, 175, 200, 0.55)';
+    wctx.lineWidth = 1;
+    wctx.beginPath();
+    wctx.moveTo(dimX, workTop);
+    wctx.lineTo(dimX, workBottom);
+    wctx.moveTo(dimX - 4, workTop);
+    wctx.lineTo(dimX + 4, workTop);
+    wctx.moveTo(dimX - 4, workBottom);
+    wctx.lineTo(dimX + 4, workBottom);
+    wctx.stroke();
+    wctx.fillStyle = 'rgba(200, 210, 225, 0.85)';
+    wctx.font = '9px "SF Mono", Consolas, monospace';
+    wctx.textAlign = 'left';
+    const thickLabel = thickMm.toFixed(1) + ' mm';
+    if (workH > 28) {
+      wctx.fillText(thickLabel, dimX + 8, workTop + workH / 2 + 3);
+    } else {
+      wctx.fillText('母材 ' + thickLabel, dimX - 4, Math.min(workBottom + 12, h * 0.95));
+    }
+
     // 时间演化
     const t = state.weldTime;
     const grow = Math.min(t / 2.5, 1); // 2.5s 内生长到目标深度
@@ -3110,13 +3142,27 @@
     poolGrad.addColorStop(0.5, 'rgba(255, 87, 34, 0.9)');
     poolGrad.addColorStop(1, 'rgba(200, 50, 20, 0.7)');
     wctx.fillStyle = poolGrad;
-    wctx.beginPath();
-    wctx.moveTo(weldX - meltWidth, workTop);
-    // 控制点 clamp 到母材底部，避免熔穿时熔池形状异常凸出母材
-    const poolCtrlY = Math.min(workTop + meltDepth * 1.1, workBottom);
-    wctx.quadraticCurveTo(weldX, poolCtrlY, weldX + meltWidth, workTop);
-    wctx.closePath();
-    wctx.fill();
+    // 熔池深度修正：二次贝塞尔曲线最低点约为控制点深度的1/2，故控制点取 meltDepth*2
+    // 使熔池视觉最低点正好等于实际熔深；熔穿时改为填满母材的圆角矩形
+    const poolCtrlY = workTop + meltDepth * 2;
+    if (poolCtrlY <= workBottom) {
+      wctx.beginPath();
+      wctx.moveTo(weldX - meltWidth, workTop);
+      wctx.quadraticCurveTo(weldX, poolCtrlY, weldX + meltWidth, workTop);
+      wctx.closePath();
+      wctx.fill();
+    } else {
+      const rb = Math.min(6, meltWidth * 0.5);
+      wctx.beginPath();
+      wctx.moveTo(weldX - meltWidth, workTop);
+      wctx.lineTo(weldX - meltWidth, workBottom - rb);
+      wctx.quadraticCurveTo(weldX - meltWidth, workBottom, weldX - meltWidth + rb, workBottom);
+      wctx.lineTo(weldX + meltWidth - rb, workBottom);
+      wctx.quadraticCurveTo(weldX + meltWidth, workBottom, weldX + meltWidth, workBottom - rb);
+      wctx.lineTo(weldX + meltWidth, workTop);
+      wctx.closePath();
+      wctx.fill();
+    }
 
     // 熔穿时：母材底部背面熔池（熔融金属从背面流出）
     if (isBurnThrough) {
