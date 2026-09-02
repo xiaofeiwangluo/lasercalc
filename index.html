@@ -1420,6 +1420,40 @@
     background: var(--cyan);
     opacity: 0.7;
   }
+  /* 即将推出预告 */
+  .cl-soon {
+    border-left-color: var(--cyan);
+    background: rgba(0, 200, 220, 0.04);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 12px 12px 18px;
+    margin-bottom: 8px;
+  }
+  .cl-soon::before {
+    background: var(--cyan);
+    border-color: var(--cyan);
+    box-shadow: 0 0 8px rgba(0, 200, 220, 0.5);
+  }
+  .cl-soon .cl-ver {
+    color: var(--cyan);
+  }
+  .cl-soon .cl-soon-tag {
+    font-size: 9px;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-left: auto;
+    letter-spacing: 0.5px;
+  }
+  .cl-soon .cl-list li {
+    color: var(--text-2);
+  }
+  .cl-soon .cl-support {
+    font-size: 10px;
+    color: var(--text-3);
+    margin-top: 6px;
+    padding-left: 14px;
+  }
 </style>
 </head>
 <body>
@@ -1997,6 +2031,17 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item cl-soon">
+        <div class="cl-head">
+          <span class="cl-ver">v1.5.0</span>
+          <span class="cl-date">开发中</span>
+          <span class="cl-soon-tag">即将推出</span>
+        </div>
+        <ul class="cl-list">
+          <li>激光填丝焊接熔深计算及熔深动态演化<span style="font-size:10px;color:var(--text-3);margin-left:4px">（技术支持：张飞）</span></li>
+          <li>环形光斑光纤激光器焊接熔深计算及熔深动态演化</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.3</span><span class="cl-date">2026-09</span></div>
         <ul class="cl-list">
