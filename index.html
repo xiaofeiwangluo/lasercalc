@@ -1056,7 +1056,7 @@
   }
   .weld-canvas-wrap .wc-tag {
     position: absolute;
-    top: 10px; left: 12px;
+    bottom: 28px; left: 12px;
     font-size: 10px;
     color: rgba(255,255,255,0.4);
     letter-spacing: 1px;
@@ -1811,8 +1811,8 @@
           <div class="input-group">
             <div class="input-label"><span>母材厚度</span><span class="unit">mm</span></div>
             <div class="input-row">
-              <input type="range" id="wThick" min="2" max="30" value="10" step="1">
-              <input type="number" id="wThickNum" value="10" min="1" max="60">
+              <input type="range" id="wThick" min="0.1" max="30" value="10" step="0.1">
+              <input type="number" id="wThickNum" value="10" min="0.1" max="60" step="0.1">
             </div>
           </div>
         </div>
@@ -3038,7 +3038,7 @@
 
     // 工件截面：上方为空气，下方为母材（厚度可由用户设置）
     const workTop = h * 0.30;
-    const thickMm = Math.max(Number(state.weldThickness) || 10, 1);
+    const thickMm = Math.max(Number(state.weldThickness) || 10, 0.1);
     const pxPerMm = (h * 0.62) / 10; // 基准：10mm 厚母材占据表面线以下 62% 画布高度
     const workBottom = Math.min(workTop + thickMm * pxPerMm, h * 0.97);
     const workH = Math.max(workBottom - workTop, 2);
@@ -3072,6 +3072,8 @@
     // 熔池（Molten pool）
     const meltDepth = Math.min(depthMm * pxPerMm * grow, workH);
     const meltWidth = w * 0.10;
+    // 熔穿判定：实际熔深（含生长因子）达到或超过母材厚度
+    const isBurnThrough = (depthMm * grow >= thickMm) && meltDepth >= workH * 0.95;
     const poolGrad = wctx.createLinearGradient(weldX, workTop, weldX, workTop + meltDepth);
     poolGrad.addColorStop(0, 'rgba(255, 120, 60, 0.95)');
     poolGrad.addColorStop(0.5, 'rgba(255, 87, 34, 0.9)');
@@ -3079,9 +3081,27 @@
     wctx.fillStyle = poolGrad;
     wctx.beginPath();
     wctx.moveTo(weldX - meltWidth, workTop);
-    wctx.quadraticCurveTo(weldX, workTop + meltDepth * 1.1, weldX + meltWidth, workTop);
+    // 控制点 clamp 到母材底部，避免熔穿时熔池形状异常凸出母材
+    const poolCtrlY = Math.min(workTop + meltDepth * 1.1, workBottom);
+    wctx.quadraticCurveTo(weldX, poolCtrlY, weldX + meltWidth, workTop);
     wctx.closePath();
     wctx.fill();
+
+    // 熔穿时：母材底部背面熔池（熔融金属从背面流出）
+    if (isBurnThrough) {
+      const backW = meltWidth * 0.65;
+      const backH = Math.min(h * 0.07, Math.max((depthMm - thickMm) * pxPerMm * 0.25, h * 0.02));
+      const backGrad = wctx.createLinearGradient(weldX, workBottom, weldX, workBottom + backH);
+      backGrad.addColorStop(0, 'rgba(255, 110, 50, 0.85)');
+      backGrad.addColorStop(0.6, 'rgba(255, 87, 34, 0.5)');
+      backGrad.addColorStop(1, 'rgba(200, 50, 20, 0)');
+      wctx.fillStyle = backGrad;
+      wctx.beginPath();
+      wctx.moveTo(weldX - backW, workBottom);
+      wctx.quadraticCurveTo(weldX, workBottom + backH * 1.3, weldX + backW, workBottom);
+      wctx.closePath();
+      wctx.fill();
+    }
 
     // 熔池拖尾（沿焊接方向反方向拉长，体现焊缝）
     wctx.fillStyle = 'rgba(255, 100, 45, 0.35)';
@@ -3174,7 +3194,8 @@
       wctx.globalAlpha = 1;
     }
 
-    // 熔深标注（使用当前离焦熔深）
+    // 熔深标注（使用当前离焦熔深，带半透明底衬避免与动画元素重合）
+    const depLabel = isBurnThrough ? (depthMm.toFixed(1) + ' mm · 熔穿') : (depthMm.toFixed(1) + ' mm');
     wctx.strokeStyle = 'rgba(255, 152, 0, 0.5)';
     wctx.lineWidth = 1;
     wctx.setLineDash([3, 2]);
@@ -3183,14 +3204,21 @@
     wctx.lineTo(weldX + meltWidth + 8, workTop + meltDepth);
     wctx.stroke();
     wctx.setLineDash([]);
-    wctx.fillStyle = '#ff9800';
     wctx.font = 'bold 11px monospace';
     wctx.textAlign = 'left';
-    wctx.fillText(depthMm.toFixed(1) + ' mm', weldX + meltWidth + 12, workTop + meltDepth / 2 + 4);
+    const depW = wctx.measureText(depLabel).width;
+    // 熔深文字默认放虚线右侧；若超出画布右缘则放到虚线左侧
+    let depX = weldX + meltWidth + 12;
+    if (depX + depW > w - 4) depX = weldX - meltWidth - depW - 12;
+    const depY = Math.min(workTop + meltDepth / 2 + 4, workBottom - 4);
+    wctx.fillStyle = 'rgba(10, 14, 26, 0.72)';
+    wctx.fillRect(depX - 3, depY - 10, depW + 6, 14);
+    wctx.fillStyle = '#ff9800';
+    wctx.fillText(depLabel, depX, depY);
 
-    // 焊接方向指示（箭头 + 速度）
-    const dirY = h * 0.16;
-    const arrowX0 = w * 0.62, arrowX1 = w * 0.88;
+    // 焊接方向指示（箭头 + 速度）：置于画布左上空气区，避开中央激光束与熔池
+    const dirY = h * 0.085;
+    const arrowX0 = w * 0.09, arrowX1 = w * 0.34;
     const arrowSpeed = (state.weldSpeed * 0.12 + 0.1);
     const dashPhase = (state.weldTime * arrowSpeed * 20) % 30;
     // 运动虚线（向右流动）
@@ -3215,11 +3243,11 @@
     wctx.fillStyle = '#ff9800';
     wctx.font = 'bold 10px monospace';
     wctx.textAlign = 'left';
-    wctx.fillText('焊接方向', arrowX0 - 56, dirY + 3);
+    wctx.fillText('焊接方向', arrowX0, dirY + 16);
     // 速度标签
     wctx.fillStyle = 'rgba(255,255,255,0.75)';
     wctx.font = '10px monospace';
-    wctx.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowX0 - 56, dirY + 16);
+    wctx.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowX0, dirY + 29);
 
     // 材料标注
     wctx.fillStyle = 'rgba(138,150,173,0.8)';
@@ -3279,7 +3307,7 @@
     };
     slider.addEventListener('input', () => sync(parseFloat(slider.value)));
     num.addEventListener('change', () => {
-      let v = Math.min(Math.max(parseFloat(num.value) || 10, 1), 60);
+      let v = Math.min(Math.max(parseFloat(num.value) || 10, 0.1), 60);
       sync(v);
     });
   }
