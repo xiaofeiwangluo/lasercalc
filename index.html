@@ -1986,39 +1986,7 @@
       <div class="up-sub">修复已知问题</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">母材厚度下限放宽</b>：自定义母材厚度最低支持 0.1mm，适配超薄工件焊接仿真。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">2</span>
-        <span><b style="color:var(--text)">修复文字与动画重合</b>：熔深动态演化中焊接方向指示移至左上空白区，熔深标注增加半透明底衬，画面更清晰。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">3</span>
-        <span><b style="color:var(--text)">熔穿动画优化</b>：修复熔深大于母材厚度时熔池形状异常凸出的问题，熔穿时显示背面熔池效果并标注"熔穿"。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">4</span>
-        <span><b style="color:var(--text)">标题位置调整</b>：熔深动态演化标题移至左下角图例上方，布局更合理。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">5</span>
-        <span><b style="color:var(--text)">薄母材等比例放大</b>：母材厚度较小时，熔深动态演化画面自动等比例放大，薄工件焊接过程也能清晰观察。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">6</span>
-        <span><b style="color:var(--text)">熔深与母材比例修正</b>：修复厚母材时熔深视觉占比失真的问题，熔深与母材厚度始终按实际比例显示。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">7</span>
-        <span><b style="color:var(--text)">熔池深度显示修正</b>：修复熔池视觉深度仅为实际熔深约一半的问题，熔池最低点与预估熔深精确对应。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">8</span>
-        <span><b style="color:var(--text)">母材厚度标示</b>：熔深动态演化画面左侧新增母材厚度尺寸线与数值标示，直观对比熔深与板厚。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">9</span>
-        <span><b style="color:var(--text)">熔深显示一致性修复</b>：修复动画中熔池深度与预估熔深不一致的问题，熔池深度精确对应预估熔深数值。</span>
+        <span><b style="color:var(--text)">修复已知问题</b>：优化熔深动态演化显示效果与计算一致性，提升使用体验。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -2032,15 +2000,7 @@
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.3</span><span class="cl-date">2026-09</span></div>
         <ul class="cl-list">
-          <li>修复已知问题：母材厚度下限放宽至 0.1mm，适配超薄工件。</li>
-          <li>修复熔深动态演化中文字与动画元素重合的问题，方向指示移至左上、熔深标注加底衬。</li>
-          <li>修复熔深大于母材厚度时熔池形状异常凸出的问题，熔穿时显示背面熔池并标注"熔穿"。</li>
-          <li>熔深动态演化标题移至左下角图例上方。</li>
-          <li>薄母材等比例放大：母材厚度较小时画面自动放大，薄工件焊接过程清晰可见。</li>
-          <li>修复厚母材时熔深与母材厚度比例失真的问题，熔深按实际比例显示。</li>
-          <li>修复熔池视觉深度仅为实际熔深约一半的问题，熔池最低点与预估熔深精确对应。</li>
-          <li>熔深动态演化左侧新增母材厚度尺寸线与数值标示。</li>
-          <li>修复动画中熔池深度与预估熔深不一致的问题，熔池深度精确对应预估数值。</li>
+          <li>修复已知问题。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -3147,16 +3107,17 @@
     poolGrad.addColorStop(0.5, 'rgba(255, 87, 34, 0.9)');
     poolGrad.addColorStop(1, 'rgba(200, 50, 20, 0.7)');
     wctx.fillStyle = poolGrad;
-    // 熔池：矩形+圆角底部，深度精确等于 meltDepth（与预估熔深一致）
-    const poolRb = Math.min(6, meltWidth * 0.4);
+    // 熔池：U形（上宽下窄、底部圆润），贴近真实深熔焊熔池截面
     const poolBottom = workTop + meltDepth;
+    const halfW = meltWidth;
     wctx.beginPath();
-    wctx.moveTo(weldX - meltWidth, workTop);
-    wctx.lineTo(weldX - meltWidth, poolBottom - poolRb);
-    wctx.quadraticCurveTo(weldX - meltWidth, poolBottom, weldX - meltWidth + poolRb, poolBottom);
-    wctx.lineTo(weldX + meltWidth - poolRb, poolBottom);
-    wctx.quadraticCurveTo(weldX + meltWidth, poolBottom, weldX + meltWidth, poolBottom - poolRb);
-    wctx.lineTo(weldX + meltWidth, workTop);
+    wctx.moveTo(weldX - halfW, workTop);
+    // 左侧壁向下收窄
+    wctx.quadraticCurveTo(weldX - halfW * 0.7, workTop + meltDepth * 0.55, weldX - halfW * 0.32, poolBottom - meltDepth * 0.12);
+    // 底部圆弧
+    wctx.quadraticCurveTo(weldX, poolBottom + meltDepth * 0.04, weldX + halfW * 0.32, poolBottom - meltDepth * 0.12);
+    // 右侧壁向上展开
+    wctx.quadraticCurveTo(weldX + halfW * 0.7, workTop + meltDepth * 0.55, weldX + halfW, workTop);
     wctx.closePath();
     wctx.fill();
 
@@ -3175,14 +3136,6 @@
       wctx.closePath();
       wctx.fill();
     }
-
-    // 熔池拖尾（沿焊接方向反方向拉长，体现焊缝）
-    wctx.fillStyle = 'rgba(255, 100, 45, 0.35)';
-    wctx.beginPath();
-    wctx.moveTo(weldX - meltWidth, workTop);
-    wctx.quadraticCurveTo(weldX - meltWidth - w * 0.09, workTop + meltDepth * 0.6, weldX - meltWidth - w * 0.11, workTop);
-    wctx.closePath();
-    wctx.fill();
 
     // 匙孔（Keyhole）- 深熔模式时显示
     if (r.keyhole) {
