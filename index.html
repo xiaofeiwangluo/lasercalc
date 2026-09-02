@@ -2016,6 +2016,10 @@
         <span class="up-num">8</span>
         <span><b style="color:var(--text)">母材厚度标示</b>：熔深动态演化画面左侧新增母材厚度尺寸线与数值标示，直观对比熔深与板厚。</span>
       </div>
+      <div class="up-item">
+        <span class="up-num">9</span>
+        <span><b style="color:var(--text)">熔深显示一致性修复</b>：修复动画中熔池深度与预估熔深不一致的问题，熔池深度精确对应预估熔深数值。</span>
+      </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
   </div>
@@ -2036,6 +2040,7 @@
           <li>修复厚母材时熔深与母材厚度比例失真的问题，熔深按实际比例显示。</li>
           <li>修复熔池视觉深度仅为实际熔深约一半的问题，熔池最低点与预估熔深精确对应。</li>
           <li>熔深动态演化左侧新增母材厚度尺寸线与数值标示。</li>
+          <li>修复动画中熔池深度与预估熔深不一致的问题，熔池深度精确对应预估数值。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -3142,27 +3147,18 @@
     poolGrad.addColorStop(0.5, 'rgba(255, 87, 34, 0.9)');
     poolGrad.addColorStop(1, 'rgba(200, 50, 20, 0.7)');
     wctx.fillStyle = poolGrad;
-    // 熔池深度修正：二次贝塞尔曲线最低点约为控制点深度的1/2，故控制点取 meltDepth*2
-    // 使熔池视觉最低点正好等于实际熔深；熔穿时改为填满母材的圆角矩形
-    const poolCtrlY = workTop + meltDepth * 2;
-    if (poolCtrlY <= workBottom) {
-      wctx.beginPath();
-      wctx.moveTo(weldX - meltWidth, workTop);
-      wctx.quadraticCurveTo(weldX, poolCtrlY, weldX + meltWidth, workTop);
-      wctx.closePath();
-      wctx.fill();
-    } else {
-      const rb = Math.min(6, meltWidth * 0.5);
-      wctx.beginPath();
-      wctx.moveTo(weldX - meltWidth, workTop);
-      wctx.lineTo(weldX - meltWidth, workBottom - rb);
-      wctx.quadraticCurveTo(weldX - meltWidth, workBottom, weldX - meltWidth + rb, workBottom);
-      wctx.lineTo(weldX + meltWidth - rb, workBottom);
-      wctx.quadraticCurveTo(weldX + meltWidth, workBottom, weldX + meltWidth, workBottom - rb);
-      wctx.lineTo(weldX + meltWidth, workTop);
-      wctx.closePath();
-      wctx.fill();
-    }
+    // 熔池：矩形+圆角底部，深度精确等于 meltDepth（与预估熔深一致）
+    const poolRb = Math.min(6, meltWidth * 0.4);
+    const poolBottom = workTop + meltDepth;
+    wctx.beginPath();
+    wctx.moveTo(weldX - meltWidth, workTop);
+    wctx.lineTo(weldX - meltWidth, poolBottom - poolRb);
+    wctx.quadraticCurveTo(weldX - meltWidth, poolBottom, weldX - meltWidth + poolRb, poolBottom);
+    wctx.lineTo(weldX + meltWidth - poolRb, poolBottom);
+    wctx.quadraticCurveTo(weldX + meltWidth, poolBottom, weldX + meltWidth, poolBottom - poolRb);
+    wctx.lineTo(weldX + meltWidth, workTop);
+    wctx.closePath();
+    wctx.fill();
 
     // 熔穿时：母材底部背面熔池（熔融金属从背面流出）
     if (isBurnThrough) {
