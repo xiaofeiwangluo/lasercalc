@@ -2361,7 +2361,6 @@
   <div class="update-modal" id="adminLoginModal">
     <div class="update-card" style="max-width:320px;">
       <h3>管理员登录</h3>
-      <div class="up-sub">请输入管理员密码以查看访问统计</div>
       <input type="password" class="admin-login-pw" id="adminPwInput" placeholder="管理员密码" autocomplete="off">
       <div class="admin-err" id="adminPwErr"></div>
       <button class="up-btn" id="adminLoginBtn">登录</button>
@@ -4277,10 +4276,10 @@
     } catch (e) {}
   }
 
-  // 远程访问统计上报入口（预留）：接入第三方统计服务后，在此上报访问者信息
-  // 目前未接入远程服务，仅做本地记录；接入后无需管理员在 APP 内保存任何密钥
+  // 远程访问统计：已接入 GoatCounter（脚本在页面底部自动上报访问者，无需管理员保存任何密钥）。
+  // 管理员登录 https://xiaofeiwangluo.goatcounter.com/ 查看全部访问者明细（时间/IP/设备/路径）。
   function reportRemoteVisit() {
-    // TODO: 在此接入统计服务（如 GoatCounter / 自建接口）后启用
+    // 由页面底部 GoatCounter 脚本自动上报，此处无需额外逻辑
   }
 
   function fmtTime(ts) {
@@ -4306,11 +4305,11 @@
         '<div class="admin-log-item"><span>' + fmtTime(r.t) + '</span><span class="t">' + r.dev + '</span></div>'
       ).join('');
     }
-    // 远程统计状态（预留）
+    // 远程统计状态：已接入 GoatCounter
     const remoteVal = $('admRemoteVal');
     const remoteLabel = $('admRemoteLabel');
-    remoteLabel.textContent = '未接入远程统计服务';
-    remoteVal.textContent = '—';
+    remoteLabel.textContent = '已接入 GoatCounter 在线统计';
+    remoteVal.innerHTML = '<a href="https://xiaofeiwangluo.goatcounter.com/" target="_blank" style="color:var(--cyan);text-decoration:underline;font-size:13px;">查看统计后台 ↗</a>';
   }
 
   // 管理员登录
@@ -4361,5 +4360,8 @@
 
 })();
 </script>
+
+<!-- 远程访问统计：GoatCounter（管理员可登录后台查看访问者明细） -->
+<script data-goatcounter="https://xiaofeiwangluo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
