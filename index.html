@@ -2920,7 +2920,9 @@
     const core = state.wCore;
     const fc = state.wFc;
     const ff = state.wFf;
-    const V = state.wV;
+    // 焊接速度为 0 或负值会触发 theory=Infinity 且 correction=0，产生 Infinity*0=NaN 使动画消失；
+    // 工程上按最小 0.5mm/s 保守估算，保证计算与动画始终有效
+    const V = Math.max(Number(state.wV) || 0.5, 0.5);
     const eta = state.wEta;
     const def = state.wDefocus;
     const mat = MATERIALS[state.wMaterial];
@@ -2947,13 +2949,19 @@
     const kRef = 16;
     const lambda = Math.sqrt(kRef / mat.k);
     const estMat = est * lambda;
-    const theoryMat = theory * lambda;
+    // 纯理论推演同样应用功率封顶 cap：低速时线能量公式发散，
+    // 物理上熔深受功率上限约束（cap=P/400），避免出现数量级荒谬的理论值
+    const theoryCapped = Math.min(theory, cap);
+    const theoryMat = theoryCapped * lambda;
     // 离焦-熔深：当前离焦下的熔深（相对焦点）
     const fDef = defocusModel(def);
     const estDef = estMat * fDef;
+    // 当前离焦下的纯理论推演：与预估熔深同条件对比，
+    // 两者差异仅来自低速修正系数 correction（0~6%），不再因离焦/速度发散
+    const theoryDef = theoryMat * fDef;
 
     return {
-      d, density, heat, keyhole, theory, theoryMat,
+      d, density, heat, keyhole, theory, theoryMat, theoryDef,
       est, estMat, estDef, fDef, def,
       lambda, matName: mat.name, matGroup: mat.group, matNote: mat.note
     };
@@ -2962,7 +2970,8 @@
   function updateWeld() {
     const r = weldCalculate();
     $('weldEst').textContent = fmt(r.estDef, 2);
-    $('weldTheory').textContent = fmt(r.theoryMat, 2);
+    // 纯理论推演：与预估同条件（功率封顶+当前离焦），差异仅来自低速修正，避免数量级离谱
+    $('weldTheory').textContent = fmt(r.theoryDef, 2);
     $('wSpot').textContent = fmt(r.d, 1);
     $('wDensity').textContent = fmtScientific(r.density);
     $('wHeat').textContent = fmt(r.heat, 2);
@@ -3135,7 +3144,9 @@
     // 时间演化
     const t = state.weldTime;
     const grow = Math.min(t / 2.5, 1); // 2.5s 内生长到目标深度
-    const depthMm = r.estDef;
+    let depthMm = r.estDef;
+    // 兜底防御：任何异常输入导致熔深非有限数/负值时按 0 处理，避免画布坐标 NaN 使动画消失
+    if (!isFinite(depthMm) || depthMm < 0) depthMm = 0;
 
     // 焊接方向：焊接头向右移动，熔池向左拖尾
     // 熔池中心随焊接方向反向偏移（体现运动拖尾）
