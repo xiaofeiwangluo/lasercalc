@@ -1794,6 +1794,14 @@
             <span style="width:12px;height:3px;background:var(--text-2);display:inline-block;"></span>
             <span>工件（右侧，光斑按相对比例显示）</span>
           </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <span style="width:12px;height:3px;border-top:2px dashed #ff9800;display:inline-block;"></span>
+            <span>瑞利长度 zR（束腰两侧光斑面积翻倍的范围）</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <span style="width:12px;height:3px;background:#00bcd4;display:inline-block;"></span>
+            <span>到工件表面的焦距（聚焦镜 → 工件/焦点）</span>
+          </div>
           <div class="divider"></div>
           <div style="font-size:12px; color:var(--text-3);">
             光束从光纤端面以发散角输出，经准直镜变为平行光，再经聚焦镜会聚至工件表面形成光斑。调整计算器参数可实时查看光路变化。
@@ -2868,6 +2876,41 @@
     ctx.textAlign = 'right';
     ctx.fillText(fmt(r.dSpot, 0) + 'μm', L.workX - 16, L.centerY + 3);
 
+    // ===== 到工件表面的焦距标注（聚焦镜 → 工件） =====
+    const flY = L.centerY + colRadius + 24;
+    ctx.strokeStyle = 'rgba(0, 188, 212, 0.75)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(L.focX, flY);
+    ctx.lineTo(L.workX, flY);
+    ctx.moveTo(L.focX, flY - 4); ctx.lineTo(L.focX, flY + 4);
+    ctx.moveTo(L.workX, flY - 4); ctx.lineTo(L.workX, flY + 4);
+    ctx.stroke();
+    ctx.fillStyle = '#00bcd4';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('到工件表面 f=' + fmt(state.fFoc, 0) + 'mm', (L.focX + L.workX) / 2, flY - 6);
+
+    // ===== 瑞利长度标注（束腰向聚焦镜侧，示意长度按 zR 相对焦距比例） =====
+    const zrRatio = Math.max(0.06, Math.min(0.6, r.zR_mm / Math.max(1, state.fFoc)));
+    const zrPx = Math.max(22, (L.workX - L.focX) * zrRatio);
+    const zrY = Math.max(20, L.centerY - colRadius - 12);
+    ctx.strokeStyle = 'rgba(255, 152, 0, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(L.workX, zrY);
+    ctx.lineTo(L.workX - zrPx, zrY);
+    ctx.moveTo(L.workX, zrY - 4); ctx.lineTo(L.workX, zrY + 4);
+    ctx.moveTo(L.workX - zrPx, zrY - 4); ctx.lineTo(L.workX - zrPx, zrY + 4);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ff9800';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('瑞利长度 zR=' + fmt(r.zR_mm, 2) + 'mm', L.workX - zrPx / 2, zrY - 6);
+
     // ===== 绘制粒子 =====
     for (const p of particles) {
       if (p.phase === 'hit') {
@@ -2891,12 +2934,11 @@
     }
     ctx.globalAlpha = 1;
 
-    // 焦距标注
+    // 焦距标注（准直镜段；聚焦镜段已由上方"到工件表面"尺寸线标示）
     ctx.fillStyle = '#5a6680';
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('f=' + state.fCol + 'mm', (L.fiberX + L.colX) / 2, h - 8);
-    ctx.fillText('f=' + state.fFoc + 'mm', (L.focX + L.workX) / 2, h - 8);
   }
 
   function drawLens(x, cy, halfH, label, color) {
