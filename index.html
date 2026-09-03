@@ -1753,6 +1753,9 @@
         <div class="sim-controls">
           <button class="sim-btn" id="btnPlay">暂停</button>
           <button class="sim-btn secondary" id="btnReset">重置</button>
+          <button class="sim-btn secondary" id="simSave" title="将当前光路画面保存为图片">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
+          </button>
           <div class="sim-speed">
             <span>速度</span>
             <select id="simSpeed">
@@ -2999,6 +3002,41 @@
   });
   $('simSpeed').addEventListener('change', (e) => {
     state.simSpeed = parseFloat(e.target.value);
+  });
+
+  // 保存光路画面为图片
+  const simSaveBtn = $('simSave');
+  if (simSaveBtn) simSaveBtn.addEventListener('click', () => {
+    // 暂停动画，保证保存的画面完整
+    const wasPlaying = state.simPlaying;
+    state.simPlaying = false;
+    $('btnPlay').textContent = '播放';
+    resizeCanvas();
+    drawSim();
+    let dataUrl;
+    try {
+      dataUrl = canvas.toDataURL('image/png');
+    } catch (e) {
+      showToast('保存失败：图片生成出错');
+      if (wasPlaying) { state.simPlaying = true; $('btnPlay').textContent = '暂停'; }
+      return;
+    }
+    if (window.AndroidBridge && typeof window.AndroidBridge.savePng === 'function') {
+      try {
+        window.AndroidBridge.savePng(dataUrl);
+        if (wasPlaying) { state.simPlaying = true; $('btnPlay').textContent = '暂停'; }
+        showToast('已保存到手机相册 · 光斑计算器');
+        return;
+      } catch (e) { /* 走浏览器下载兜底 */ }
+    }
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = '光路模拟_' + new Date().toISOString().slice(0, 10) + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (wasPlaying) { state.simPlaying = true; $('btnPlay').textContent = '暂停'; }
+    showToast('已开始保存图片');
   });
 
   // ===== 参数库 =====
