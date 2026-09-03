@@ -4276,10 +4276,10 @@
     } catch (e) {}
   }
 
-  // 远程访问统计：已接入 GoatCounter（脚本在页面底部自动上报访问者，无需管理员保存任何密钥）。
-  // 管理员登录 https://xiaofeiwangluo.goatcounter.com/ 查看全部访问者明细（时间/IP/设备/路径）。
+  // 远程访问统计：未接入第三方服务（纯前端无服务器，跨设备收集需第三方统计通道）。
+  // 当前仅保留本机访问记录（localStorage），在该设备管理员后台可查看。
   function reportRemoteVisit() {
-    // 由页面底部 GoatCounter 脚本自动上报，此处无需额外逻辑
+    // 预留：若需跨设备统计，在此接入统计服务
   }
 
   function fmtTime(ts) {
@@ -4305,11 +4305,11 @@
         '<div class="admin-log-item"><span>' + fmtTime(r.t) + '</span><span class="t">' + r.dev + '</span></div>'
       ).join('');
     }
-    // 远程统计状态：已接入 GoatCounter
+    // 远程统计状态：未接入（本机记录仅在该设备管理员后台可见）
     const remoteVal = $('admRemoteVal');
     const remoteLabel = $('admRemoteLabel');
-    remoteLabel.textContent = '已接入 GoatCounter 在线统计';
-    remoteVal.innerHTML = '<a href="https://xiaofeiwangluo.goatcounter.com/" target="_blank" style="color:var(--cyan);text-decoration:underline;font-size:13px;">查看统计后台 ↗</a>';
+    remoteLabel.textContent = '未接入远程统计服务';
+    remoteVal.textContent = '—';
   }
 
   // 管理员登录
@@ -4360,8 +4360,5 @@
 
 })();
 </script>
-
-<!-- 远程访问统计：GoatCounter（管理员可登录后台查看访问者明细） -->
-<script data-goatcounter="https://xiaofeiwangluo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
