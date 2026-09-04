@@ -3686,18 +3686,20 @@
     const cx = w / 2;
     const grow = Math.min(wobState.t / 2.5, 1);
 
-    // 母材厚度（用户可设）：决定母材高度与熔深/熔宽同比例
+    // 母材厚度（用户可设）：母材按同比例显示，薄板自动放大确保可见
     const thickMm = Math.max(Number($('wobThicknessNum').value) || 2, 0.1);
-    // 比例尺：厚板用基准（thick=1mm 时约占可用区 55%），薄板自动放大确保可见
-    const basePxPerMm = availH * 0.55 / Math.max(thickMm, 1);
+    // 主体比例由熔深/熔宽决定（动画主体始终清晰可见，不被母材厚度主导）
+    let pxPerMm = Math.min(
+      availH * 0.72 / Math.max(r.depth, 0.01),
+      availH * 0.55 / Math.max(r.width, 0.01)
+    );
+    // 薄板：母材过小时整体放大，保证母材至少占显示区 30%
     const minWorkH = Math.min(availH * 0.3, 60);
-    let pxPerMm = Math.max(basePxPerMm, minWorkH / thickMm);
-    let workBottom = workTop + thickMm * pxPerMm;
-    if (workBottom > secBottom) {
-      pxPerMm = (secBottom - workTop) / thickMm;
-      workBottom = secBottom;
+    if (thickMm * pxPerMm < minWorkH) {
+      pxPerMm = minWorkH / thickMm;
     }
-    const workH = Math.max(workBottom - workTop, 2);
+    const workH = Math.min(thickMm * pxPerMm, secBottom - workTop);
+    const workBottom = workTop + workH;
 
     const depthMm = r.depth * grow;
     // 熔穿判定：当前熔深达到或超过母材厚度
