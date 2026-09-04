@@ -3004,6 +3004,16 @@
     state.simSpeed = parseFloat(e.target.value);
   });
 
+  // 原生保存结果回传（由 MainActivity 调用 window.__savePngResult(ok)）
+  window.__savePngResult = function (ok) {
+    window.__savePngPending = null;
+    if (ok) {
+      showToast('已保存到手机相册 · 光斑计算器');
+    } else {
+      showToast('保存失败，请检查存储空间或相册权限');
+    }
+  };
+
   // 保存光路画面为图片
   const simSaveBtn = $('simSave');
   if (simSaveBtn) simSaveBtn.addEventListener('click', () => {
@@ -3023,9 +3033,19 @@
     }
     if (window.AndroidBridge && typeof window.AndroidBridge.savePng === 'function') {
       try {
+        // 存入全局变量供原生读取（规避 JS 桥大字符串传参限制），再通知原生保存
+        window.__lastPngDataUrl = dataUrl;
+        const savedFlag = '__simSaved_' + Date.now();
+        window.__savePngPending = savedFlag;
         window.AndroidBridge.savePng(dataUrl);
         if (wasPlaying) { state.simPlaying = true; $('btnPlay').textContent = '暂停'; }
-        showToast('已保存到手机相册 · 光斑计算器');
+        // 等待原生回调；3.5 秒未回调则乐观提示（兼容旧版 APK）
+        setTimeout(() => {
+          if (window.__savePngPending === savedFlag) {
+            window.__savePngPending = null;
+            showToast('已保存到手机相册 · 光斑计算器');
+          }
+        }, 3500);
         return;
       } catch (e) { /* 走浏览器下载兜底 */ }
     }
@@ -3641,8 +3661,18 @@
     }
     if (window.AndroidBridge && typeof window.AndroidBridge.savePng === 'function') {
       try {
+        // 存入全局变量供原生读取（规避 JS 桥大字符串传参限制），再通知原生保存
+        window.__lastPngDataUrl = dataUrl;
+        const savedFlag = '__weldSaved_' + Date.now();
+        window.__savePngPending = savedFlag;
         window.AndroidBridge.savePng(dataUrl);
-        showToast('已保存到手机相册 · 光斑计算器');
+        // 等待原生回调；3.5 秒未回调则乐观提示（兼容旧版 APK）
+        setTimeout(() => {
+          if (window.__savePngPending === savedFlag) {
+            window.__savePngPending = null;
+            showToast('已保存到手机相册 · 光斑计算器');
+          }
+        }, 3500);
         return;
       } catch (e) { /* 走浏览器下载兜底 */ }
     }
