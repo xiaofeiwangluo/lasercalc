@@ -1883,11 +1883,35 @@
       <div class="card">
         <div class="card-title">摆动焊接参数</div>
         <div class="input-group">
+          <div class="input-label"><span>工件材料</span><span class="unit" id="wobMatSpec">钢/不锈钢 · k=16 W/m·K</span></div>
+          <select class="weld-material-select" id="wobMaterial">
+            <optgroup label="—— 钢/不锈钢 ——">
+              <option value="steel" selected>碳钢 / 不锈钢（基准）</option>
+            </optgroup>
+            <optgroup label="—— 铝合金 ——">
+              <option value="al1060">铝合金 1060（工业纯铝）</option>
+              <option value="al3003">铝合金 3003（Al-Mn）</option>
+              <option value="al5052">铝合金 5052（Al-Mg）</option>
+              <option value="al5083">铝合金 5083（Al-Mg）</option>
+              <option value="al6061">铝合金 6061（Al-Mg-Si）</option>
+              <option value="al6063">铝合金 6063（Al-Mg-Si）</option>
+              <option value="al7075">铝合金 7075（Al-Zn）</option>
+            </optgroup>
+            <optgroup label="—— 铜及铜合金 ——">
+              <option value="cu_t2">T2 紫铜 / C1100（纯铜）</option>
+              <option value="cu_c1020">C1020 无氧铜</option>
+              <option value="cu_h62">H62 黄铜（Cu-Zn）</option>
+              <option value="cu_c5191">C5191 磷青铜</option>
+              <option value="cu_qbe2">QBe2 铍铜</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="input-group">
           <div class="input-label"><span>摆动类型</span><span class="unit">轨迹示意</span></div>
           <select class="weld-material-select" id="wobType">
-            <option value="sine" selected>1. 正弦摆动</option>
-            <option value="spiral">2. 螺旋摆动</option>
-            <option value="zigzag">3. 弓字摆动</option>
+            <option value="sine" selected>正弦摆动</option>
+            <option value="spiral">螺旋摆动</option>
+            <option value="zigzag">弓字摆动</option>
           </select>
         </div>
         <div class="input-group">
@@ -1916,6 +1940,13 @@
           <div class="input-row">
             <input type="range" id="wobV" min="5" max="300" value="80" step="5">
             <input type="number" id="wobVNum" value="80" min="1" max="1000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>母材厚度</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="wobThickness" min="0.1" max="20" value="2" step="0.1">
+            <input type="number" id="wobThicknessNum" value="2" min="0.1" max="50" step="0.1">
           </div>
         </div>
       </div>
@@ -1968,7 +1999,7 @@
           </div>
         </div>
         <div class="hint" style="margin-top:8px;">
-          模型依据（半经验工程模型）：环形光斑（ARM）双光束激光摆动焊接——内芯高能量密度决定熔深，外环与摆动宽度主导熔宽；随摆动幅度增大熔深减小、熔宽增大（焊接学报《光束摆动对Ti60合金激光焊能量分布及焊缝成形的影响》、焊接《光纤激光工艺参数对Q235钢穿透点焊缝形状和尺寸的影响》等）。光学假设：准直100mm/聚焦200mm（放大2×）、λ=1080nm、碳钢 η=0.7。结果供工艺预研参考，请以实测为准。
+          模型依据（半经验工程模型）：环形光斑（ARM）双光束激光摆动焊接——内芯高能量密度决定熔深，外环与摆动宽度主导熔宽；随摆动幅度增大熔深减小、熔宽增大（焊接学报《光束摆动对Ti60合金激光焊能量分布及焊缝成形的影响》、焊接《光纤激光工艺参数对Q235钢穿透点焊缝形状和尺寸的影响》等）。材料吸收率取自材料库：钢 η≈0.40、铝合金 η≈0.22-0.32、铜 η≈0.15-0.22，并按导热率作修正（高导热材料同线能量熔深更浅）。光学假设：准直100mm/聚焦200mm（放大2×）、λ=1080nm。结果供工艺预研参考，请以实测为准。
         </div>
       </div>
     </section>
@@ -3414,7 +3445,9 @@
       B: Math.max(Number($('wobWidthNum').value) || 0, 0),
       pitch: Math.max(Number($('wobPitchNum').value) || 0.1, 0.05),
       V: Math.max(Number($('wobVNum').value) || 1, 1),
-      type: $('wobType').value
+      type: $('wobType').value,
+      material: $('wobMaterial').value,
+      thickness: Math.max(Number($('wobThicknessNum').value) || 2, 0.1)
     };
   }
 
@@ -3425,19 +3458,25 @@
   //       焊接《光纤激光工艺参数对Q235钢穿透点焊缝形状和尺寸的影响》（摆动幅度↑→熔深↓、熔宽↑）等。
   function wobCalculate() {
     const p = wobRead();
+    const mat = MATERIALS[p.material] || MATERIALS.steel;
     const core = wobSpotDefocus(p.coreDia * WOB_OPT.M, p.def);
     const ring = wobSpotDefocus(p.ringDia * WOB_OPT.M, p.def);
     const f = p.V / p.pitch;
-    const eta = 0.7;
+    // 材料吸收率：深熔匙孔模式下钢约0.4、铝合金约0.22-0.32、铜约0.15-0.22
+    const eta = mat.eta;
+    // 导热修正：高导热材料（铝/铜）热量散失快，同线能量熔深更浅
+    // λ = (k_ref/k)^0.5，k_ref = 16 W/m·K（钢基准，λ=1）
+    const kRef = 16;
+    const lambda = Math.sqrt(kRef / mat.k);
     const E_core = p.coreP * eta / p.V;
     const E_ring = p.ringP * eta / p.V;
-    // 熔深
+    // 熔深（内芯能量线密度驱动 + 外环辅助 + 离焦修正 + 摆动加宽修正 + 材料导热修正）
     const dCore = 0.35 * Math.pow(Math.max(E_core, 0), 0.62);
     const dRingAux = 0.12 * Math.pow(Math.max(E_ring, 0), 0.5) * 0.35;
     const fDef = Math.pow(core.d0Um / core.dUm, 1.6);
     // 摆动加宽修正：B(mm) 相对内芯光斑 d_core(mm)，加宽越宽熔深越小
     const fWob = Math.pow(1 / (1 + Math.pow(p.B / (core.dUm / 1000), 0.8)), 0.25);
-    const depth = Math.max((dCore + dRingAux) * fDef * fWob, 0);
+    const depth = Math.max((dCore + dRingAux) * fDef * fWob * lambda, 0);
     // 熔宽
     const dW = 0.18 * Math.pow(Math.max(E_ring, 0), 0.4);
     const width = Math.max(ring.dUm / 1000 + p.B + dW, ring.dUm / 1000);
@@ -3449,7 +3488,9 @@
       depth: depth, width: width, f: f, core: core, ring: ring,
       density: density, heatTotal: heatTotal, ratio: width > 0 ? depth / width : 0,
       B: p.B, pitch: p.pitch, V: p.V, type: p.type, def: p.def,
-      E_core: E_core, E_ring: E_ring, fWob: fWob, fDef: fDef
+      E_core: E_core, E_ring: E_ring, fWob: fWob, fDef: fDef,
+      mat: mat, lambda: lambda, eta: eta,
+      matName: mat.name, matGroup: mat.group, matNote: mat.note
     };
   }
 
@@ -3463,6 +3504,9 @@
     $('wobRatio').textContent = fmt(r.ratio, 2);
     $('wobDensity').textContent = fmtScientific(r.density);
     $('wobHeat').textContent = fmt(r.heatTotal, 1) + ' J/mm';
+    // 材料信息
+    const spec = $('wobMatSpec');
+    if (spec) spec.textContent = r.matGroup + ' · k=' + r.mat.k + ' W/m·K · η=' + r.eta.toFixed(2);
   }
 
   // 摆动焊接动画 Canvas
@@ -3483,12 +3527,39 @@
   function wobTrackOffset(type, xmm, pitch) {
     const p = Math.max(pitch, 0.05);
     const ph = (xmm / p) % 1;
-    if (type === 'zigzag') {
-      // 弓字（三角波折线）：0→1→0→-1→0
-      return ph < 0.25 ? ph * 4 : ph < 0.75 ? 2 - ph * 4 : ph * 4 - 4;
+    if (type === 'sine') {
+      // 正弦：正V/反V交替（三角波，尖角峰谷）
+      return ph < 0.5 ? 1 - 4 * ph : 4 * (ph - 0.5) - 1;
     }
-    // 正弦 / 螺旋（圆运动在焊缝平面投影均为正弦）
+    // 弓字 / 螺旋（圆运动在焊缝平面投影）
     return Math.sin(2 * Math.PI * ph);
+  }
+
+  // 弓字顶视轨迹：正U/反U交替（波峰、波谷均为半圆的圆弧三角波）
+  function zigzagTopY(xmm, pitch, pxPerMm, A) {
+    const p = Math.max(pitch, 0.05);
+    const pitchPx = p * pxPerMm;
+    // 半圆半径：受间距限制（每周期 2×半圆 + 2×斜线 = pitchPx），尽量取大
+    const R = Math.min(A / 2, Math.max(pitchPx / 6, 2));
+    const S = Math.max((pitchPx - 4 * R) / 2, 0); // 斜线 x 跨度
+    const seg = 2 * R; // 半圆 x 跨度（直径）
+    const xIn = ((xmm / p) % 1) * pitchPx;
+    if (xIn < seg) {
+      // 峰半圆（凸向上，弧顶 +A）：圆心 (R, A-R)
+      return (A - R) + R * Math.sin(Math.PI * (xIn / seg));
+    }
+    if (xIn < seg + S) {
+      // 斜线下降：(A-R) → (-A+R)
+      const u = (xIn - seg) / Math.max(S, 1);
+      return (A - R) * (1 - u) + (-A + R) * u;
+    }
+    if (xIn < 2 * seg + S) {
+      // 谷半圆（凸向下，弧底 -A）：圆心 (seg+S+R, -A+R)
+      return (-A + R) - R * Math.sin(Math.PI * (xIn - seg - S) / seg);
+    }
+    // 斜线上升：(-A+R) → (A-R)
+    const u = (xIn - 2 * seg - S) / Math.max(S, 1);
+    return (-A + R) * (1 - u) + (A - R) * u;
   }
 
   function drawWob() {
@@ -3505,11 +3576,12 @@
     const padL = 30, padR = 16, padT = 14;
     const tw = w - padL - padR;
     const midY = topH * 0.5;
-    const viewMm = 8;
-    const pxPerMm = tw / viewMm;
     const B = r.B;
-    // 摆动幅度像素上限：顶部预留标题区（34px），避免大摆动宽度时轨迹边界压到标题
-    const A = Math.min(B / 2 * pxPerMm, Math.max((topH - 34) / 2, 6));
+    // 视野随摆动宽度自适应：保证拖动 B 时摆动幅度始终按比例变化、不被画布钳死
+    const viewMm = Math.max(B * 3.2, 20);
+    const pxPerMm = tw / viewMm;
+    // 摆动幅度像素上限：顶部预留标题区、底部预留间距标注区，避免大摆动宽度时轨迹压到文字
+    const A = Math.min(B / 2 * pxPerMm, Math.max((topH - 20) / 2, 6));
     const ph = (wobState.t / 3.2) % 1;
     const beamMm = ph * viewMm;
     const beamX = padL + beamMm * pxPerMm;
@@ -3532,26 +3604,35 @@
     // 间距标注置于轨迹下方右侧
     wobCtx.fillText('间距 p=' + fmt(r.pitch, 2) + ' mm', w - padR, midY + A + 12);
 
-    // 已走轨迹
-    const N = 240;
+    // 已走轨迹（采样密度随视野/间距自适应，保证波形圆滑）
+    const N = Math.min(Math.max(Math.ceil(viewMm / Math.max(r.pitch, 0.05)) * 12, 240), 2400);
     const typeName = r.type === 'sine' ? '正弦' : r.type === 'spiral' ? '螺旋' : '弓字';
     if (r.type === 'spiral') {
-      // 螺旋：点列（圆运动投影）
+      // 螺旋：摆动的正圆（光束以半径A绕焊缝轴旋转前进，顶视呈正圆环串）
+      wobCtx.beginPath();
       for (let i = 0; i <= N; i++) {
         const xmm = (i / N) * beamMm;
-        const x = padL + (i / N) * beamMm * pxPerMm;
-        const y = midY + wobTrackOffset('sine', xmm, r.pitch) * A;
-        wobCtx.beginPath();
-        wobCtx.arc(x, y, 1.1, 0, Math.PI * 2);
-        wobCtx.fillStyle = 'rgba(0,188,212,0.85)';
-        wobCtx.fill();
+        const ang = 2 * Math.PI * (xmm / r.pitch);
+        const x = padL + (i / N) * beamMm * pxPerMm + A * Math.cos(ang);
+        const y = midY + A * Math.sin(ang);
+        if (i === 0) wobCtx.moveTo(x, y);
+        else wobCtx.lineTo(x, y);
       }
+      wobCtx.strokeStyle = 'rgba(0,188,212,0.9)';
+      wobCtx.lineWidth = 1.6;
+      wobCtx.stroke();
     } else {
       wobCtx.beginPath();
       for (let i = 0; i <= N; i++) {
         const xmm = (i / N) * beamMm;
         const x = padL + (i / N) * beamMm * pxPerMm;
-        const y = midY + wobTrackOffset(r.type, xmm, r.pitch) * A;
+        let y;
+        if (r.type === 'zigzag') {
+          // 弓字：两条水平线 + 半圆拱连接
+          y = midY + zigzagTopY(xmm, r.pitch, pxPerMm, A);
+        } else {
+          y = midY + wobTrackOffset(r.type, xmm, r.pitch) * A;
+        }
         if (i === 0) wobCtx.moveTo(x, y);
         else wobCtx.lineTo(x, y);
       }
@@ -3561,8 +3642,17 @@
     }
 
     // 光束当前位置（外环+内芯）
-    const bx = beamX;
-    const by = midY + wobTrackOffset(r.type, beamMm, r.pitch) * A;
+    let bx = beamX;
+    let by;
+    if (r.type === 'spiral') {
+      const ang = 2 * Math.PI * (beamMm / r.pitch);
+      bx = beamX + A * Math.cos(ang);
+      by = midY + A * Math.sin(ang);
+    } else if (r.type === 'zigzag') {
+      by = midY + zigzagTopY(beamMm, r.pitch, pxPerMm, A);
+    } else {
+      by = midY + wobTrackOffset(r.type, beamMm, r.pitch) * A;
+    }
     wobCtx.beginPath();
     wobCtx.arc(bx, by, Math.max(A * 0.5, 3), 0, Math.PI * 2);
     wobCtx.strokeStyle = 'rgba(0,188,212,0.95)';
@@ -3591,21 +3681,38 @@
     const workTop = topY + secH * 0.16;
     // 底部预留 56px（wc-tag 28px + 图例 20px + 余量），避免熔宽标注与动态图被容器标签遮挡
     const bottomPad = 56;
-    const availH = Math.max(secH - (workTop - topY) - bottomPad, 40);
-    const maxDim = Math.max(r.depth, r.width, 0.01);
-    let pxPerMm = availH * 0.72 / Math.max(maxDim, 0.01);
-    pxPerMm = Math.min(pxPerMm, availH * 0.62 / Math.max(r.depth, 0.01));
-    const grow = Math.min(wobState.t / 2.5, 1);
-    const depthPx = Math.min(r.depth * pxPerMm * grow, availH * 0.92);
-    const widthPx = Math.min(r.width * pxPerMm, w * 0.72);
+    const secBottom = topY + secH - bottomPad + 34;
+    const availH = Math.max(secBottom - workTop, 40);
     const cx = w / 2;
+    const grow = Math.min(wobState.t / 2.5, 1);
 
-    // 母材
-    const grad = wobCtx.createLinearGradient(0, workTop, 0, workTop + availH);
-    grad.addColorStop(0, '#43536e');
-    grad.addColorStop(1, '#242f45');
+    // 母材厚度（用户可设）：决定母材高度与熔深/熔宽同比例
+    const thickMm = Math.max(Number($('wobThicknessNum').value) || 2, 0.1);
+    // 比例尺：厚板用基准（thick=1mm 时约占可用区 55%），薄板自动放大确保可见
+    const basePxPerMm = availH * 0.55 / Math.max(thickMm, 1);
+    const minWorkH = Math.min(availH * 0.3, 60);
+    let pxPerMm = Math.max(basePxPerMm, minWorkH / thickMm);
+    let workBottom = workTop + thickMm * pxPerMm;
+    if (workBottom > secBottom) {
+      pxPerMm = (secBottom - workTop) / thickMm;
+      workBottom = secBottom;
+    }
+    const workH = Math.max(workBottom - workTop, 2);
+
+    const depthMm = r.depth * grow;
+    // 熔穿判定：当前熔深达到或超过母材厚度
+    const isBurnThrough = depthMm >= thickMm - 0.001;
+    const depthPx = Math.min(depthMm * pxPerMm, workH);
+    const widthPx = Math.min(r.width * pxPerMm, w * 0.72);
+    const halfW = widthPx / 2;
+
+    // 母材（颜色贴近所选工件材料）
+    const matCols = baseColor(r.matGroup);
+    const grad = wobCtx.createLinearGradient(0, workTop, 0, workTop + workH);
+    grad.addColorStop(0, matCols[0]);
+    grad.addColorStop(1, matCols[1]);
     wobCtx.fillStyle = grad;
-    wobCtx.fillRect(0, workTop, w, availH);
+    wobCtx.fillRect(0, workTop, w, workH);
     wobCtx.strokeStyle = 'rgba(138,150,173,0.5)';
     wobCtx.lineWidth = 1;
     wobCtx.beginPath();
@@ -3613,9 +3720,8 @@
     wobCtx.lineTo(w, workTop);
     wobCtx.stroke();
 
-    // U形熔池（顶宽=熔宽，深=熔深）
+    // U形熔池（顶宽=熔宽，深=熔深；熔穿时底达母材底部）
     const poolBottom = workTop + depthPx;
-    const halfW = widthPx / 2;
     const poolGrad = wobCtx.createLinearGradient(cx, workTop, cx, Math.max(poolBottom, workTop + 1));
     poolGrad.addColorStop(0, 'rgba(255,120,60,0.95)');
     poolGrad.addColorStop(0.5, 'rgba(255,87,34,0.9)');
@@ -3653,8 +3759,30 @@
     wobCtx.fillStyle = 'rgba(224,247,255,0.9)';
     wobCtx.fill();
 
-    // 熔深标注（左侧）
-    const dimX = w * 0.08;
+    // 母材厚度标注（最左侧尺寸线）
+    const tDimX = w * 0.045;
+    wobCtx.strokeStyle = 'rgba(160,175,200,0.55)';
+    wobCtx.lineWidth = 1;
+    wobCtx.beginPath();
+    wobCtx.moveTo(tDimX, workTop);
+    wobCtx.lineTo(tDimX, workBottom);
+    wobCtx.moveTo(tDimX - 4, workTop);
+    wobCtx.lineTo(tDimX + 4, workTop);
+    wobCtx.moveTo(tDimX - 4, workBottom);
+    wobCtx.lineTo(tDimX + 4, workBottom);
+    wobCtx.stroke();
+    wobCtx.fillStyle = 'rgba(200,210,225,0.85)';
+    wobCtx.font = '9px "SF Mono", Consolas, monospace';
+    if (workH > 26) {
+      wobCtx.textAlign = 'left';
+      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX + 6, workTop + workH / 2 + 3);
+    } else {
+      wobCtx.textAlign = 'left';
+      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX, Math.min(workBottom + 12, secBottom));
+    }
+
+    // 熔深标注（贴熔池左侧边）
+    const dimX = Math.max(cx - halfW - 5, w * 0.16);
     wobCtx.strokeStyle = 'rgba(200,210,225,0.7)';
     wobCtx.lineWidth = 1;
     wobCtx.beginPath();
@@ -3667,11 +3795,14 @@
     wobCtx.stroke();
     wobCtx.fillStyle = 'rgba(255,200,120,0.9)';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
-    wobCtx.textAlign = 'left';
-    wobCtx.fillText('熔深 ' + fmt(r.depth * grow, 2) + ' mm', dimX + 8, Math.max(workTop + depthPx / 2 + 3, workTop + 10));
+    const depthLabel = '熔深 ' + fmt(depthMm, 2) + ' mm';
+    const labelW = depthLabel.length * 5.6 + 4;
+    const leftOk = (dimX - 6 - labelW) > 4;
+    wobCtx.textAlign = leftOk ? 'right' : 'left';
+    wobCtx.fillText(depthLabel, leftOk ? dimX - 6 : dimX + 6, Math.max(workTop + depthPx / 2 + 3, workTop + 10));
 
     // 熔宽标注（底部，位于容器标签留白区上方）
-    const wY = workTop + availH * 0.76;
+    const wY = workTop + workH * 0.8;
     const wL = cx - halfW, wR = cx + halfW;
     wobCtx.strokeStyle = 'rgba(200,210,225,0.7)';
     wobCtx.beginPath();
@@ -3686,11 +3817,19 @@
     wobCtx.textAlign = 'center';
     wobCtx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', cx, wY + 14);
 
-    // 标题
+    // 熔穿提示
+    if (isBurnThrough) {
+      wobCtx.fillStyle = 'rgba(255,120,80,0.95)';
+      wobCtx.font = '9px "SF Mono", Consolas, monospace';
+      wobCtx.textAlign = 'right';
+      wobCtx.fillText('熔穿', w - 14, workTop + 8);
+    }
+
+    // 标题（置于母材表面线上方留白处，与熔池/标注不重叠）
     wobCtx.fillStyle = 'rgba(255,255,255,0.4)';
     wobCtx.textAlign = 'left';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
-    wobCtx.fillText('截面 · 熔深/熔宽动态演化', w * 0.04, workTop - 6);
+    wobCtx.fillText('截面 · 熔深/熔宽动态演化', w * 0.5 + 12, workTop - 6);
   }
 
   function wobLoop(ts) {
@@ -3743,7 +3882,23 @@
   bindWobPair('wobWidth', 'wobWidthNum');
   bindWobPair('wobPitch', 'wobPitchNum');
   bindWobPair('wobV', 'wobVNum');
+  bindWobPair('wobThickness', 'wobThicknessNum');
   $('wobType').addEventListener('change', () => { updateWob(); if (wobCtx) drawWob(); });
+  // 测试专区材料切换：更新计算与母材颜色
+  $('wobMaterial').addEventListener('change', (e) => {
+    const mat = MATERIALS[e.target.value];
+    if (mat) {
+      updateWob();
+      if (wobCtx) drawWob();
+      const lgDot = document.querySelector('#view-lib .wc-legend .lg:nth-child(3) .dot');
+      if (lgDot) {
+        const c = baseColor(mat.group);
+        lgDot.style.background = c;
+        lgDot.style.borderColor = c;
+      }
+      showToast('已应用 ' + mat.name + ' 材料参数');
+    }
+  });
 
   // ===== 高能激光焊接仿真 =====
   // 离焦-熔深模型（经验模型）：
