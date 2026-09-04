@@ -510,58 +510,7 @@
     color: var(--cyan);
   }
 
-  /* ===== 参数库 ===== */
-  .lib-section { margin-bottom: 14px; }
-  .lib-section-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-2);
-    margin-bottom: 8px;
-    padding-left: 4px;
-  }
-  .lib-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .lib-item {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .lib-item:active {
-    border-color: var(--laser);
-    background: var(--card-2);
-  }
-  .lib-item .li-name {
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .lib-item .li-spec {
-    font-size: 12px;
-    color: var(--text-3);
-    margin-top: 2px;
-    font-family: "SF Mono", "Consolas", monospace;
-  }
-  .lib-item .li-arrow {
-    color: var(--text-3);
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-  .lib-item .li-badge {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    background: rgba(0,188,212,0.15);
-    color: var(--cyan);
-    font-weight: 600;
-  }
+  /* ===== 测试专区（摆动焊接仿真）复用焊接面板样式 ===== */
 
   .toast {
     position: fixed;
@@ -1879,21 +1828,149 @@
       </div>
     </section>
 
-    <!-- ===== 视图3：参数库 ===== -->
+    <!-- ===== 视图3：测试专区（环形光斑摆动焊接仿真） ===== -->
     <section class="view" id="view-lib">
-      <div class="lib-section">
-        <div class="lib-section-title">常用光纤</div>
-        <div class="lib-list" id="fiberList"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="weld-mode-badge keyhole">环形光斑 · 摆动焊接</span>
+        <span style="font-size:11px; color:var(--text-3);">摆动熔深 · 熔宽仿真</span>
       </div>
-      <div class="lib-section">
-        <div class="lib-section-title">常用准直镜</div>
-        <div class="lib-list" id="colList"></div>
+
+      <div class="weld-hero">
+        <div class="wh-left">
+          <div class="wh-label">预估熔深</div>
+          <div class="wh-value"><span id="wobDepth">0</span><span class="unit"> mm</span></div>
+        </div>
+        <div class="wh-right">
+          <div class="wh-sub-label">预估熔宽</div>
+          <div class="wh-sub"><span id="wobWidth">0</span> mm</div>
+        </div>
       </div>
-      <div class="lib-section">
-        <div class="lib-section-title">常用聚焦镜 / 场镜</div>
-        <div class="lib-list" id="focList"></div>
+
+      <!-- 环形光斑（双光束）参数 -->
+      <div class="card">
+        <div class="card-title">环形光斑参数（双光束）</div>
+        <div class="input-group">
+          <div class="input-label"><span>外环芯径 D_ring</span><span class="unit">μm</span></div>
+          <div class="input-row">
+            <input type="range" id="wobRingDia" min="50" max="600" value="100" step="10">
+            <input type="number" id="wobRingDiaNum" value="100" min="20" max="2000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>内芯芯径 D_core</span><span class="unit">μm</span></div>
+          <div class="input-row">
+            <input type="range" id="wobCoreDia" min="20" max="200" value="50" step="5">
+            <input type="number" id="wobCoreDiaNum" value="50" min="10" max="800">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>外环功率 P_ring</span><span class="unit">W</span></div>
+          <div class="input-row">
+            <input type="range" id="wobRingP" min="0" max="6000" value="1500" step="50">
+            <input type="number" id="wobRingPNum" value="1500" min="0" max="20000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>内芯功率 P_core</span><span class="unit">W</span></div>
+          <div class="input-row">
+            <input type="range" id="wobCoreP" min="0" max="6000" value="1500" step="50">
+            <input type="number" id="wobCorePNum" value="1500" min="0" max="20000">
+          </div>
+        </div>
       </div>
-      <div class="hint">点击任意参数可快速填入计算器。</div>
+
+      <!-- 摆动焊接参数 -->
+      <div class="card">
+        <div class="card-title">摆动焊接参数</div>
+        <div class="input-group">
+          <div class="input-label"><span>摆动类型</span><span class="unit">轨迹示意</span></div>
+          <select class="weld-material-select" id="wobType">
+            <option value="sine" selected>1. 正弦摆动</option>
+            <option value="spiral">2. 螺旋摆动</option>
+            <option value="zigzag">3. 弓字摆动</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>离焦量 Δf</span><span class="unit">mm（负=焦点深入工件）</span></div>
+          <div class="input-row">
+            <input type="range" id="wobDefocus" min="-5" max="5" value="0" step="0.5">
+            <input type="number" id="wobDefocusNum" value="0" min="-10" max="10" step="0.5">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>摆动宽度 B</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="wobWidth" min="0" max="5" value="1.2" step="0.1">
+            <input type="number" id="wobWidthNum" value="1.2" min="0" max="10" step="0.1">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>摆动间距 p</span><span class="unit">mm/周</span></div>
+          <div class="input-row">
+            <input type="range" id="wobPitch" min="0.1" max="2" value="0.5" step="0.1">
+            <input type="number" id="wobPitchNum" value="0.5" min="0.05" max="5" step="0.05">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>几何焊接速度 V</span><span class="unit">mm/s</span></div>
+          <div class="input-row">
+            <input type="range" id="wobV" min="5" max="300" value="80" step="5">
+            <input type="number" id="wobVNum" value="80" min="1" max="1000">
+          </div>
+        </div>
+      </div>
+
+      <!-- 熔深 / 熔宽动态演化 -->
+      <div class="weld-canvas-wrap">
+        <span class="wc-tag">WOBBLE WELDING SIMULATION · 熔深/熔宽动态演化</span>
+        <canvas id="wobCanvas"></canvas>
+        <div class="wc-legend">
+          <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+          <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
+          <span class="lg"><span class="dot" style="background:#1a2340;"></span>母材</span>
+          <span class="lg"><span class="dot" style="background:#00bcd4;"></span>摆动光束</span>
+        </div>
+      </div>
+
+      <!-- 动画控制 -->
+      <div class="weld-controls">
+        <button class="weld-btn" id="wobPlay">暂停</button>
+        <button class="weld-btn secondary" id="wobReset">重置</button>
+      </div>
+
+      <!-- 计算结果 -->
+      <div class="card">
+        <div class="card-title">计算结果</div>
+        <div class="weld-defocus-grid">
+          <div class="wd-item2">
+            <span class="wd2-label">摆动频率 f</span>
+            <span class="wd2-value" id="wobFreq">0 Hz</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">内芯光斑（焦点）</span>
+            <span class="wd2-value" id="wobSpotCore">0 μm</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">外环光斑（焦点）</span>
+            <span class="wd2-value" id="wobSpotRing">0 μm</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">深宽比 h/W</span>
+            <span class="wd2-value" id="wobRatio">—</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">内芯功率密度</span>
+            <span class="wd2-value" id="wobDensity">0</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">总能量线密度</span>
+            <span class="wd2-value" id="wobHeat">0 J/mm</span>
+          </div>
+        </div>
+        <div class="hint" style="margin-top:8px;">
+          模型依据（半经验工程模型）：环形光斑（ARM）双光束激光摆动焊接——内芯高能量密度决定熔深，外环与摆动宽度主导熔宽；随摆动幅度增大熔深减小、熔宽增大（焊接学报《光束摆动对Ti60合金激光焊能量分布及焊缝成形的影响》、焊接《光纤激光工艺参数对Q235钢穿透点焊缝形状和尺寸的影响》等）。光学假设：准直100mm/聚焦200mm（放大2×）、λ=1080nm、碳钢 η=0.7。结果供工艺预研参考，请以实测为准。
+        </div>
+      </div>
     </section>
 
     <!-- ===== 视图4：高能激光焊接仿真 ===== -->
@@ -2279,10 +2356,10 @@
     </button>
     <button class="tab" data-view="lib">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
-      <span>参数库</span>
+      <span>测试专区</span>
     </button>
     <button class="tab" data-view="toolbox">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2440,12 +2517,12 @@
   <div class="update-modal" id="toolboxLockModal">
     <div class="update-card" style="text-align:center;">
       <h3 style="justify-content:center; color:var(--laser-2);">测试中暂不开放！</h3>
-      <div class="up-sub" style="margin-top:6px;">工具箱功能测试中，请输入访问密码后进入</div>
+      <div class="up-sub" style="margin-top:6px;" id="lockSub">请输入访问密码后进入</div>
       <input type="password" id="toolboxPwd" class="lock-input" placeholder="请输入访问密码" autocomplete="off">
       <div class="lock-err" id="lockErr"></div>
       <div style="display:flex; gap:10px; margin-top:14px;">
         <button class="up-btn" id="lockCancel" style="background:var(--bg-2); color:var(--text-2); border:1px solid var(--border); flex:1;">取消</button>
-        <button class="up-btn" id="lockConfirm" style="flex:1;">进入工具箱</button>
+        <button class="up-btn" id="lockConfirm" style="flex:1;">进入专区</button>
       </div>
     </div>
   </div>
@@ -2813,79 +2890,93 @@
   bindInput('defocus', 'defocusNum', 'defocus');
 
   // ===== Tab 切换 =====
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      const view = tab.dataset.view;
-      // 工具箱受密码保护：未解锁时不切换视图，弹出访问密码
-      if (view === 'toolbox' && !isToolboxUnlocked()) {
-        lockToolbox();
-        return;
-      }
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      tab.classList.add('active');
-      $('view-' + view).classList.add('active');
-      $('content').scrollTop = 0;
-      if (view === 'sim') {
-        resizeCanvas();
-        if (!simAnimId) startSim();
-      }
-      if (view === 'weld') {
-        resizeWeldCanvas();
-        if (!weldAnimId) startWeldSim();
-      }
-      if (view === 'toolbox') {
-        const cur = toolSelect ? toolSelect.value : 'focus';
-        if (cur === 'focus') { resizeTpCanvas(); drawTpFit(); }
-        else if (cur === 'accel') { resizeAccCanvas(); calcAccel(); }
-        else if (cur === 'spacing') { resizeSpCanvas(); calcSpacing(); }
-      }
-    });
-  });
+  // 专区访问密码（测试期，统一密码 admin123，可在此修改）
+  const ZONE_PASSWORD = 'admin123';
+  // 受密码保护的专区（lib=测试专区，toolbox=工具箱）
+  const ZONE_KEYS = { lib: 'fslc_lib_unlock', toolbox: 'fslc_toolbox_unlock' };
+  const ZONE_SUB = {
+    lib: '测试专区功能测试中，请输入访问密码后进入',
+    toolbox: '工具箱功能测试中，请输入访问密码后进入'
+  };
+  let pendingZone = null; // {key, enter}
 
-  // ===== 工具箱访问密码锁（测试期） =====
-  // 访问密码：默认 admin123，可在此修改
-  const TOOLBOX_PASSWORD = 'admin123';
-  function isToolboxUnlocked() {
-    try { return sessionStorage.getItem('fslc_toolbox_unlock') === '1'; } catch (e) { return false; }
+  function isZoneUnlocked(view) {
+    const key = ZONE_KEYS[view];
+    if (!key) return true;
+    try { return sessionStorage.getItem(key) === '1'; } catch (e) { return false; }
   }
-  function lockToolbox() {
+  function openZoneLock(view, enterFn) {
+    pendingZone = { key: ZONE_KEYS[view], enter: enterFn };
+    $('lockSub').textContent = ZONE_SUB[view] || '请输入访问密码后进入';
     $('lockErr').textContent = '';
     $('toolboxPwd').value = '';
     $('toolboxLockModal').classList.add('show');
     setTimeout(() => { const p = $('toolboxPwd'); if (p) p.focus(); }, 80);
   }
-  function unlockToolbox() {
+  function confirmZoneUnlock() {
+    if (!pendingZone) return;
     const pwd = $('toolboxPwd').value;
-    if (pwd === TOOLBOX_PASSWORD) {
+    if (pwd === ZONE_PASSWORD) {
       $('toolboxLockModal').classList.remove('show');
-      try { sessionStorage.setItem('fslc_toolbox_unlock', '1'); } catch (e) {}
-      enterToolbox();
+      try { sessionStorage.setItem(pendingZone.key, '1'); } catch (e) {}
+      const fn = pendingZone.enter;
+      pendingZone = null;
+      if (fn) fn();
     } else {
       $('lockErr').textContent = '密码错误，请重试';
     }
   }
-  function enterToolbox() {
+
+  // 统一进入视图（供密码解锁成功后调用）
+  function enterView(view) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    const tb = document.querySelector('.tab[data-view=toolbox]');
+    const tb = document.querySelector('.tab[data-view=' + view + ']');
     if (tb) tb.classList.add('active');
-    $('view-toolbox').classList.add('active');
+    $('view-' + view).classList.add('active');
     $('content').scrollTop = 0;
-    const cur = toolSelect ? toolSelect.value : 'focus';
-    if (cur === 'focus') { resizeTpCanvas(); drawTpFit(); }
-    else if (cur === 'accel') { resizeAccCanvas(); calcAccel(); }
-    else if (cur === 'spacing') { resizeSpCanvas(); calcSpacing(); }
+    if (view === 'sim') {
+      resizeCanvas();
+      if (!simAnimId) startSim();
+    }
+    if (view === 'weld') {
+      resizeWeldCanvas();
+      if (!weldAnimId) startWeldSim();
+    }
+    if (view === 'lib') {
+      resizeWobCanvas();
+      if (!wobAnimId) startWobSim();
+    }
+    if (view === 'toolbox') {
+      const cur = toolSelect ? toolSelect.value : 'focus';
+      if (cur === 'focus') { resizeTpCanvas(); drawTpFit(); }
+      else if (cur === 'accel') { resizeAccCanvas(); calcAccel(); }
+      else if (cur === 'spacing') { resizeSpCanvas(); calcSpacing(); }
+    }
   }
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const view = tab.dataset.view;
+      // 测试专区 / 工具箱受密码保护：未解锁时不切换视图，弹出访问密码
+      if (ZONE_KEYS[view] && !isZoneUnlocked(view)) {
+        openZoneLock(view, () => enterView(view));
+        return;
+      }
+      enterView(view);
+    });
+  });
+
+  // ===== 专区访问密码锁（测试期） =====
   const lockConfirmBtn = $('lockConfirm');
-  if (lockConfirmBtn) lockConfirmBtn.addEventListener('click', unlockToolbox);
+  if (lockConfirmBtn) lockConfirmBtn.addEventListener('click', confirmZoneUnlock);
   const lockCancelBtn = $('lockCancel');
   if (lockCancelBtn) lockCancelBtn.addEventListener('click', () => $('toolboxLockModal').classList.remove('show'));
   $('toolboxLockModal').addEventListener('click', (e) => {
     if (e.target.id === 'toolboxLockModal') $('toolboxLockModal').classList.remove('show');
   });
   const toolboxPwdEl = $('toolboxPwd');
-  if (toolboxPwdEl) toolboxPwdEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockToolbox(); });
+  if (toolboxPwdEl) toolboxPwdEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmZoneUnlock(); });
 
   // ===== 光路模拟 Canvas =====
   const canvas = $('simCanvas');
@@ -3301,96 +3392,358 @@
     showToast('已开始保存图片');
   });
 
-  // ===== 参数库 =====
-  const fiberData = [
-    { name: '标准通信光纤', spec: '芯径 9μm / NA 0.14', dia: 9, na: 0.14 },
-    { name: '小芯径激光光纤', spec: '芯径 25μm / NA 0.06', dia: 25, na: 0.06 },
-    { name: '常用激光光纤', spec: '芯径 50μm / NA 0.12', dia: 50, na: 0.12 },
-    { name: '中芯径激光光纤', spec: '芯径 100μm / NA 0.12', dia: 100, na: 0.12 },
-    { name: '大芯径激光光纤', spec: '芯径 200μm / NA 0.22', dia: 200, na: 0.22 },
-    { name: '超大芯径光纤', spec: '芯径 400μm / NA 0.22', dia: 400, na: 0.22 },
-    { name: '高功率传输光纤', spec: '芯径 600μm / NA 0.22', dia: 600, na: 0.22 }
-  ];
+  // ===== 测试专区：环形光斑摆动焊接熔深/熔宽仿真 =====
+  // 光学假设：准直 fc=100mm、聚焦 ff=200mm → 放大比 M=2；波长 λ=1080nm
+  const WOB_OPT = { M: 2, LAMBDA_UM: 1080 };
 
-  const colData = [
-    { name: '短焦准直镜', spec: '焦距 50mm', f: 50 },
-    { name: '标准准直镜', spec: '焦距 75mm', f: 75 },
-    { name: '常用准直镜', spec: '焦距 100mm', f: 100 },
-    { name: '长焦准直镜', spec: '焦距 125mm', f: 125 },
-    { name: '长焦准直镜', spec: '焦距 150mm', f: 150 }
-  ];
+  // 光斑随离焦变化：d(z)=d0·sqrt(1+(z/zR)²)，zR=π·d0²/(4λ)
+  function wobSpotDefocus(d0Um, z) {
+    const d0Mm = d0Um / 1000;
+    const zR = Math.PI * d0Mm * d0Mm / (4 * (WOB_OPT.LAMBDA_UM / 1e6));
+    const dUm = d0Um * Math.sqrt(1 + Math.pow(z / zR, 2));
+    return { d0Um: d0Um, dUm: dUm, zR: zR };
+  }
 
-  const focData = [
-    { name: '短焦聚焦镜', spec: '焦距 120mm', f: 120 },
-    { name: '标准聚焦镜', spec: '焦距 150mm', f: 150 },
-    { name: '常用聚焦镜', spec: '焦距 200mm', f: 200 },
-    { name: '长焦聚焦镜', spec: '焦距 255mm (F-theta)', f: 255 },
-    { name: '长焦聚焦镜', spec: '焦距 300mm', f: 300 },
-    { name: '远心场镜', spec: '焦距 330mm (F-theta)', f: 330 }
-  ];
+  function wobRead() {
+    return {
+      ringDia: Math.max(Number($('wobRingDiaNum').value) || 100, 1),
+      coreDia: Math.max(Number($('wobCoreDiaNum').value) || 50, 1),
+      ringP: Math.max(Number($('wobRingPNum').value) || 0, 0),
+      coreP: Math.max(Number($('wobCorePNum').value) || 0, 0),
+      def: Number($('wobDefocusNum').value) || 0,
+      B: Math.max(Number($('wobWidthNum').value) || 0, 0),
+      pitch: Math.max(Number($('wobPitchNum').value) || 0.1, 0.05),
+      V: Math.max(Number($('wobVNum').value) || 1, 1),
+      type: $('wobType').value
+    };
+  }
 
-  function renderLib() {
-    const fiberList = $('fiberList');
-    fiberList.innerHTML = '';
-    fiberData.forEach(item => {
-      const el = document.createElement('div');
-      el.className = 'lib-item';
-      el.innerHTML = '<div><div class="li-name">' + item.name + '</div><div class="li-spec">' + item.spec + '</div></div><span class="li-arrow">›</span>';
-      el.addEventListener('click', () => {
-        setFiber(item.dia, item.na);
-        showToast('已填入：' + item.name);
-      });
-      fiberList.appendChild(el);
+  // 摆动焊接熔深/熔宽半经验模型：
+  // 熔深——内芯能量线密度驱动（P_core·η/v）^0.62 + 外环辅助，经离焦功率密度修正与摆动加宽修正；
+  // 熔宽——外环光斑 + 摆动宽度 B + 外环能量贡献。
+  // 依据：焊接学报《光束摆动对Ti60合金激光焊能量分布及焊缝成形的影响》（摆动幅值↑→正面熔宽↑、背面熔宽↓）、
+  //       焊接《光纤激光工艺参数对Q235钢穿透点焊缝形状和尺寸的影响》（摆动幅度↑→熔深↓、熔宽↑）等。
+  function wobCalculate() {
+    const p = wobRead();
+    const core = wobSpotDefocus(p.coreDia * WOB_OPT.M, p.def);
+    const ring = wobSpotDefocus(p.ringDia * WOB_OPT.M, p.def);
+    const f = p.V / p.pitch;
+    const eta = 0.7;
+    const E_core = p.coreP * eta / p.V;
+    const E_ring = p.ringP * eta / p.V;
+    // 熔深
+    const dCore = 0.35 * Math.pow(Math.max(E_core, 0), 0.62);
+    const dRingAux = 0.12 * Math.pow(Math.max(E_ring, 0), 0.5) * 0.35;
+    const fDef = Math.pow(core.d0Um / core.dUm, 1.6);
+    // 摆动加宽修正：B(mm) 相对内芯光斑 d_core(mm)，加宽越宽熔深越小
+    const fWob = Math.pow(1 / (1 + Math.pow(p.B / (core.dUm / 1000), 0.8)), 0.25);
+    const depth = Math.max((dCore + dRingAux) * fDef * fWob, 0);
+    // 熔宽
+    const dW = 0.18 * Math.pow(Math.max(E_ring, 0), 0.4);
+    const width = Math.max(ring.dUm / 1000 + p.B + dW, ring.dUm / 1000);
+    // 内芯功率密度 (W/cm²)
+    const rCm = (core.dUm / 2) / 10000;
+    const density = rCm > 0 ? p.coreP / (Math.PI * rCm * rCm) : 0;
+    const heatTotal = (p.coreP + p.ringP) * eta / p.V;
+    return {
+      depth: depth, width: width, f: f, core: core, ring: ring,
+      density: density, heatTotal: heatTotal, ratio: width > 0 ? depth / width : 0,
+      B: p.B, pitch: p.pitch, V: p.V, type: p.type, def: p.def,
+      E_core: E_core, E_ring: E_ring, fWob: fWob, fDef: fDef
+    };
+  }
+
+  function updateWob() {
+    const r = wobCalculate();
+    $('wobDepth').textContent = fmt(r.depth, 2);
+    $('wobWidth').textContent = fmt(r.width, 2);
+    $('wobFreq').textContent = fmt(r.f, 1) + ' Hz';
+    $('wobSpotCore').textContent = fmt(r.core.d0Um, 0) + ' μm';
+    $('wobSpotRing').textContent = fmt(r.ring.d0Um, 0) + ' μm';
+    $('wobRatio').textContent = fmt(r.ratio, 2);
+    $('wobDensity').textContent = fmtScientific(r.density);
+    $('wobHeat').textContent = fmt(r.heatTotal, 1) + ' J/mm';
+  }
+
+  // 摆动焊接动画 Canvas
+  const wobCanvas = $('wobCanvas');
+  const wobCtx = wobCanvas.getContext('2d');
+  let wobAnimId = null;
+  const wobState = { t: 0, running: true, speed: 1, _lt: 0 };
+
+  function resizeWobCanvas() {
+    const rect = wobCanvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    wobCanvas.width = rect.width * dpr;
+    wobCanvas.height = rect.height * dpr;
+    wobCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // 摆动轨迹归一化横向位移 [-1,1]（xmm=沿焊缝位置，pitch=每周期推进间距）
+  function wobTrackOffset(type, xmm, pitch) {
+    const p = Math.max(pitch, 0.05);
+    const ph = (xmm / p) % 1;
+    if (type === 'zigzag') {
+      // 弓字（三角波折线）：0→1→0→-1→0
+      return ph < 0.25 ? ph * 4 : ph < 0.75 ? 2 - ph * 4 : ph * 4 - 4;
+    }
+    // 正弦 / 螺旋（圆运动在焊缝平面投影均为正弦）
+    return Math.sin(2 * Math.PI * ph);
+  }
+
+  function drawWob() {
+    const rect = wobCanvas.parentElement.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    const r = wobCalculate();
+    wobCtx.clearRect(0, 0, w, h);
+    const topH = Math.max(h * 0.36, 56);
+    drawWobTrack(w, topH, r);
+    drawWobSection(w, topH, h - topH, r);
+  }
+
+  function drawWobTrack(w, topH, r) {
+    const padL = 30, padR = 16, padT = 14;
+    const tw = w - padL - padR;
+    const midY = topH * 0.5;
+    const viewMm = 8;
+    const pxPerMm = tw / viewMm;
+    const B = r.B;
+    // 摆动幅度像素上限：顶部预留标题区（34px），避免大摆动宽度时轨迹边界压到标题
+    const A = Math.min(B / 2 * pxPerMm, Math.max((topH - 34) / 2, 6));
+    const ph = (wobState.t / 3.2) % 1;
+    const beamMm = ph * viewMm;
+    const beamX = padL + beamMm * pxPerMm;
+
+    // 摆动宽度边界
+    wobCtx.strokeStyle = 'rgba(0,188,212,0.25)';
+    wobCtx.setLineDash([3, 3]);
+    wobCtx.beginPath();
+    wobCtx.moveTo(padL, midY - A);
+    wobCtx.lineTo(w - padR, midY - A);
+    wobCtx.moveTo(padL, midY + A);
+    wobCtx.lineTo(w - padR, midY + A);
+    wobCtx.stroke();
+    wobCtx.setLineDash([]);
+    wobCtx.fillStyle = 'rgba(0,188,212,0.65)';
+    wobCtx.font = '9px "SF Mono", Consolas, monospace';
+    // 摆动宽度标注置于右上角，与左上标题同行分居，避免与轨迹/标题重叠
+    wobCtx.textAlign = 'right';
+    wobCtx.fillText('摆动宽度 B=' + fmt(r.B, 2) + ' mm', w - padR, padT + 9);
+    // 间距标注置于轨迹下方右侧
+    wobCtx.fillText('间距 p=' + fmt(r.pitch, 2) + ' mm', w - padR, midY + A + 12);
+
+    // 已走轨迹
+    const N = 240;
+    const typeName = r.type === 'sine' ? '正弦' : r.type === 'spiral' ? '螺旋' : '弓字';
+    if (r.type === 'spiral') {
+      // 螺旋：点列（圆运动投影）
+      for (let i = 0; i <= N; i++) {
+        const xmm = (i / N) * beamMm;
+        const x = padL + (i / N) * beamMm * pxPerMm;
+        const y = midY + wobTrackOffset('sine', xmm, r.pitch) * A;
+        wobCtx.beginPath();
+        wobCtx.arc(x, y, 1.1, 0, Math.PI * 2);
+        wobCtx.fillStyle = 'rgba(0,188,212,0.85)';
+        wobCtx.fill();
+      }
+    } else {
+      wobCtx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const xmm = (i / N) * beamMm;
+        const x = padL + (i / N) * beamMm * pxPerMm;
+        const y = midY + wobTrackOffset(r.type, xmm, r.pitch) * A;
+        if (i === 0) wobCtx.moveTo(x, y);
+        else wobCtx.lineTo(x, y);
+      }
+      wobCtx.strokeStyle = 'rgba(0,188,212,0.9)';
+      wobCtx.lineWidth = 1.6;
+      wobCtx.stroke();
+    }
+
+    // 光束当前位置（外环+内芯）
+    const bx = beamX;
+    const by = midY + wobTrackOffset(r.type, beamMm, r.pitch) * A;
+    wobCtx.beginPath();
+    wobCtx.arc(bx, by, Math.max(A * 0.5, 3), 0, Math.PI * 2);
+    wobCtx.strokeStyle = 'rgba(0,188,212,0.95)';
+    wobCtx.lineWidth = 1.5;
+    wobCtx.stroke();
+    wobCtx.beginPath();
+    wobCtx.arc(bx, by, 1.8, 0, Math.PI * 2);
+    wobCtx.fillStyle = '#e0f7ff';
+    wobCtx.fill();
+
+    // 分割线 + 标题
+    wobCtx.strokeStyle = 'rgba(138,150,173,0.2)';
+    wobCtx.setLineDash([4, 4]);
+    wobCtx.beginPath();
+    wobCtx.moveTo(0, topH);
+    wobCtx.lineTo(w, topH);
+    wobCtx.stroke();
+    wobCtx.setLineDash([]);
+    wobCtx.fillStyle = 'rgba(255,255,255,0.4)';
+    wobCtx.font = '9px "SF Mono", Consolas, monospace';
+    wobCtx.textAlign = 'left';
+    wobCtx.fillText('顶视 · 摆动轨迹（' + typeName + ' · f=' + fmt(r.f, 1) + 'Hz）', padL, padT);
+  }
+
+  function drawWobSection(w, topY, secH, r) {
+    const workTop = topY + secH * 0.16;
+    // 底部预留 56px（wc-tag 28px + 图例 20px + 余量），避免熔宽标注与动态图被容器标签遮挡
+    const bottomPad = 56;
+    const availH = Math.max(secH - (workTop - topY) - bottomPad, 40);
+    const maxDim = Math.max(r.depth, r.width, 0.01);
+    let pxPerMm = availH * 0.72 / Math.max(maxDim, 0.01);
+    pxPerMm = Math.min(pxPerMm, availH * 0.62 / Math.max(r.depth, 0.01));
+    const grow = Math.min(wobState.t / 2.5, 1);
+    const depthPx = Math.min(r.depth * pxPerMm * grow, availH * 0.92);
+    const widthPx = Math.min(r.width * pxPerMm, w * 0.72);
+    const cx = w / 2;
+
+    // 母材
+    const grad = wobCtx.createLinearGradient(0, workTop, 0, workTop + availH);
+    grad.addColorStop(0, '#43536e');
+    grad.addColorStop(1, '#242f45');
+    wobCtx.fillStyle = grad;
+    wobCtx.fillRect(0, workTop, w, availH);
+    wobCtx.strokeStyle = 'rgba(138,150,173,0.5)';
+    wobCtx.lineWidth = 1;
+    wobCtx.beginPath();
+    wobCtx.moveTo(0, workTop);
+    wobCtx.lineTo(w, workTop);
+    wobCtx.stroke();
+
+    // U形熔池（顶宽=熔宽，深=熔深）
+    const poolBottom = workTop + depthPx;
+    const halfW = widthPx / 2;
+    const poolGrad = wobCtx.createLinearGradient(cx, workTop, cx, Math.max(poolBottom, workTop + 1));
+    poolGrad.addColorStop(0, 'rgba(255,120,60,0.95)');
+    poolGrad.addColorStop(0.5, 'rgba(255,87,34,0.9)');
+    poolGrad.addColorStop(1, 'rgba(200,50,20,0.7)');
+    wobCtx.fillStyle = poolGrad;
+    wobCtx.beginPath();
+    wobCtx.moveTo(cx - halfW, workTop);
+    wobCtx.quadraticCurveTo(cx - halfW * 0.75, workTop + depthPx * 0.5, cx - halfW * 0.3, poolBottom - depthPx * 0.1);
+    wobCtx.quadraticCurveTo(cx, poolBottom + depthPx * 0.03, cx + halfW * 0.3, poolBottom - depthPx * 0.1);
+    wobCtx.quadraticCurveTo(cx + halfW * 0.75, workTop + depthPx * 0.5, cx + halfW, workTop);
+    wobCtx.closePath();
+    wobCtx.fill();
+
+    // 匙孔（中心窄条）
+    if (depthPx > 2) {
+      const keyW = Math.max(widthPx * 0.08, 2);
+      const keyH = Math.max(depthPx * 0.8, 2);
+      const keyGrad = wobCtx.createLinearGradient(0, workTop, 0, workTop + keyH);
+      keyGrad.addColorStop(0, 'rgba(255,205,120,0.95)');
+      keyGrad.addColorStop(1, 'rgba(255,120,40,0.55)');
+      wobCtx.fillStyle = keyGrad;
+      wobCtx.fillRect(cx - keyW / 2, workTop, keyW, keyH);
+    }
+
+    // 环形光束（外环+内芯）沿表面摆动
+    const wobAmp = Math.min(r.B / 2 * pxPerMm, widthPx * 0.45);
+    const beamX = cx + wobTrackOffset(r.type, wobState.t, r.pitch) * wobAmp;
+    wobCtx.beginPath();
+    wobCtx.arc(beamX, workTop, Math.max(widthPx * 0.09, 2.5), 0, Math.PI * 2);
+    wobCtx.strokeStyle = 'rgba(0,188,212,0.9)';
+    wobCtx.lineWidth = 1.6;
+    wobCtx.stroke();
+    wobCtx.beginPath();
+    wobCtx.arc(beamX, workTop, Math.max(widthPx * 0.03, 1.5), 0, Math.PI * 2);
+    wobCtx.fillStyle = 'rgba(224,247,255,0.9)';
+    wobCtx.fill();
+
+    // 熔深标注（左侧）
+    const dimX = w * 0.08;
+    wobCtx.strokeStyle = 'rgba(200,210,225,0.7)';
+    wobCtx.lineWidth = 1;
+    wobCtx.beginPath();
+    wobCtx.moveTo(dimX, workTop);
+    wobCtx.lineTo(dimX, Math.max(poolBottom, workTop + 2));
+    wobCtx.moveTo(dimX - 4, workTop);
+    wobCtx.lineTo(dimX + 4, workTop);
+    wobCtx.moveTo(dimX - 4, Math.max(poolBottom, workTop + 2));
+    wobCtx.lineTo(dimX + 4, Math.max(poolBottom, workTop + 2));
+    wobCtx.stroke();
+    wobCtx.fillStyle = 'rgba(255,200,120,0.9)';
+    wobCtx.font = '9px "SF Mono", Consolas, monospace';
+    wobCtx.textAlign = 'left';
+    wobCtx.fillText('熔深 ' + fmt(r.depth * grow, 2) + ' mm', dimX + 8, Math.max(workTop + depthPx / 2 + 3, workTop + 10));
+
+    // 熔宽标注（底部，位于容器标签留白区上方）
+    const wY = workTop + availH * 0.76;
+    const wL = cx - halfW, wR = cx + halfW;
+    wobCtx.strokeStyle = 'rgba(200,210,225,0.7)';
+    wobCtx.beginPath();
+    wobCtx.moveTo(wL, wY);
+    wobCtx.lineTo(wR, wY);
+    wobCtx.moveTo(wL, wY - 4);
+    wobCtx.lineTo(wL, wY + 4);
+    wobCtx.moveTo(wR, wY - 4);
+    wobCtx.lineTo(wR, wY + 4);
+    wobCtx.stroke();
+    wobCtx.fillStyle = 'rgba(140,220,255,0.9)';
+    wobCtx.textAlign = 'center';
+    wobCtx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', cx, wY + 14);
+
+    // 标题
+    wobCtx.fillStyle = 'rgba(255,255,255,0.4)';
+    wobCtx.textAlign = 'left';
+    wobCtx.font = '9px "SF Mono", Consolas, monospace';
+    wobCtx.fillText('截面 · 熔深/熔宽动态演化', w * 0.04, workTop - 6);
+  }
+
+  function wobLoop(ts) {
+    if (!wobState.running) {
+      wobAnimId = requestAnimationFrame(wobLoop);
+      return;
+    }
+    const dt = Math.min((ts - (wobState._lt || ts)) / 16.67, 3) || 1;
+    wobState._lt = ts;
+    wobState.t += dt * 0.016 * wobState.speed;
+    drawWob();
+    wobAnimId = requestAnimationFrame(wobLoop);
+  }
+
+  function startWobSim() {
+    if (wobAnimId) return;
+    resizeWobCanvas();
+    wobState._lt = performance.now();
+    wobAnimId = requestAnimationFrame(wobLoop);
+  }
+
+  // 摆动控制
+  $('wobPlay').addEventListener('click', () => {
+    wobState.running = !wobState.running;
+    $('wobPlay').textContent = wobState.running ? '暂停' : '播放';
+  });
+  $('wobReset').addEventListener('click', () => { wobState.t = 0; });
+
+  // 输入绑定（滑动条与数字框联动）
+  function bindWobPair(sliderId, numId) {
+    const slider = $(sliderId), num = $(numId);
+    const sync = (v) => {
+      slider.value = v;
+      num.value = v;
+      updateWob();
+      if (wobCtx) drawWob();
+    };
+    slider.addEventListener('input', () => sync(parseFloat(slider.value)));
+    num.addEventListener('change', () => {
+      const v = parseFloat(num.value);
+      if (isNaN(v)) return;
+      sync(v);
     });
-
-    const colList = $('colList');
-    colList.innerHTML = '';
-    colData.forEach(item => {
-      const el = document.createElement('div');
-      el.className = 'lib-item';
-      el.innerHTML = '<div><div class="li-name">' + item.name + '</div><div class="li-spec">' + item.spec + '</div></div><span class="li-arrow">›</span>';
-      el.addEventListener('click', () => {
-        setFCol(item.f);
-        showToast('已填入准直镜：' + item.f + 'mm');
-      });
-      colList.appendChild(el);
-    });
-
-    const focList = $('focList');
-    focList.innerHTML = '';
-    focData.forEach(item => {
-      const el = document.createElement('div');
-      el.className = 'lib-item';
-      el.innerHTML = '<div><div class="li-name">' + item.name + '</div><div class="li-spec">' + item.spec + '</div></div><span class="li-arrow">›</span>';
-      el.addEventListener('click', () => {
-        setFFoc(item.f);
-        showToast('已填入聚焦镜：' + item.f + 'mm');
-      });
-      focList.appendChild(el);
-    });
   }
-
-  function setFiber(dia, na) {
-    state.fiberDia = dia;
-    state.fiberNA = na;
-    $('fiberDia').value = Math.min(Math.max(dia, 20), 600);
-    $('fiberDiaNum').value = dia;
-    $('fiberNA').value = Math.min(Math.max(na, 0.02), 0.3);
-    $('fiberNANum').value = na;
-    updateResults();
-  }
-  function setFCol(f) {
-    state.fCol = f;
-    $('fCol').value = Math.min(Math.max(f, 30), 200);
-    $('fColNum').value = f;
-    updateResults();
-  }
-  function setFFoc(f) {
-    state.fFoc = f;
-    $('fFoc').value = Math.min(Math.max(f, 50), 400);
-    $('fFocNum').value = f;
-    updateResults();
-  }
+  bindWobPair('wobRingDia', 'wobRingDiaNum');
+  bindWobPair('wobCoreDia', 'wobCoreDiaNum');
+  bindWobPair('wobRingP', 'wobRingPNum');
+  bindWobPair('wobCoreP', 'wobCorePNum');
+  bindWobPair('wobDefocus', 'wobDefocusNum');
+  bindWobPair('wobWidth', 'wobWidthNum');
+  bindWobPair('wobPitch', 'wobPitchNum');
+  bindWobPair('wobV', 'wobVNum');
+  $('wobType').addEventListener('change', () => { updateWob(); if (wobCtx) drawWob(); });
 
   // ===== 高能激光焊接仿真 =====
   // 离焦-熔深模型（经验模型）：
@@ -3986,9 +4339,9 @@
   }
 
   // ===== 初始化 =====
-  renderLib();
   updateResults();
   updateWeld();
+  updateWob();
 
   // 运行启动动画
   runSplash();
