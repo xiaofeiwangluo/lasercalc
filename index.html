@@ -1345,6 +1345,30 @@
   }
   .update-card .up-btn:active { opacity: 0.85; }
 
+  /* 工具箱访问密码锁 */
+  .lock-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+    padding: 11px 12px;
+    margin-top: 6px;
+    text-align: center;
+    letter-spacing: 2px;
+    outline: none;
+    font-family: inherit;
+  }
+  .lock-input:focus { border-color: var(--laser); }
+  .lock-err {
+    min-height: 18px;
+    font-size: 12px;
+    color: #ff8a80;
+    margin-top: 6px;
+  }
+
   /* 版本更新记录 */
   .changelog-card {
     padding: 24px 20px;
@@ -2412,6 +2436,20 @@
     </div>
   </div>
 
+  <!-- 工具箱访问密码锁 -->
+  <div class="update-modal" id="toolboxLockModal">
+    <div class="update-card" style="text-align:center;">
+      <h3 style="justify-content:center; color:var(--laser-2);">测试中暂不开放！</h3>
+      <div class="up-sub" style="margin-top:6px;">工具箱功能测试中，请输入访问密码后进入</div>
+      <input type="password" id="toolboxPwd" class="lock-input" placeholder="请输入访问密码" autocomplete="off">
+      <div class="lock-err" id="lockErr"></div>
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="up-btn" id="lockCancel" style="background:var(--bg-2); color:var(--text-2); border:1px solid var(--border); flex:1;">取消</button>
+        <button class="up-btn" id="lockConfirm" style="flex:1;">进入工具箱</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 安装提示横幅 -->
   <div class="install-banner" id="installBanner">
     <div class="ib-title">
@@ -2777,10 +2815,15 @@
   // ===== Tab 切换 =====
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
+      const view = tab.dataset.view;
+      // 工具箱受密码保护：未解锁时不切换视图，弹出访问密码
+      if (view === 'toolbox' && !isToolboxUnlocked()) {
+        lockToolbox();
+        return;
+      }
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       tab.classList.add('active');
-      const view = tab.dataset.view;
       $('view-' + view).classList.add('active');
       $('content').scrollTop = 0;
       if (view === 'sim') {
@@ -2799,6 +2842,50 @@
       }
     });
   });
+
+  // ===== 工具箱访问密码锁（测试期） =====
+  // 访问密码：默认 199693，可在此修改
+  const TOOLBOX_PASSWORD = '199693';
+  function isToolboxUnlocked() {
+    try { return sessionStorage.getItem('fslc_toolbox_unlock') === '1'; } catch (e) { return false; }
+  }
+  function lockToolbox() {
+    $('lockErr').textContent = '';
+    $('toolboxPwd').value = '';
+    $('toolboxLockModal').classList.add('show');
+    setTimeout(() => { const p = $('toolboxPwd'); if (p) p.focus(); }, 80);
+  }
+  function unlockToolbox() {
+    const pwd = $('toolboxPwd').value;
+    if (pwd === TOOLBOX_PASSWORD) {
+      $('toolboxLockModal').classList.remove('show');
+      try { sessionStorage.setItem('fslc_toolbox_unlock', '1'); } catch (e) {}
+      enterToolbox();
+    } else {
+      $('lockErr').textContent = '密码错误，请重试';
+    }
+  }
+  function enterToolbox() {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const tb = document.querySelector('.tab[data-view=toolbox]');
+    if (tb) tb.classList.add('active');
+    $('view-toolbox').classList.add('active');
+    $('content').scrollTop = 0;
+    const cur = toolSelect ? toolSelect.value : 'focus';
+    if (cur === 'focus') { resizeTpCanvas(); drawTpFit(); }
+    else if (cur === 'accel') { resizeAccCanvas(); calcAccel(); }
+    else if (cur === 'spacing') { resizeSpCanvas(); calcSpacing(); }
+  }
+  const lockConfirmBtn = $('lockConfirm');
+  if (lockConfirmBtn) lockConfirmBtn.addEventListener('click', unlockToolbox);
+  const lockCancelBtn = $('lockCancel');
+  if (lockCancelBtn) lockCancelBtn.addEventListener('click', () => $('toolboxLockModal').classList.remove('show'));
+  $('toolboxLockModal').addEventListener('click', (e) => {
+    if (e.target.id === 'toolboxLockModal') $('toolboxLockModal').classList.remove('show');
+  });
+  const toolboxPwdEl = $('toolboxPwd');
+  if (toolboxPwdEl) toolboxPwdEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockToolbox(); });
 
   // ===== 光路模拟 Canvas =====
   const canvas = $('simCanvas');
