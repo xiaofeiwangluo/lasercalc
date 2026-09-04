@@ -1552,6 +1552,48 @@
   .tr-item .tr-value { font-size: 16px; font-weight: 700; color: var(--laser); }
   .tr-item .tr-value.small { font-size: 13px; color: var(--cyan); }
 
+  /* ===== 工具箱 · 下拉菜单 & 工具面板 ===== */
+  .tool-menu {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .tool-menu-label {
+    font-size: 12px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  #toolSelect {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-1);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a96ad' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  #toolSelect:focus { border-color: var(--laser); }
+  .tool-panel { display: none; }
+  .tool-panel.active { display: block; }
+  #accCanvas, #spCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
 </style>
 </head>
 <body>
@@ -1580,7 +1622,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.2</div>
+    <div class="splash-version">v1.4.4</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2038,45 +2080,140 @@
       </div>
     </section>
 
-    <!-- ===== 视图5：工具箱 · 打焦点记录 ===== -->
+    <!-- ===== 视图5：工具箱 ===== -->
     <section class="view" id="view-toolbox">
-      <div class="card">
-        <div class="card-title">打焦点记录 · 0 离焦坐标推断</div>
-        <div class="hint" style="margin-bottom:12px;">
-          在多个机械坐标高度分别用激光在氧化铝板上打点，用显微镜测量各点的实际焦点大小；焦点直径最小的位置即为焦点所在。通过多组数据（默认 10 组，数量可自定义）拟合光斑-离焦抛物线求最小值点，再扣除氧化铝板厚度，即得排除板厚后的 0 离焦坐标。
-        </div>
-        <div class="input-group">
-          <div class="input-label"><span>氧化铝板厚度</span><span class="unit">mm（手动输入）</span></div>
-          <div class="input-row">
-            <input type="number" id="tpThick" value="2" min="0.1" max="50" step="0.1" style="flex:1;">
+      <!-- 工具下拉菜单 -->
+      <div class="tool-menu">
+        <div class="tool-menu-label">选择工具</div>
+        <select id="toolSelect">
+          <option value="focus">打焦点记录 · 0 离焦坐标推断</option>
+          <option value="accel">加速距离计算 · 焊接运动分析</option>
+          <option value="spacing">点间距频率计算 · 脉冲焊接</option>
+        </select>
+      </div>
+
+      <!-- 工具A：打焦点记录 -->
+      <div class="tool-panel active" id="tool-focus">
+        <div class="card">
+          <div class="card-title">打焦点记录 · 0 离焦坐标推断</div>
+          <div class="hint" style="margin-bottom:12px;">
+            在多个机械坐标高度分别用激光在氧化铝板上打点，用显微镜测量各点的实际焦点大小；焦点直径最小的位置即为焦点所在。通过多组数据（默认 10 组，数量可自定义）拟合光斑-离焦抛物线求最小值点，再扣除氧化铝板厚度，即得排除板厚后的 0 离焦坐标。
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>氧化铝板厚度</span><span class="unit">mm（手动输入）</span></div>
+            <div class="input-row">
+              <input type="number" id="tpThick" value="2" min="0.1" max="50" step="0.1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>机械坐标数量</span><span class="unit">组（可自定义，最少 3 组）</span></div>
+            <div class="input-row">
+              <input type="number" id="tpCount" value="10" min="3" max="30" step="1" style="flex:1;">
+              <button id="tpApply" style="background:var(--bg-2);color:var(--text-2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;">生成</button>
+            </div>
+          </div>
+          <div class="tp-table">
+            <div class="tp-head">
+              <span>#</span><span>机械坐标 Z (mm)</span><span>显微镜焦点大小 (μm)</span>
+            </div>
+            <div id="tpRows"></div>
+          </div>
+          <div class="tp-actions">
+            <button id="tpCalc">计算 0 离焦坐标</button>
+            <button class="secondary" id="tpDemo">填入示例数据</button>
+            <button class="secondary" id="tpClear">清空</button>
           </div>
         </div>
-        <div class="input-group">
-          <div class="input-label"><span>机械坐标数量</span><span class="unit">组（可自定义，最少 3 组）</span></div>
-          <div class="input-row">
-            <input type="number" id="tpCount" value="10" min="3" max="30" step="1" style="flex:1;">
-            <button id="tpApply" style="background:var(--bg-2);color:var(--text-2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;">生成</button>
+
+        <div class="card">
+          <div class="card-title">拟合演示图</div>
+          <div class="tp-canvas-wrap">
+            <canvas id="tpCanvas"></canvas>
           </div>
-        </div>
-        <div class="tp-table">
-          <div class="tp-head">
-            <span>#</span><span>机械坐标 Z (mm)</span><span>显微镜焦点大小 (μm)</span>
-          </div>
-          <div id="tpRows"></div>
-        </div>
-        <div class="tp-actions">
-          <button id="tpCalc">计算 0 离焦坐标</button>
-          <button class="secondary" id="tpDemo">填入示例数据</button>
-          <button class="secondary" id="tpClear">清空</button>
+          <div class="tp-results" id="tpResults"></div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title">拟合演示图</div>
-        <div class="tp-canvas-wrap">
-          <canvas id="tpCanvas"></canvas>
+      <!-- 工具B：加速距离计算 -->
+      <div class="tool-panel" id="tool-accel">
+        <div class="card">
+          <div class="card-title">加速距离计算 · 焊接运动分析</div>
+          <div class="hint" style="margin-bottom:12px;">
+            激光焊接头从静止匀加速到设定焊接速度需要一段加速行程（Sa = v²/2a），该行程内热输入集中、易导致起焊过熔；行程末端还需匀减速停止（Sd = v²/2d）。本工具按「匀加速 → 匀速 → 匀减速」模型分析完整运动过程；加速度、减速度、焊接速度、焊接距离、焊接时间均可手动设置，修改任意一项自动联动重算。
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>加速度 a</span><span class="unit">mm/s²</span></div>
+            <div class="input-row">
+              <input type="number" id="accA" value="2000" min="1" step="1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>减速度 d</span><span class="unit">mm/s²</span></div>
+            <div class="input-row">
+              <input type="number" id="accD" value="2000" min="1" step="1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接速度 v</span><span class="unit">mm/s</span></div>
+            <div class="input-row">
+              <input type="number" id="accV" value="80" min="0.1" step="0.1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接距离 L</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="number" id="accL" value="200" min="0.1" step="0.1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接时间 T</span><span class="unit">s（手动修改将反向联动焊接距离）</span></div>
+            <div class="input-row">
+              <input type="number" id="accT" value="2.65" min="0.001" step="0.01" style="flex:1;">
+            </div>
+          </div>
+          <div class="tp-canvas-wrap" style="aspect-ratio:16/9;">
+            <canvas id="accCanvas"></canvas>
+          </div>
+          <div class="tp-results" id="accResults"></div>
         </div>
-        <div class="tp-results" id="tpResults"></div>
+      </div>
+
+      <!-- 工具C：点间距频率计算 -->
+      <div class="tool-panel" id="tool-spacing">
+        <div class="card">
+          <div class="card-title">点间距频率计算 · 脉冲焊接</div>
+          <div class="hint" style="margin-bottom:12px;">
+            脉冲激光焊接中，焊接速度 v、脉冲频率 f 与点间距 d 满足 f = v / d。输入焊接速度、焊接距离、加速度与目标点间距，自动计算所需脉冲频率并给出焊缝点分布与速度-时间曲线的动态示意。
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接速度 v</span><span class="unit">mm/s</span></div>
+            <div class="input-row">
+              <input type="number" id="spV" value="80" min="0.1" step="0.1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接距离 L</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="number" id="spL" value="200" min="0.1" step="0.1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>加速度 a</span><span class="unit">mm/s²</span></div>
+            <div class="input-row">
+              <input type="number" id="spA" value="2000" min="1" step="1" style="flex:1;">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>点间距 d</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="number" id="spD" value="0.5" min="0.01" step="0.01" style="flex:1;">
+            </div>
+          </div>
+          <div class="tp-canvas-wrap" style="aspect-ratio:16/9;">
+            <canvas id="spCanvas"></canvas>
+          </div>
+          <div class="tp-results" id="spResults"></div>
+        </div>
       </div>
     </section>
 
@@ -2149,7 +2286,7 @@
         </svg>
       </div>
       <div class="about-app-name">光纤激光光斑计算器</div>
-      <div class="about-version">Version 1.4.3</div>
+      <div class="about-version">Version 1.4.4</div>
       <div class="about-divider"></div>
       <div class="about-row">
         <span class="ar-label">发布人</span>
@@ -2157,7 +2294,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.3</span>
+        <span class="ar-value">v1.4.4</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -2173,11 +2310,19 @@
   <!-- 首次登录：v1.4.3 更新说明 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.3</span></h3>
-      <div class="up-sub">修复已知问题</div>
+      <h3>版本更新 <span class="vtag">v1.4.4</span></h3>
+      <div class="up-sub">更新的工具箱</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">修复已知问题</b>：优化熔深动态演化显示效果与计算一致性，提升使用体验。</span>
+        <span><b style="color:var(--text)">工具箱新增工具下拉菜单</b>：可在「打焦点记录」「加速距离计算」「点间距频率计算」三个工具间一键切换。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">2</span>
+        <span><b style="color:var(--text)">新增加速距离计算 · 焊接运动分析</b>：加速度、减速度、焊接速度、焊接距离、焊接时间均可手动设置，按「匀加速→匀速→匀减速」模型计算加速/匀速/减速的距离与时间，并附动态速度-时间曲线。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">3</span>
+        <span><b style="color:var(--text)">新增点间距频率计算 · 脉冲焊接</b>：输入焊接速度、焊接距离、加速度与点间距，自动计算脉冲频率 f=v/d 与焊缝点数，附焊缝点分布与速度-时间曲线动态示意。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -2197,6 +2342,14 @@
         <ul class="cl-list">
           <li>激光填丝焊接熔深计算及熔深动态演化<span style="font-size:10px;color:var(--text-3);margin-left:4px">（技术支持：张飞）</span></li>
           <li>环形光斑光纤激光器焊接熔深计算及熔深动态演化</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.4</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>工具箱新增工具下拉菜单：打焦点记录 / 加速距离计算 / 点间距频率计算一键切换。</li>
+          <li>新增「加速距离计算 · 焊接运动分析」：加速度、减速度、焊接速度、焊接距离、焊接时间均可手动设置，按匀加速→匀速→匀减速模型计算加速/匀速/减速距离与时间，附动态速度-时间曲线。</li>
+          <li>新增「点间距频率计算 · 脉冲焊接」：输入焊接速度、焊接距离、加速度与点间距，自动计算脉冲频率 f=v/d 与焊缝点数，附焊缝点分布与速度曲线动态示意。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -2639,8 +2792,10 @@
         if (!weldAnimId) startWeldSim();
       }
       if (view === 'toolbox') {
-        resizeTpCanvas();
-        drawTpFit();
+        const cur = toolSelect ? toolSelect.value : 'focus';
+        if (cur === 'focus') { resizeTpCanvas(); drawTpFit(); }
+        else if (cur === 'accel') { resizeAccCanvas(); calcAccel(); }
+        else if (cur === 'spacing') { resizeSpCanvas(); calcSpacing(); }
       }
     });
   });
@@ -3703,7 +3858,7 @@
   // ===== 首次登录更新说明（只显示一次） =====
   function maybeShowUpdate() {
     try {
-      const seen = localStorage.getItem('fslc_seen_v143');
+      const seen = localStorage.getItem('fslc_seen_v144');
       if (seen) return;
       // 启动动画结束后再弹出
       setTimeout(() => {
@@ -3714,13 +3869,13 @@
   $('updateClose').addEventListener('click', () => {
     $('updateModal').classList.remove('show');
     try {
-      localStorage.setItem('fslc_seen_v143', '1');
+      localStorage.setItem('fslc_seen_v144', '1');
     } catch (e) {}
   });
   $('updateModal').addEventListener('click', (e) => {
     if (e.target.id === 'updateModal') {
       $('updateModal').classList.remove('show');
-      try { localStorage.setItem('fslc_seen_v142', '1'); } catch (e) {}
+      try { localStorage.setItem('fslc_seen_v144', '1'); } catch (e) {}
     }
   });
 
@@ -4198,6 +4353,499 @@
   if (tpDemoBtn) tpDemoBtn.addEventListener('click', loadTpDemo);
   const tpClearBtn = $('tpClear');
   if (tpClearBtn) tpClearBtn.addEventListener('click', clearTp);
+
+  // ===== 工具箱 · 工具下拉切换 =====
+  const toolSelect = $('toolSelect');
+  function switchTool(name) {
+    ['tool-focus', 'tool-accel', 'tool-spacing'].forEach(id => {
+      const el = $(id);
+      if (el) el.classList.toggle('active', id === 'tool-' + name);
+    });
+    if (name === 'focus') { resizeTpCanvas(); drawTpFit(); }
+    if (name === 'accel') { resizeAccCanvas(); calcAccel(); }
+    if (name === 'spacing') { resizeSpCanvas(); calcSpacing(); }
+  }
+  if (toolSelect) toolSelect.addEventListener('change', () => switchTool(toolSelect.value));
+
+  // ===== 工具B：加速距离计算 · 焊接运动分析 =====
+  const accCanvas = $('accCanvas');
+  const accCtx = accCanvas ? accCanvas.getContext('2d') : null;
+  let accelAnimId = null;
+  const accel = { playing: true, progress: 0 };
+
+  function resizeAccCanvas() {
+    if (!accCanvas || !accCtx) return;
+    const rect = accCanvas.parentElement.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    accCanvas.width = Math.max(2, Math.round((rect.width || 320) * d));
+    accCanvas.height = Math.max(2, Math.round((rect.height || 180) * d));
+    accCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  // 匀加速→匀速→匀减速 运动学模型
+  // withDec=true 时含减速段（工具B）；false 时仅加速→匀速（工具C，d 忽略）
+  function computeMotion(a, d, v, L, withDec) {
+    const dec = !!(withDec && d > 0);
+    let ta = v / a;
+    let sa = v * v / (2 * a);
+    let td = 0, sd = 0, tu = 0, su = 0, t, reached = true, vp = v;
+    if (dec) {
+      td = v / d;
+      sd = v * v / (2 * d);
+      const sMin = sa + sd;
+      if (L >= sMin) {
+        su = L - sMin;
+        tu = su / v;
+        t = ta + tu + td;
+      } else {
+        // 距离不足以完成完整加减速 → 三角速度曲线，峰值 vp < v
+        reached = false;
+        vp = Math.sqrt(2 * L * a * d / (a + d));
+        ta = vp / a;
+        sa = vp * vp / (2 * a);
+        td = vp / d;
+        sd = vp * vp / (2 * d);
+        su = 0; tu = 0;
+        t = ta + td;
+      }
+    } else {
+      if (L >= sa) {
+        su = L - sa;
+        tu = su / v;
+        t = ta + tu;
+      } else {
+        reached = false;
+        t = Math.sqrt(2 * L / a);
+        ta = t;
+        sa = L;
+        vp = a * t;
+      }
+    }
+    return { a: a, d: dec ? d : 0, v: v, L: L, ta: ta, sa: sa, tu: tu, su: su, td: td, sd: sd, t: t, reached: reached, vp: vp, withDec: dec };
+  }
+
+  function readAccel() {
+    return {
+      a: parseFloat($('accA').value),
+      d: parseFloat($('accD').value),
+      v: parseFloat($('accV').value),
+      L: parseFloat($('accL').value)
+    };
+  }
+
+  function calcAccel() {
+    const resBox = $('accResults');
+    const { a, d, v, L } = readAccel();
+    if (!(a > 0 && d > 0 && v > 0 && L > 0)) {
+      resBox.style.display = 'block';
+      resBox.innerHTML = '<div class="tr-item"><span class="tr-label">提示</span><span class="tr-value small">请输入有效的加速度、减速度、焊接速度与焊接距离</span></div>';
+      drawAccel(0);
+      return;
+    }
+    const m = computeMotion(a, d, v, L, true);
+    resBox.style.display = 'block';
+    resBox.innerHTML =
+      '<div class="tr-item"><span class="tr-label">加速距离 Sa = v²/2a</span><span class="tr-value">' + m.sa.toFixed(2) + ' mm</span></div>' +
+      '<div class="tr-item"><span class="tr-label">加速时间 Ta = v/a</span><span class="tr-value">' + m.ta.toFixed(3) + ' s</span></div>' +
+      '<div class="tr-item"><span class="tr-label">匀速距离 Su</span><span class="tr-value">' + m.su.toFixed(2) + ' mm</span></div>' +
+      '<div class="tr-item"><span class="tr-label">匀速时间 Tu</span><span class="tr-value">' + m.tu.toFixed(3) + ' s</span></div>' +
+      '<div class="tr-item"><span class="tr-label">减速距离 Sd = v²/2d</span><span class="tr-value">' + m.sd.toFixed(2) + ' mm</span></div>' +
+      '<div class="tr-item"><span class="tr-label">减速时间 Td = v/d</span><span class="tr-value">' + m.td.toFixed(3) + ' s</span></div>' +
+      '<div class="tr-item"><span class="tr-label">总焊接时间 T</span><span class="tr-value">' + m.t.toFixed(3) + ' s</span></div>' +
+      '<div class="tr-item"><span class="tr-label">状态</span><span class="tr-value small" style="' + (m.reached ? 'color:var(--cyan);' : 'color:#ff9800;') + '">' + (m.reached ? '完整加速→匀速→减速' : '距离不足，三角速度曲线峰值 vp=' + m.vp.toFixed(1) + 'mm/s') + '</span></div>' +
+      '<div class="tr-item" style="border-color:transparent;background:transparent;padding:4px 12px;"><span class="tr-label" style="font-size:10px;color:var(--text-3);line-height:1.6;">加速段热输入集中，易导致起焊过熔；减速段热输入仍存，易导致收尾过熔。建议激光在加减速段结束后再触发，或设置起弧/收弧延时补偿。</span></div>';
+    drawAccel(accel.progress);
+  }
+
+  function drawAccel(progress) {
+    if (!accCtx) return;
+    const w = accCanvas.width / (window.devicePixelRatio || 1);
+    const h = accCanvas.height / (window.devicePixelRatio || 1);
+    accCtx.clearRect(0, 0, w, h);
+    const { a, d, v, L } = readAccel();
+    if (!(a > 0 && d > 0 && v > 0 && L > 0)) {
+      accCtx.fillStyle = 'rgba(160,175,200,0.6)';
+      accCtx.font = '12px sans-serif';
+      accCtx.textAlign = 'center';
+      accCtx.fillText('请输入有效的加速度、减速度、焊接速度与焊接距离', w / 2, h / 2);
+      return;
+    }
+    const m = computeMotion(a, d, v, L, true);
+    const pad = { l: w * 0.13, r: w * 0.95, t: h * 0.13, b: h * 0.78 };
+    const cw = pad.r - pad.l, ch = pad.b - pad.t;
+    const tMax = m.t * 1.12;
+    const vMax = (m.withDec ? m.vp : v) * 1.15;
+    const X = t => pad.l + Math.max(0, t) / tMax * cw;
+    const Y = s => pad.b - Math.max(0, s) / vMax * ch;
+    // 速度随时间函数
+    function speedAt(tt) {
+      if (m.withDec) {
+        if (tt <= m.ta) return m.vp / m.ta * tt;
+        if (tt <= m.ta + m.tu) return m.vp;
+        return Math.max(0, m.vp - m.vp / m.td * (tt - m.ta - m.tu));
+      }
+      if (m.reached) {
+        if (tt <= m.ta) return m.vp / m.ta * tt;
+        return m.vp;
+      }
+      return m.vp / m.t * tt;
+    }
+
+    // 网格 + 坐标轴
+    accCtx.strokeStyle = 'rgba(138,150,173,0.1)';
+    accCtx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const gy = pad.b - ch * i / 4;
+      accCtx.beginPath(); accCtx.moveTo(pad.l, gy); accCtx.lineTo(pad.r, gy); accCtx.stroke();
+      const gx = pad.l + cw * i / 4;
+      accCtx.beginPath(); accCtx.moveTo(gx, pad.t); accCtx.lineTo(gx, pad.b); accCtx.stroke();
+    }
+    accCtx.strokeStyle = 'rgba(200,210,225,0.5)';
+    accCtx.beginPath(); accCtx.moveTo(pad.l, pad.b); accCtx.lineTo(pad.r, pad.b); accCtx.stroke();
+    accCtx.beginPath(); accCtx.moveTo(pad.l, pad.t); accCtx.lineTo(pad.l, pad.b); accCtx.stroke();
+    accCtx.fillStyle = 'rgba(160,175,200,0.8)';
+    accCtx.font = '9px sans-serif';
+    accCtx.textAlign = 'center';
+    accCtx.fillText('0', pad.l, pad.b + 10);
+    accCtx.fillText(tMax.toFixed(1) + ' s', pad.r, pad.b + 10);
+    accCtx.textAlign = 'right';
+    accCtx.fillText(vMax.toFixed(0) + ' mm/s', pad.l - 4, pad.t + 4);
+
+    // 标题
+    accCtx.fillStyle = 'rgba(160,175,200,0.85)';
+    accCtx.font = '10px sans-serif';
+    accCtx.textAlign = 'center';
+    accCtx.fillText('焊接速度 - 时间曲线（动态演示）', pad.l + cw / 2, h * 0.055);
+    accCtx.save();
+    accCtx.translate(h * 0.05, pad.t + ch / 2);
+    accCtx.rotate(-Math.PI / 2);
+    accCtx.fillText('速度 v (mm/s)', 0, 0);
+    accCtx.restore();
+
+    // 已走过面积（0..curT）
+    const curT = m.t * progress;
+    accCtx.fillStyle = 'rgba(0,200,220,0.15)';
+    accCtx.beginPath();
+    accCtx.moveTo(X(0), Y(0));
+    const steps = 64;
+    for (let i = 0; i <= steps; i++) {
+      const tt = curT * i / steps;
+      const vv = speedAt(tt);
+      accCtx.lineTo(X(tt), Y(Math.min(vv, m.vp)));
+    }
+    accCtx.lineTo(X(curT), Y(0));
+    accCtx.closePath();
+    accCtx.fill();
+
+    // 速度曲线（加速→匀速→减速）
+    accCtx.strokeStyle = 'rgba(0,200,220,0.95)';
+    accCtx.lineWidth = 2.5;
+    accCtx.beginPath();
+    accCtx.moveTo(X(0), Y(0));
+    accCtx.lineTo(X(m.ta), Y(m.vp));
+    if (m.withDec) {
+      if (m.reached) accCtx.lineTo(X(m.ta + m.tu), Y(m.vp));
+      accCtx.lineTo(X(m.t), Y(0));
+    } else if (m.reached) {
+      accCtx.lineTo(X(m.t), Y(m.vp));
+    }
+    accCtx.stroke();
+
+    // 当前时刻指示线
+    accCtx.strokeStyle = 'rgba(255,120,60,0.9)';
+    accCtx.lineWidth = 1.5;
+    accCtx.setLineDash([4, 3]);
+    accCtx.beginPath(); accCtx.moveTo(X(curT), pad.t); accCtx.lineTo(X(curT), pad.b); accCtx.stroke();
+    accCtx.setLineDash([]);
+    accCtx.fillStyle = 'rgba(255,120,60,0.95)';
+    accCtx.font = '9px sans-serif';
+    accCtx.fillText('t=' + curT.toFixed(3) + 's', X(curT), pad.t - 6);
+
+    // 标示：Ta / Tu / Td / T / a / d / Sa / Sd
+    accCtx.textAlign = 'center';
+    if (m.ta > 0.0005) {
+      accCtx.fillStyle = 'rgba(255,87,34,0.95)';
+      accCtx.fillText('Ta=' + m.ta.toFixed(3) + 's', X(m.ta / 2), Y(m.vp) - 7);
+      accCtx.fillStyle = 'rgba(255,120,60,0.9)';
+      accCtx.font = '9px sans-serif';
+      accCtx.fillText('a=' + a.toFixed(0) + 'mm/s²', X(m.ta * 0.5), Y(m.vp * 0.5));
+    }
+    if (m.withDec && m.reached && m.tu > 0.0005) {
+      accCtx.fillStyle = 'rgba(0,200,220,0.95)';
+      accCtx.fillText('Tu=' + m.tu.toFixed(3) + 's', X(m.ta + m.tu / 2), Y(m.vp) - 7);
+    }
+    if (m.withDec && m.td > 0.0005) {
+      accCtx.fillStyle = 'rgba(120,180,255,0.95)';
+      accCtx.fillText('Td=' + m.td.toFixed(3) + 's', X(m.ta + m.tu + m.td / 2), Y(m.vp) - 7);
+      accCtx.fillStyle = 'rgba(120,180,255,0.9)';
+      accCtx.font = '9px sans-serif';
+      accCtx.fillText('d=' + d.toFixed(0) + 'mm/s²', X(m.ta + m.tu + m.td * 0.5), Y(m.vp * 0.5));
+    }
+    if (!m.reached) {
+      accCtx.fillStyle = 'rgba(255,152,0,0.95)';
+      accCtx.font = '9px sans-serif';
+      accCtx.fillText('vp=' + m.vp.toFixed(1) + 'mm/s', X(m.ta + m.tu), Y(m.vp) - 12);
+    }
+    accCtx.fillStyle = 'rgba(255,200,120,0.95)';
+    accCtx.fillText('T=' + m.t.toFixed(3) + 's', X(m.t), pad.b + 22);
+    accCtx.fillStyle = 'rgba(200,210,225,0.75)';
+    accCtx.font = '9px sans-serif';
+    accCtx.fillText('加速 Sa=' + m.sa.toFixed(1) + 'mm · 匀速 Su=' + m.su.toFixed(1) + 'mm · 减速 Sd=' + m.sd.toFixed(1) + 'mm · 总 L=' + L.toFixed(1) + 'mm', pad.l + cw / 2, h * 0.94);
+  }
+
+  function startAccelSim() {
+    let last = performance.now();
+    function loop(now) {
+      accelAnimId = requestAnimationFrame(loop);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (!accel.playing) return;
+      accel.progress += dt / 3.2;
+      if (accel.progress > 1) accel.progress = 0;
+      drawAccel(accel.progress);
+    }
+    loop(performance.now());
+  }
+
+  // 加速距离输入联动：改 a/d/v/L → 重算 T；改 T → 反向联动 L
+  ['accA', 'accD', 'accV', 'accL'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', () => {
+      const { a, d, v, L } = readAccel();
+      if (a > 0 && d > 0 && v > 0 && L > 0) {
+        const m = computeMotion(a, d, v, L, true);
+        $('accT').value = m.t.toFixed(3);
+        calcAccel();
+      }
+    });
+  });
+  const accTEl = $('accT');
+  if (accTEl) accTEl.addEventListener('input', () => {
+    const t = parseFloat(accTEl.value);
+    const { a, d, v } = readAccel();
+    if (isFinite(t) && t > 0 && a > 0 && d > 0 && v > 0) {
+      const ta = v / a, td = v / d;
+      let Lnew;
+      if (t > ta + td) {
+        // 完整梯形：反算焊接距离
+        Lnew = (t - ta - td) * v + v * v / (2 * a) + v * v / (2 * d);
+      } else {
+        // 三角曲线反算：vp = t/(1/a+1/d)
+        const vp = t / (1 / a + 1 / d);
+        Lnew = vp * vp / (2 * a) + vp * vp / (2 * d);
+      }
+      $('accL').value = Math.round(Lnew * 1000) / 1000;
+      calcAccel();
+    }
+  });
+
+  // 初始
+  if (accCtx) { resizeAccCanvas(); calcAccel(); startAccelSim(); }
+
+  // ===== 工具C：点间距频率计算 · 脉冲焊接 =====
+  const spCanvas = $('spCanvas');
+  const spCtx = spCanvas ? spCanvas.getContext('2d') : null;
+  let spacingAnimId = null;
+  const spacing = { playing: true, progress: 0 };
+
+  function resizeSpCanvas() {
+    if (!spCanvas || !spCtx) return;
+    const rect = spCanvas.parentElement.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    spCanvas.width = Math.max(2, Math.round((rect.width || 320) * d));
+    spCanvas.height = Math.max(2, Math.round((rect.height || 180) * d));
+    spCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  function readSpacing() {
+    return {
+      v: parseFloat($('spV').value),
+      L: parseFloat($('spL').value),
+      a: parseFloat($('spA').value),
+      d: parseFloat($('spD').value)
+    };
+  }
+
+  function calcSpacing() {
+    const resBox = $('spResults');
+    const { v, L, a, d } = readSpacing();
+    if (!(v > 0 && L > 0 && a > 0 && d > 0)) {
+      resBox.style.display = 'block';
+      resBox.innerHTML = '<div class="tr-item"><span class="tr-label">提示</span><span class="tr-value small">请输入有效的焊接速度、焊接距离、加速度与点间距</span></div>';
+      drawSpacing(0);
+      return;
+    }
+    const f = v / d;
+    const N = Math.max(1, Math.floor(L / d));
+    const m = computeMotion(a, 0, v, L, false);
+    resBox.style.display = 'block';
+    resBox.innerHTML =
+      '<div class="tr-item"><span class="tr-label">脉冲频率 f = v / d</span><span class="tr-value">' + f.toFixed(2) + ' Hz</span></div>' +
+      '<div class="tr-item"><span class="tr-label">焊缝点数 N ≈ L / d</span><span class="tr-value">' + N + ' 个</span></div>' +
+      '<div class="tr-item"><span class="tr-label">加速时间 Ta</span><span class="tr-value">' + m.ta.toFixed(3) + ' s</span></div>' +
+      '<div class="tr-item"><span class="tr-label">加速距离 Sa</span><span class="tr-value">' + m.sa.toFixed(2) + ' mm</span></div>' +
+      '<div class="tr-item"><span class="tr-label">总焊接时间 T</span><span class="tr-value">' + m.t.toFixed(3) + ' s</span></div>' +
+      '<div class="tr-item" style="border-color:transparent;background:transparent;padding:4px 12px;"><span class="tr-label" style="font-size:10px;color:var(--text-3);line-height:1.6;">频率由焊接速度与点间距决定（f = v/d），与加速度无关；加速度仅影响到达设定速度前的运动过程。</span></div>';
+    drawSpacing(spacing.progress);
+  }
+
+  function drawSpacing(progress) {
+    if (!spCtx) return;
+    const w = spCanvas.width / (window.devicePixelRatio || 1);
+    const h = spCanvas.height / (window.devicePixelRatio || 1);
+    spCtx.clearRect(0, 0, w, h);
+    const { v, L, a, d } = readSpacing();
+    if (!(v > 0 && L > 0 && a > 0 && d > 0)) {
+      spCtx.fillStyle = 'rgba(160,175,200,0.6)';
+      spCtx.font = '12px sans-serif';
+      spCtx.textAlign = 'center';
+      spCtx.fillText('请输入有效的焊接速度、焊接距离、加速度与点间距', w / 2, h / 2);
+      return;
+    }
+    const f = v / d;
+    const N = Math.max(1, Math.floor(L / d));
+    const m = computeMotion(a, 0, v, L, false);
+    const curFrac = progress;
+
+    // ===== 上部：焊缝脉冲点分布 =====
+    const topT = h * 0.14, topB = h * 0.44;
+    const midY = (topT + topB) / 2;
+    const lineX0 = w * 0.12, lineX1 = w * 0.88;
+    // 标题
+    spCtx.fillStyle = 'rgba(160,175,200,0.85)';
+    spCtx.font = '10px sans-serif';
+    spCtx.textAlign = 'center';
+    spCtx.fillText('焊缝脉冲点分布 · N=' + N + ' 点', w / 2, h * 0.055);
+    // 焊缝线
+    spCtx.strokeStyle = 'rgba(200,210,225,0.5)';
+    spCtx.lineWidth = 2;
+    spCtx.beginPath(); spCtx.moveTo(lineX0, midY); spCtx.lineTo(lineX1, midY); spCtx.stroke();
+    // 起点/终点
+    spCtx.fillStyle = 'rgba(255,87,34,0.95)';
+    spCtx.beginPath(); spCtx.arc(lineX0, midY, 4, 0, Math.PI * 2); spCtx.fill();
+    spCtx.beginPath(); spCtx.arc(lineX1, midY, 4, 0, Math.PI * 2); spCtx.fill();
+    // 脉冲点（随进度点亮）
+    for (let i = 0; i < N; i++) {
+      const frac = N > 1 ? i / (N - 1) : 0;
+      const px = lineX0 + (lineX1 - lineX0) * frac;
+      const lit = frac <= curFrac;
+      spCtx.fillStyle = lit ? 'rgba(255,120,60,0.95)' : 'rgba(138,150,173,0.28)';
+      spCtx.beginPath(); spCtx.arc(px, midY, 3, 0, Math.PI * 2); spCtx.fill();
+    }
+    // 点间距标示（第一段）
+    if (N >= 2) {
+      const p0 = lineX0, p1 = lineX0 + (lineX1 - lineX0) / (N - 1);
+      const yGap = midY - 14;
+      spCtx.strokeStyle = 'rgba(0,200,220,0.6)';
+      spCtx.lineWidth = 1;
+      spCtx.beginPath(); spCtx.moveTo(p0, yGap + 6); spCtx.lineTo(p1, yGap + 6); spCtx.stroke();
+      spCtx.beginPath();
+      spCtx.moveTo(p1 - 4, yGap + 4); spCtx.lineTo(p1, yGap + 6); spCtx.lineTo(p1 - 4, yGap + 8); spCtx.stroke();
+      spCtx.fillStyle = 'rgba(0,200,220,0.9)';
+      spCtx.font = '9px sans-serif';
+      spCtx.textAlign = 'center';
+      spCtx.fillText('d=' + d.toFixed(2) + 'mm', (p0 + p1) / 2, yGap - 2);
+    }
+    spCtx.fillStyle = 'rgba(255,120,60,0.95)';
+    spCtx.font = '9px sans-serif';
+    spCtx.fillText('f=' + f.toFixed(1) + ' Hz', lineX1, midY + 16);
+    spCtx.textAlign = 'left';
+    spCtx.fillStyle = 'rgba(160,175,200,0.7)';
+    spCtx.fillText('起点', lineX0, midY + 16);
+    spCtx.textAlign = 'right';
+    spCtx.fillText('终点', lineX1, midY + 16);
+
+    // 分隔线
+    const splitY = h * 0.52;
+    spCtx.strokeStyle = 'rgba(138,150,173,0.15)';
+    spCtx.setLineDash([4, 4]);
+    spCtx.beginPath(); spCtx.moveTo(w * 0.05, splitY); spCtx.lineTo(w * 0.95, splitY); spCtx.stroke();
+    spCtx.setLineDash([]);
+
+    // ===== 下部：速度-时间曲线（同步） =====
+    const pad = { l: w * 0.13, r: w * 0.95, t: h * 0.58, b: h * 0.84 };
+    const cw = pad.r - pad.l, ch = pad.b - pad.t;
+    const tMax = m.t * 1.12;
+    const vMax = v * 1.15;
+    const X = t => pad.l + Math.max(0, t) / tMax * cw;
+    const Y = s => pad.b - Math.max(0, s) / vMax * ch;
+    // 曲线
+    spCtx.strokeStyle = 'rgba(0,200,220,0.95)';
+    spCtx.lineWidth = 2.5;
+    spCtx.beginPath();
+    spCtx.moveTo(X(0), Y(0));
+    spCtx.lineTo(X(m.ta), Y(v));
+    if (m.reached) spCtx.lineTo(X(m.t), Y(v));
+    spCtx.stroke();
+    // 面积
+    const curT = m.t * curFrac;
+    spCtx.fillStyle = 'rgba(0,200,220,0.12)';
+    spCtx.beginPath(); spCtx.moveTo(X(0), Y(0));
+    const steps = 64;
+    for (let i = 0; i <= steps; i++) {
+      const tt = curT * i / steps;
+      const vv = tt <= m.ta ? a * tt : v;
+      spCtx.lineTo(X(tt), Y(Math.min(vv, v)));
+    }
+    spCtx.lineTo(X(curT), Y(0));
+    spCtx.closePath(); spCtx.fill();
+    // 指示线
+    spCtx.strokeStyle = 'rgba(255,120,60,0.9)';
+    spCtx.lineWidth = 1.5;
+    spCtx.setLineDash([4, 3]);
+    spCtx.beginPath(); spCtx.moveTo(X(curT), pad.t); spCtx.lineTo(X(curT), pad.b); spCtx.stroke();
+    spCtx.setLineDash([]);
+    // 轴标题
+    spCtx.fillStyle = 'rgba(160,175,200,0.85)';
+    spCtx.font = '10px sans-serif';
+    spCtx.textAlign = 'center';
+    spCtx.fillText('焊接速度 - 时间曲线（同步运动过程）', pad.l + cw / 2, h * 0.545);
+    spCtx.save();
+    spCtx.translate(h * 0.05, pad.t + ch / 2);
+    spCtx.rotate(-Math.PI / 2);
+    spCtx.fillText('速度 v (mm/s)', 0, 0);
+    spCtx.restore();
+    // 时间轴刻度
+    spCtx.fillStyle = 'rgba(160,175,200,0.8)';
+    spCtx.font = '9px sans-serif';
+    spCtx.textAlign = 'center';
+    spCtx.fillText('0', pad.l, pad.b + 10);
+    spCtx.fillText(tMax.toFixed(1) + ' s', pad.r, pad.b + 10);
+    // 标示
+    if (m.ta > 0.0005) {
+      spCtx.fillStyle = 'rgba(255,87,34,0.95)';
+      spCtx.fillText('Ta=' + m.ta.toFixed(3) + 's', X(m.ta / 2), Y(v) - 7);
+    }
+    if (m.reached && m.tu > 0.0005) {
+      spCtx.fillStyle = 'rgba(0,200,220,0.95)';
+      spCtx.fillText('Tu=' + m.tu.toFixed(3) + 's', X(m.ta + m.tu / 2), Y(v) - 7);
+    }
+    spCtx.fillStyle = 'rgba(255,200,120,0.95)';
+    spCtx.fillText('T=' + m.t.toFixed(3) + 's', X(m.t), pad.b + 20);
+  }
+
+  function startSpacingSim() {
+    let last = performance.now();
+    function loop(now) {
+      spacingAnimId = requestAnimationFrame(loop);
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (!spacing.playing) return;
+      spacing.progress += dt / 3.2;
+      if (spacing.progress > 1) spacing.progress = 0;
+      drawSpacing(spacing.progress);
+    }
+    loop(performance.now());
+  }
+
+  // 输入监听
+  ['spV', 'spL', 'spA', 'spD'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', calcSpacing);
+  });
+
+  // 初始
+  if (spCtx) { resizeSpCanvas(); calcSpacing(); startSpacingSim(); }
 
 })();
 </script>
