@@ -1003,6 +1003,12 @@
     height: 100%;
     display: block;
   }
+  #wobCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
   .weld-canvas-wrap .wc-tag {
     position: absolute;
     bottom: 28px; left: 12px;
@@ -1055,6 +1061,13 @@
     background: var(--card-2);
     color: var(--text-2);
     border: 1px solid var(--border-2);
+  }
+  /* 标注位置编辑模式激活态 */
+  .weld-btn.edit-on {
+    background: rgba(255,152,0,0.18);
+    color: #ff9800;
+    border-color: #ff9800;
+    box-shadow: 0 0 0 1px rgba(255,152,0,0.4);
   }
   .weld-speed-select {
     margin-left: auto;
@@ -1979,6 +1992,9 @@
             <option value="4">4×</option>
           </select>
         </div>
+        <button class="weld-btn secondary" id="wobEdit" title="拖动文字/标示到任意位置，自动保存">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>标注位置
+        </button>
       </div>
 
       <!-- 计算结果 -->
@@ -3525,7 +3541,70 @@
   const wobCanvas = $('wobCanvas');
   const wobCtx = wobCanvas.getContext('2d');
   let wobAnimId = null;
-  const wobState = { t: 0, running: true, speed: 1, _lt: 0 };
+  const wobState = { t: 0, running: true, speed: 1, _lt: 0, editMode: false };
+
+  // ===== 标注/文字位置自定义（编辑模式拖动画布上的文字到任意位置，自动持久化） =====
+  // 每个标注保存相对默认位置的偏移 {dx, dy}，存 localStorage，刷新后保持
+  let wobLabelPos = {};
+  try { wobLabelPos = JSON.parse(localStorage.getItem('fslc_wob_labels') || '{}') || {}; } catch (e) {}
+  let wobLabelRects = {}; // 编辑模式下记录各标注当前画布坐标，供拖动命中检测
+  function saveWobLabels() { try { localStorage.setItem('fslc_wob_labels', JSON.stringify(wobLabelPos)); } catch (e) {} }
+  // 取标注偏移后的坐标：默认 (dx,dy) + 用户偏移
+  function lp(id, dx, dy) {
+    const o = wobLabelPos[id] || { dx: 0, dy: 0 };
+    return { x: dx + (o.dx || 0), y: dy + (o.dy || 0) };
+  }
+  // 取标注偏移量（用于动态标注整体平移：线+文字一起移动）
+  function wobOff(id) {
+    const o = wobLabelPos[id] || { dx: 0, dy: 0 };
+    return { dx: o.dx || 0, dy: o.dy || 0 };
+  }
+  // 编辑模式下记录标注位置并画虚线框（拾取框）
+  function markLabel(id, x, y) {
+    if (!wobState.editMode) return;
+    wobLabelRects[id] = { x: x, y: y };
+    wobCtx.strokeStyle = 'rgba(255,152,0,0.55)';
+    wobCtx.setLineDash([3, 3]);
+    wobCtx.lineWidth = 1;
+    wobCtx.strokeRect(x - 6, y - 10, 12, 12);
+    wobCtx.setLineDash([]);
+  }
+  // 指针坐标 → 画布逻辑坐标（与 drawWob/resize 同一坐标系：parentElement 的 CSS 像素）
+  function wobPointerXY(e) {
+    const rect = wobCanvas.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  let dragLabel = null, dragStartX = 0, dragStartY = 0, dragOffX = 0, dragOffY = 0;
+  wobCanvas.addEventListener('pointerdown', (e) => {
+    if (!wobState.editMode) return;
+    const p = wobPointerXY(e);
+    let best = null, bestD = 1e9;
+    for (const id in wobLabelRects) {
+      const r = wobLabelRects[id];
+      const d = Math.hypot(p.x - r.x, p.y - r.y);
+      if (d < bestD) { bestD = d; best = id; }
+    }
+    if (best && bestD < 46) {
+      dragLabel = best;
+      const o = wobLabelPos[best] || { dx: 0, dy: 0 };
+      dragOffX = o.dx || 0; dragOffY = o.dy || 0;
+      dragStartX = p.x; dragStartY = p.y;
+      e.preventDefault();
+    }
+  });
+  wobCanvas.addEventListener('pointermove', (e) => {
+    if (!dragLabel) return;
+    const p = wobPointerXY(e);
+    const o = wobLabelPos[dragLabel] || { dx: 0, dy: 0 };
+    o.dx = dragOffX + (p.x - dragStartX);
+    o.dy = dragOffY + (p.y - dragStartY);
+    wobLabelPos[dragLabel] = o;
+    drawWob();
+    saveWobLabels();
+  });
+  const endDrag = () => { dragLabel = null; };
+  wobCanvas.addEventListener('pointerup', endDrag);
+  wobCanvas.addEventListener('pointercancel', endDrag);
 
   function resizeWobCanvas() {
     const rect = wobCanvas.parentElement.getBoundingClientRect();
@@ -3610,11 +3689,15 @@
     wobCtx.setLineDash([]);
     wobCtx.fillStyle = 'rgba(0,188,212,0.65)';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
-    // 摆动宽度标注置于右上角，与左上标题同行分居，避免与轨迹/标题重叠
+    // 摆动宽度标注置于右上角，与左上标题同行分居，避免与轨迹/标题重叠（位置可自定义）
+    const pB = lp('trackB', w - padR, padT + 9);
     wobCtx.textAlign = 'right';
-    wobCtx.fillText('摆动宽度 B=' + fmt(r.B, 2) + ' mm', w - padR, padT + 9);
-    // 间距标注置于轨迹下方右侧
-    wobCtx.fillText('间距 p=' + fmt(r.pitch, 2) + ' mm', w - padR, midY + A + 12);
+    wobCtx.fillText('摆动宽度 B=' + fmt(r.B, 2) + ' mm', pB.x, pB.y);
+    markLabel('trackB', pB.x, pB.y);
+    // 间距标注置于轨迹下方右侧（位置可自定义）
+    const pP = lp('trackP', w - padR, midY + A + 12);
+    wobCtx.fillText('间距 p=' + fmt(r.pitch, 2) + ' mm', pP.x, pP.y);
+    markLabel('trackP', pP.x, pP.y);
 
     // 已走轨迹（采样密度随视野/间距自适应，保证波形圆滑）
     const N = Math.min(Math.max(Math.ceil(viewMm / Math.max(r.pitch, 0.05)) * 12, 240), 2400);
@@ -3686,7 +3769,9 @@
     wobCtx.fillStyle = 'rgba(255,255,255,0.4)';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
     wobCtx.textAlign = 'left';
-    wobCtx.fillText('顶视 · 摆动轨迹（' + typeName + ' · f=' + fmt(r.f, 1) + 'Hz）', padL, padT);
+    const pTt = lp('tracktitle', padL, padT);
+    wobCtx.fillText('顶视 · 摆动轨迹（' + typeName + ' · f=' + fmt(r.f, 1) + 'Hz）', pTt.x, pTt.y);
+    markLabel('tracktitle', pTt.x, pTt.y);
   }
 
   function drawWobSection(w, topY, secH, r) {
@@ -3773,39 +3858,46 @@
     wobCtx.fillStyle = 'rgba(224,247,255,0.9)';
     wobCtx.fill();
 
-    // 母材厚度标注（最左侧尺寸线）
-    const tDimX = w * 0.045;
+    // 母材厚度标注（最左侧尺寸线，位置可自定义）
+    const oTk = wobOff('thick');
+    const tDimX = w * 0.045 + oTk.dx;
     wobCtx.strokeStyle = 'rgba(160,175,200,0.55)';
     wobCtx.lineWidth = 1;
     wobCtx.beginPath();
-    wobCtx.moveTo(tDimX, workTop);
-    wobCtx.lineTo(tDimX, workBottom);
-    wobCtx.moveTo(tDimX - 4, workTop);
-    wobCtx.lineTo(tDimX + 4, workTop);
-    wobCtx.moveTo(tDimX - 4, workBottom);
-    wobCtx.lineTo(tDimX + 4, workBottom);
+    wobCtx.moveTo(tDimX, workTop + oTk.dy);
+    wobCtx.lineTo(tDimX, workBottom + oTk.dy);
+    wobCtx.moveTo(tDimX - 4, workTop + oTk.dy);
+    wobCtx.lineTo(tDimX + 4, workTop + oTk.dy);
+    wobCtx.moveTo(tDimX - 4, workBottom + oTk.dy);
+    wobCtx.lineTo(tDimX + 4, workBottom + oTk.dy);
     wobCtx.stroke();
     wobCtx.fillStyle = 'rgba(200,210,225,0.85)';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
+    let tTy;
     if (workH > 26) {
       wobCtx.textAlign = 'left';
-      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX + 6, workTop + workH / 2 + 3);
+      tTy = workTop + workH / 2 + 3 + oTk.dy;
+      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX + 6, tTy);
     } else {
       wobCtx.textAlign = 'left';
-      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX, Math.min(workBottom + 12, secBottom));
+      tTy = Math.min(workBottom + 12, secBottom) + oTk.dy;
+      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX, tTy);
     }
+    markLabel('thick', tDimX, tTy);
 
-    // 熔深标注（贴熔池左侧边）
-    const dimX = Math.max(cx - halfW - 5, w * 0.16);
+    // 熔深标注（贴熔池左侧边，位置可自定义）
+    const oDp = wobOff('depth');
+    const dimX = Math.max(cx - halfW - 5, w * 0.16) + oDp.dx;
+    const dpBotY = Math.max(poolBottom, workTop + 2) + oDp.dy;
     wobCtx.strokeStyle = 'rgba(200,210,225,0.7)';
     wobCtx.lineWidth = 1;
     wobCtx.beginPath();
-    wobCtx.moveTo(dimX, workTop);
-    wobCtx.lineTo(dimX, Math.max(poolBottom, workTop + 2));
-    wobCtx.moveTo(dimX - 4, workTop);
-    wobCtx.lineTo(dimX + 4, workTop);
-    wobCtx.moveTo(dimX - 4, Math.max(poolBottom, workTop + 2));
-    wobCtx.lineTo(dimX + 4, Math.max(poolBottom, workTop + 2));
+    wobCtx.moveTo(dimX, workTop + oDp.dy);
+    wobCtx.lineTo(dimX, dpBotY);
+    wobCtx.moveTo(dimX - 4, workTop + oDp.dy);
+    wobCtx.lineTo(dimX + 4, workTop + oDp.dy);
+    wobCtx.moveTo(dimX - 4, dpBotY);
+    wobCtx.lineTo(dimX + 4, dpBotY);
     wobCtx.stroke();
     wobCtx.fillStyle = 'rgba(255,200,120,0.9)';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
@@ -3813,11 +3905,15 @@
     const labelW = depthLabel.length * 5.6 + 4;
     const leftOk = (dimX - 6 - labelW) > 4;
     wobCtx.textAlign = leftOk ? 'right' : 'left';
-    wobCtx.fillText(depthLabel, leftOk ? dimX - 6 : dimX + 6, Math.max(workTop + depthPx / 2 + 3, workTop + 10));
+    const dpTx = leftOk ? dimX - 6 : dimX + 6;
+    const dpTy = Math.max(workTop + depthPx / 2 + 3, workTop + 10) + oDp.dy;
+    wobCtx.fillText(depthLabel, dpTx, dpTy);
+    markLabel('depth', dimX, dpTy);
 
-    // 熔宽标注（底部，位于容器标签留白区上方）
-    const wY = workTop + workH * 0.8;
-    const wL = cx - halfW, wR = cx + halfW;
+    // 熔宽标注（底部，位于容器标签留白区上方，位置可自定义）
+    const oWd = wobOff('width');
+    const wY = workTop + workH * 0.8 + oWd.dy;
+    const wL = cx - halfW + oWd.dx, wR = cx + halfW + oWd.dx;
     wobCtx.strokeStyle = 'rgba(200,210,225,0.7)';
     wobCtx.beginPath();
     wobCtx.moveTo(wL, wY);
@@ -3829,7 +3925,8 @@
     wobCtx.stroke();
     wobCtx.fillStyle = 'rgba(140,220,255,0.9)';
     wobCtx.textAlign = 'center';
-    wobCtx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', cx, wY + 14);
+    wobCtx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', cx + oWd.dx, wY + 14);
+    markLabel('width', cx + oWd.dx, wY + 14);
 
     // 熔穿提示
     if (isBurnThrough) {
@@ -3839,15 +3936,18 @@
       wobCtx.fillText('熔穿', w - 14, workTop + 8);
     }
 
-    // 标题（置于母材表面线上方留白处，与熔池/标注不重叠）
+    // 标题（置于母材表面线上方留白处，与熔池/标注不重叠，位置可自定义）
+    const pSt = lp('sectitle', w * 0.5 + 12, workTop - 6);
     wobCtx.fillStyle = 'rgba(255,255,255,0.4)';
     wobCtx.textAlign = 'left';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
-    wobCtx.fillText('截面 · 熔深/熔宽动态演化', w * 0.5 + 12, workTop - 6);
+    wobCtx.fillText('截面 · 熔深/熔宽动态演化', pSt.x, pSt.y);
+    markLabel('sectitle', pSt.x, pSt.y);
 
-    // 焊接方向指示（与焊接仿真一致）：箭头置于表面线上方空气区，速度标注在母材左侧
-    const dirY = workTop - 8;
-    const arrowX0 = w * 0.06, arrowX1 = w * 0.30;
+    // 焊接方向指示（与焊接仿真一致）：箭头置于表面线上方空气区，速度标注在母材左侧（位置可自定义）
+    const oDr = wobOff('dir');
+    const dirY = workTop - 8 + oDr.dy;
+    const arrowX0 = w * 0.06 + oDr.dx, arrowX1 = w * 0.30 + oDr.dx;
     const dashPhase = (wobState.t * (wobState.speed * 0.12 + 0.1) * 20) % 30;
     wobCtx.strokeStyle = 'rgba(255,152,0,0.4)';
     wobCtx.lineWidth = 2;
@@ -3868,19 +3968,25 @@
     wobCtx.textAlign = 'left';
     wobCtx.font = 'bold 10px monospace';
     wobCtx.fillStyle = '#ff9800';
-    wobCtx.fillText('焊接方向', arrowX0, workTop + 13);
+    wobCtx.fillText('焊接方向', arrowX0, workTop + 13 + oDr.dy);
     wobCtx.fillStyle = 'rgba(255,255,255,0.75)';
     wobCtx.font = '10px monospace';
-    wobCtx.fillText('V=' + fmt(r.V, 0) + ' mm/s', arrowX0 + 60, workTop + 13);
+    wobCtx.fillText('V=' + fmt(r.V, 0) + ' mm/s', arrowX0 + 60, workTop + 13 + oDr.dy);
+    markLabel('dir', arrowX0, workTop + 13 + oDr.dy);
 
-    // 模式标注 + 材料标注（右下角母材内，与焊接仿真 KEYHOLE MODE 风格一致）
+    // 模式标注 + 材料标注（右下角母材内，与焊接仿真 KEYHOLE MODE 风格一致，位置可自定义）
     if (workH > 44) {
+      const oMd = wobOff('mode');
+      const mX = w - 12 + oMd.dx, mY = workBottom - 10 + oMd.dy;
       wobCtx.textAlign = 'right';
       wobCtx.font = '10px monospace';
       wobCtx.fillStyle = '#ff9800';
-      wobCtx.fillText('WOBBLE KEYHOLE MODE', w - 12, workBottom - 10);
+      wobCtx.fillText('WOBBLE KEYHOLE MODE', mX, mY);
+      markLabel('mode', mX, mY);
+      const oMt = wobOff('mat');
       wobCtx.fillStyle = 'rgba(255,255,255,0.6)';
-      wobCtx.fillText(r.matGroup + ' · ' + r.matName, w - 12, workBottom - 22);
+      wobCtx.fillText(r.matGroup + ' · ' + r.matName, w - 12 + oMt.dx, workBottom - 22 + oMt.dy);
+      markLabel('mat', w - 12 + oMt.dx, workBottom - 22 + oMt.dy);
     }
   }
 
@@ -3911,6 +4017,22 @@
   $('wobReset').addEventListener('click', () => { wobState.t = 0; });
   $('wobSpeed').addEventListener('change', (e) => {
     wobState.speed = parseFloat(e.target.value);
+  });
+
+  // 标注位置编辑模式：进入后暂停动画，可拖动文字/标示；再次点击恢复动画
+  $('wobEdit').addEventListener('click', () => {
+    wobState.editMode = !wobState.editMode;
+    $('wobEdit').classList.toggle('edit-on', wobState.editMode);
+    if (wobState.editMode) {
+      wobState._prevRunning = wobState.running;
+      wobState.running = false;
+      $('wobPlay').textContent = '播放';
+    } else {
+      wobState.running = wobState._prevRunning !== false;
+      $('wobPlay').textContent = wobState.running ? '暂停' : '播放';
+    }
+    wobLabelRects = {};
+    drawWob();
   });
 
   // 保存环形光斑仿真画面为图片（与焊接仿真一致：原生相册 + 浏览器下载兜底）
