@@ -1003,7 +1003,7 @@
     height: 100%;
     display: block;
   }
-  #wobCanvas {
+  #wobCanvas, #wobCanvas3D, #wobCanvas3DEnergy {
     width: 100%;
     height: 100%;
     display: block;
@@ -3649,7 +3649,8 @@
   function markLabel(id, x, y, txtW, ctx) {
     const c = ctx || wobCtx;
     if (!wobState.editMode) return;
-    if (ctx) wobLabelRects3D[id] = { x: x, y: y };
+    if (ctx === wobCtx3DE) wobLabelRects3DE[id] = { x: x, y: y };
+    else if (ctx) wobLabelRects3D[id] = { x: x, y: y };
     else wobLabelRects[id] = { x: x, y: y };
     const bw = Math.max(txtW || 12, 34);
     c.strokeStyle = 'rgba(255,152,0,0.6)';
@@ -3696,6 +3697,7 @@
       wobLabelPos[dragLabel] = o;
       drawWob();
       drawWob3D();
+      drawWob3DEnergy();
       saveWobLabels();
     });
     const endDrag = () => { dragLabel = null; };
@@ -4525,9 +4527,10 @@
       wobState.running = wobState._prevRunning !== false;
       $('wobPlay').textContent = wobState.running ? '暂停' : '播放';
     }
-    wobLabelRects = {};
-    wobLabelRects3D = {};
-    wobLabelRects3DE = {};
+    // 清空标注拾取框坐标（保持对象引用不变，避免与 bindWobDrag 闭包捕获的引用断链）
+    for (const k in wobLabelRects) delete wobLabelRects[k];
+    for (const k in wobLabelRects3D) delete wobLabelRects3D[k];
+    for (const k in wobLabelRects3DE) delete wobLabelRects3DE[k];
     drawWob();
     drawWob3D();
     drawWob3DEnergy();
