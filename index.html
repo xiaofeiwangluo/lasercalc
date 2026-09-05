@@ -1120,6 +1120,16 @@
       aspect-ratio: 4 / 3;
       min-height: 280px;
     }
+    /* 能量分布画布内容更多（3D+2D+颜色条），单独加大 */
+    .energy-canvas-wrap {
+      aspect-ratio: 3 / 4;
+      min-height: 420px;
+    }
+  }
+  /* 桌面端能量分布画布也加大 */
+  .energy-canvas-wrap {
+    aspect-ratio: 4 / 5;
+    min-height: 480px;
   }
   #weldCanvas {
     width: 100%;
@@ -2154,7 +2164,7 @@
       </div>
 
       <!-- 环形光斑能量分布 3D 曲面图（内芯锥形 + 外环环形 + 组合） -->
-      <div class="weld-canvas-wrap" style="margin-top:12px;">
+      <div class="weld-canvas-wrap energy-canvas-wrap" style="margin-top:12px;">
         <canvas id="wobCanvas3DEnergy"></canvas>
         <button class="wc-save-btn" data-save="wobCanvas3DEnergy">保存</button>
         <div class="wc-legend">
