@@ -1892,6 +1892,32 @@
         </div>
       </div>
 
+      <!-- 光学系统参数 -->
+      <div class="card">
+        <div class="card-title">光学系统</div>
+        <div class="input-group">
+          <div class="input-label"><span>准直镜焦距 f_c</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="wobFc" min="50" max="300" value="100" step="5">
+            <input type="number" id="wobFcNum" value="100" min="20" max="500">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>聚焦镜焦距 f_f</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="wobFf" min="100" max="600" value="200" step="5">
+            <input type="number" id="wobFfNum" value="200" min="50" max="1000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>焊接长度 L</span><span class="unit">mm</span></div>
+          <div class="input-row">
+            <input type="range" id="wobLen" min="10" max="500" value="100" step="10">
+            <input type="number" id="wobLenNum" value="100" min="1" max="5000">
+          </div>
+        </div>
+      </div>
+
       <!-- 摆动焊接参数 -->
       <div class="card">
         <div class="card-title">摆动焊接参数</div>
@@ -2025,9 +2051,21 @@
             <span class="wd2-label">总能量线密度</span>
             <span class="wd2-value" id="wobHeat">0 J/mm</span>
           </div>
+          <div class="wd-item2">
+            <span class="wd2-label">放大倍率 M</span>
+            <span class="wd2-value" id="wobMag">2×</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">焊接时长 t</span>
+            <span class="wd2-value" id="wobTime">0 s</span>
+          </div>
+          <div class="wd-item2">
+            <span class="wd2-label">总输入能量</span>
+            <span class="wd2-value" id="wobEnergy">0 J</span>
+          </div>
         </div>
         <div class="hint" style="margin-top:8px;">
-          模型依据（半经验工程模型）：环形光斑（ARM）双光束激光摆动焊接——内芯高能量密度决定熔深，外环与摆动宽度主导熔宽；随摆动幅度增大熔深减小、熔宽增大（焊接学报《光束摆动对Ti60合金激光焊能量分布及焊缝成形的影响》、焊接《光纤激光工艺参数对Q235钢穿透点焊缝形状和尺寸的影响》等）。材料吸收率取自材料库：钢 η≈0.40、铝合金 η≈0.22-0.32、铜 η≈0.15-0.22，并按导热率作修正（高导热材料同线能量熔深更浅）。光学假设：准直100mm/聚焦200mm（放大2×）、λ=1080nm。结果供工艺预研参考，请以实测为准。
+          模型依据（半经验工程模型，经文献校准）：环形光斑（ARM）双光束激光摆动焊接——内芯高能量密度决定熔深，外环与摆动宽度主导熔宽。校准依据：①摆动加宽修正（摆动宽度B↑→熔深↓、熔宽↑）：焊接学报《圆形摆动激光对5A06铝合金激光焊接熔池流动行为的影响分析》——摆动幅度1→3mm焊缝深度减小约42%，本模型按此标定摆动修正指数；②摆动能量分布（两端高中间低双峰、峰值约为常规激光焊1/5）：焊接学报《摆动激光焊接参数对5A06厚板铝合金能量分布及接头成形的影响》——摆动频率↑→单位长度轨迹能量↓→熔宽熔深减小（对熔深影响更大），本模型加入频率弱修正；③光学链路：放大倍率 M=f_f/f_c 由准直镜/聚焦镜焦距动态计算，焦点光斑 d₀=纤芯×M，瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。材料吸收率取自材料库：钢 η≈0.40、铝合金 η≈0.22-0.32、铜 η≈0.15-0.22，并按导热率作修正。结果供工艺预研参考，请以实测为准。
         </div>
       </div>
     </section>
@@ -3452,8 +3490,8 @@
   });
 
   // ===== 测试专区：环形光斑摆动焊接熔深/熔宽仿真 =====
-  // 光学假设：准直 fc=100mm、聚焦 ff=200mm → 放大比 M=2；波长 λ=1080nm
-  const WOB_OPT = { M: 2, LAMBDA_UM: 1080 };
+  // 光学链路：准直镜 f_c 与聚焦镜 f_f 决定放大倍率 M=f_f/f_c；波长 λ=1080nm
+  const WOB_OPT = { LAMBDA_UM: 1080 };
 
   // 光斑随离焦变化：d(z)=d0·sqrt(1+(z/zR)²)，zR=π·d0²/(4λ)
   function wobSpotDefocus(d0Um, z) {
@@ -3475,7 +3513,10 @@
       V: Math.max(Number($('wobVNum').value) || 1, 1),
       type: $('wobType').value,
       material: $('wobMaterial').value,
-      thickness: Math.max(Number($('wobThicknessNum').value) || 2, 0.1)
+      thickness: Math.max(Number($('wobThicknessNum').value) || 2, 0.1),
+      fc: Math.max(Number($('wobFcNum').value) || 100, 20),
+      ff: Math.max(Number($('wobFfNum').value) || 200, 50),
+      len: Math.max(Number($('wobLenNum').value) || 100, 1)
     };
   }
 
@@ -3487,8 +3528,10 @@
   function wobCalculate() {
     const p = wobRead();
     const mat = MATERIALS[p.material] || MATERIALS.steel;
-    const core = wobSpotDefocus(p.coreDia * WOB_OPT.M, p.def);
-    const ring = wobSpotDefocus(p.ringDia * WOB_OPT.M, p.def);
+    // 放大倍率由准直镜/聚焦镜动态计算：M = f_f / f_c
+    const M = p.ff / p.fc;
+    const core = wobSpotDefocus(p.coreDia * M, p.def);
+    const ring = wobSpotDefocus(p.ringDia * M, p.def);
     const f = p.V / p.pitch;
     // 材料吸收率：深熔匙孔模式下钢约0.4、铝合金约0.22-0.32、铜约0.15-0.22
     const eta = mat.eta;
@@ -3498,13 +3541,17 @@
     const lambda = Math.sqrt(kRef / mat.k);
     const E_core = p.coreP * eta / p.V;
     const E_ring = p.ringP * eta / p.V;
-    // 熔深（内芯能量线密度驱动 + 外环辅助 + 离焦修正 + 摆动加宽修正 + 材料导热修正）
+    // 熔深（内芯能量线密度驱动 + 外环辅助 + 离焦修正 + 摆动加宽修正 + 频率修正 + 材料导热修正）
     const dCore = 0.35 * Math.pow(Math.max(E_core, 0), 0.62);
     const dRingAux = 0.12 * Math.pow(Math.max(E_ring, 0), 0.5) * 0.35;
     const fDef = Math.pow(core.d0Um / core.dUm, 1.6);
-    // 摆动加宽修正：B(mm) 相对内芯光斑 d_core(mm)，加宽越宽熔深越小
-    const fWob = Math.pow(1 / (1 + Math.pow(p.B / (core.dUm / 1000), 0.8)), 0.25);
-    const depth = Math.max((dCore + dRingAux) * fDef * fWob * lambda, 0);
+    // 摆动加宽修正（经文献校准）：B(mm) 相对内芯光斑 d_core(mm)
+    // 依据：焊接学报《圆形摆动激光对5A06铝合金激光焊接熔池流动行为的影响分析》——摆动幅度1→3mm焊缝深度减小约42%
+    const fWob = Math.pow(1 / (1 + Math.pow(p.B / (core.dUm / 1000), 0.8)), 0.35);
+    // 摆动频率修正（经文献校准）：频率↑→扫描轨迹变长→单位长度能量↓→熔深浅
+    // 依据：焊接学报《摆动激光焊接参数对5A06厚板铝合金能量分布及接头成形的影响》（以100Hz为基准）
+    const fFreq = Math.pow(100 / Math.max(f, 1), 0.1);
+    const depth = Math.max((dCore + dRingAux) * fDef * fWob * fFreq * lambda, 0);
     // 熔宽
     const dW = 0.18 * Math.pow(Math.max(E_ring, 0), 0.4);
     const width = Math.max(ring.dUm / 1000 + p.B + dW, ring.dUm / 1000);
@@ -3512,11 +3559,15 @@
     const rCm = (core.dUm / 2) / 10000;
     const density = rCm > 0 ? p.coreP / (Math.PI * rCm * rCm) : 0;
     const heatTotal = (p.coreP + p.ringP) * eta / p.V;
+    // 焊接时长与总输入能量（由焊接长度 L 与焊接速度 V 决定）
+    const weldTime = p.len / p.V;
+    const energyTotal = (p.coreP + p.ringP) * eta * weldTime;
     return {
       depth: depth, width: width, f: f, core: core, ring: ring,
       density: density, heatTotal: heatTotal, ratio: width > 0 ? depth / width : 0,
       B: p.B, pitch: p.pitch, V: p.V, type: p.type, def: p.def,
-      E_core: E_core, E_ring: E_ring, fWob: fWob, fDef: fDef,
+      E_core: E_core, E_ring: E_ring, fWob: fWob, fDef: fDef, fFreq: fFreq,
+      M: M, weldTime: weldTime, energyTotal: energyTotal, len: p.len,
       mat: mat, lambda: lambda, eta: eta,
       matName: mat.name, matGroup: mat.group, matNote: mat.note
     };
@@ -3532,6 +3583,9 @@
     $('wobRatio').textContent = fmt(r.ratio, 2);
     $('wobDensity').textContent = fmtScientific(r.density);
     $('wobHeat').textContent = fmt(r.heatTotal, 1) + ' J/mm';
+    $('wobMag').textContent = fmt(r.M, 2) + '×';
+    $('wobTime').textContent = fmt(r.weldTime, 2) + ' s';
+    $('wobEnergy').textContent = fmtScientific(r.energyTotal) + ' J';
     // 材料信息
     const spec = $('wobMatSpec');
     if (spec) spec.textContent = r.matGroup + ' · k=' + r.mat.k + ' W/m·K · η=' + r.eta.toFixed(2);
@@ -4135,6 +4189,9 @@
   bindWobPair('wobPitch', 'wobPitchNum');
   bindWobPair('wobV', 'wobVNum');
   bindWobPair('wobThickness', 'wobThicknessNum');
+  bindWobPair('wobFc', 'wobFcNum');
+  bindWobPair('wobFf', 'wobFfNum');
+  bindWobPair('wobLen', 'wobLenNum');
   $('wobType').addEventListener('change', () => { updateWob(); if (wobCtx) drawWob(); });
   // 测试专区材料切换：更新计算与母材颜色
   $('wobMaterial').addEventListener('change', (e) => {
