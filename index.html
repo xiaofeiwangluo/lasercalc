@@ -4577,8 +4577,8 @@
       }
     }
 
-    // ===== 2D 顶视热力图（高分辨率逐像素渲染）=====
-    const M = 64; // 热力图网格分辨率（越高越清晰）
+    // ===== 2D 顶视热力图（高分辨率 + 3×3超采样，窄峰也能清晰显示）=====
+    const M = 96; // 热力图网格分辨率
     for (let s = 0; s < 3; s++) {
       const cx = subW * (s + 0.5);
       const heatSize = Math.min(subW * 0.56, row2dH * 0.78);
@@ -4591,15 +4591,24 @@
       c.fillStyle = 'rgba(10,15,30,0.6)';
       c.fillRect(hx - 1, hy - 1, heatSize + 2, heatSize + 2);
 
-      // 逐格渲染热力图
+      // 逐格渲染热力图（3×3超采样平均，避免窄峰单点采样导致几乎不可见）
+      const ss = 3; // 超采样倍率
+      const step = 2 / (M * ss); // 超采样步长
       for (let j = 0; j < M; j++) {
         for (let i = 0; i < M; i++) {
-          const X = -1 + 2 * (i + 0.5) / M;
-          const Y = -1 + 2 * (j + 0.5) / M;
-          const rn = Math.hypot(X, Y);
-          if (rn > 1.35) { c.fillStyle = '#000020'; }
+          let sumE = 0, cnt = 0;
+          for (let sj = 0; sj < ss; sj++) {
+            for (let si = 0; si < ss; si++) {
+              const X = -1 + (i * ss + si + 0.5) * step;
+              const Y = -1 + (j * ss + sj + 0.5) * step;
+              const rn = Math.hypot(X, Y);
+              if (rn <= 1.35) { sumE += Efn(rn); cnt++; }
+            }
+          }
+          if (cnt === 0) { c.fillStyle = '#000020'; }
           else {
-            const v = Math.max(0, Math.min(1, Efn(rn) / Emax * grow * pulse));
+            const avgE = sumE / cnt;
+            const v = Math.max(0, Math.min(1, avgE / Emax * grow * pulse));
             c.fillStyle = jetColor(v);
           }
           c.fillRect(hx + i * cell, hy + j * cell, cell + 0.5, cell + 0.5);
