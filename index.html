@@ -1967,6 +1967,18 @@
       <div class="weld-controls">
         <button class="weld-btn" id="wobPlay">暂停</button>
         <button class="weld-btn secondary" id="wobReset">重置</button>
+        <button class="weld-btn secondary" id="wobSave" title="将当前仿真画面保存为图片">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
+        </button>
+        <div class="weld-speed-select">
+          <span>速度</span>
+          <select id="wobSpeed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+        </div>
       </div>
 
       <!-- 计算结果 -->
@@ -3832,6 +3844,44 @@
     wobCtx.textAlign = 'left';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
     wobCtx.fillText('截面 · 熔深/熔宽动态演化', w * 0.5 + 12, workTop - 6);
+
+    // 焊接方向指示（与焊接仿真一致）：箭头置于表面线上方空气区，速度标注在母材左侧
+    const dirY = workTop - 8;
+    const arrowX0 = w * 0.06, arrowX1 = w * 0.30;
+    const dashPhase = (wobState.t * (wobState.speed * 0.12 + 0.1) * 20) % 30;
+    wobCtx.strokeStyle = 'rgba(255,152,0,0.4)';
+    wobCtx.lineWidth = 2;
+    wobCtx.setLineDash([10, 14]);
+    wobCtx.lineDashOffset = -dashPhase;
+    wobCtx.beginPath();
+    wobCtx.moveTo(arrowX0, dirY);
+    wobCtx.lineTo(arrowX1, dirY);
+    wobCtx.stroke();
+    wobCtx.setLineDash([]);
+    wobCtx.fillStyle = '#ff9800';
+    wobCtx.beginPath();
+    wobCtx.moveTo(arrowX1, dirY);
+    wobCtx.lineTo(arrowX1 - 9, dirY - 4.5);
+    wobCtx.lineTo(arrowX1 - 9, dirY + 4.5);
+    wobCtx.closePath();
+    wobCtx.fill();
+    wobCtx.textAlign = 'left';
+    wobCtx.font = 'bold 10px monospace';
+    wobCtx.fillStyle = '#ff9800';
+    wobCtx.fillText('焊接方向', arrowX0, workTop + 13);
+    wobCtx.fillStyle = 'rgba(255,255,255,0.75)';
+    wobCtx.font = '10px monospace';
+    wobCtx.fillText('V=' + fmt(r.V, 0) + ' mm/s', arrowX0 + 60, workTop + 13);
+
+    // 模式标注 + 材料标注（右下角母材内，与焊接仿真 KEYHOLE MODE 风格一致）
+    if (workH > 44) {
+      wobCtx.textAlign = 'right';
+      wobCtx.font = '10px monospace';
+      wobCtx.fillStyle = '#ff9800';
+      wobCtx.fillText('WOBBLE KEYHOLE MODE', w - 12, workBottom - 10);
+      wobCtx.fillStyle = 'rgba(255,255,255,0.6)';
+      wobCtx.fillText(r.matGroup + ' · ' + r.matName, w - 12, workBottom - 22);
+    }
   }
 
   function wobLoop(ts) {
@@ -3859,6 +3909,50 @@
     $('wobPlay').textContent = wobState.running ? '暂停' : '播放';
   });
   $('wobReset').addEventListener('click', () => { wobState.t = 0; });
+  $('wobSpeed').addEventListener('change', (e) => {
+    wobState.speed = parseFloat(e.target.value);
+  });
+
+  // 保存环形光斑仿真画面为图片（与焊接仿真一致：原生相册 + 浏览器下载兜底）
+  $('wobSave').addEventListener('click', () => {
+    const wasRunning = wobState.running;
+    wobState.running = false;
+    $('wobPlay').textContent = '播放';
+    resizeWobCanvas();
+    drawWob();
+    let dataUrl;
+    try {
+      dataUrl = wobCanvas.toDataURL('image/png');
+    } catch (e) {
+      showToast('保存失败：图片生成出错');
+      if (wasRunning) { wobState.running = true; $('wobPlay').textContent = '暂停'; }
+      return;
+    }
+    if (window.AndroidBridge && typeof window.AndroidBridge.savePng === 'function') {
+      try {
+        window.__lastPngDataUrl = dataUrl;
+        const savedFlag = '__wobSaved_' + Date.now();
+        window.__savePngPending = savedFlag;
+        window.AndroidBridge.savePng(dataUrl);
+        if (wasRunning) { wobState.running = true; $('wobPlay').textContent = '暂停'; }
+        setTimeout(() => {
+          if (window.__savePngPending === savedFlag) {
+            window.__savePngPending = null;
+            showToast('已保存到手机相册 · 光斑计算器');
+          }
+        }, 3500);
+        return;
+      } catch (e) { /* 走浏览器下载兜底 */ }
+    }
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = '环形光斑摆动焊接仿真_' + new Date().toISOString().slice(0, 10) + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (wasRunning) { wobState.running = true; $('wobPlay').textContent = '暂停'; }
+    showToast('已开始保存图片');
+  });
 
   // 输入绑定（滑动条与数字框联动）
   function bindWobPair(sliderId, numId) {
