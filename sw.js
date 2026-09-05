@@ -1,5 +1,5 @@
 // Service Worker - 离线缓存
-const CACHE_NAME = 'fiber-laser-calc-v50';
+const CACHE_NAME = 'fiber-laser-calc-v51';
 const ASSETS = [
   './',
   './index.html',
