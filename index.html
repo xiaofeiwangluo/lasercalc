@@ -1992,7 +1992,6 @@
 
       <!-- 熔深 / 熔宽动态演化 -->
       <div class="weld-canvas-wrap">
-        <span class="wc-tag">WOBBLE WELDING SIMULATION · 熔深/熔宽动态演化</span>
         <canvas id="wobCanvas"></canvas>
         <div class="wc-legend">
           <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
@@ -2002,12 +2001,35 @@
         </div>
       </div>
 
+      <!-- 环形光斑动态 3D 演化图 -->
+      <div class="weld-canvas-wrap" style="margin-top:12px;">
+        <canvas id="wobCanvas3D"></canvas>
+        <div class="wc-legend">
+          <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+          <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
+          <span class="lg"><span class="dot" style="background:#00bcd4;"></span>环形光束</span>
+        </div>
+      </div>
+
+      <!-- 环形光斑能量分布 3D 曲面图（内芯锥形 + 外环环形 + 组合） -->
+      <div class="weld-canvas-wrap" style="margin-top:12px;">
+        <canvas id="wobCanvas3DEnergy"></canvas>
+        <div class="wc-legend">
+          <span class="lg"><span class="dot" style="background:#ff5722;"></span>高能区</span>
+          <span class="lg"><span class="dot" style="background:#ffd54f;"></span>中能区</span>
+          <span class="lg"><span class="dot" style="background:#4fc3f7;"></span>低能区</span>
+        </div>
+      </div>
+
       <!-- 动画控制 -->
       <div class="weld-controls">
         <button class="weld-btn" id="wobPlay">暂停</button>
         <button class="weld-btn secondary" id="wobReset">重置</button>
         <button class="weld-btn secondary" id="wobSave" title="将当前仿真画面保存为图片">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
+        </button>
+        <button class="weld-btn secondary" id="wobSaveGif" title="录制仿真动画并保存为 GIF 动图">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>保存GIF
         </button>
         <div class="weld-speed-select">
           <span>速度</span>
@@ -3597,11 +3619,21 @@
   let wobAnimId = null;
   const wobState = { t: 0, running: true, speed: 1, _lt: 0, editMode: false };
 
+  // 环形光斑动态 3D 演化 Canvas
+  const wobCanvas3D = $('wobCanvas3D');
+  const wobCtx3D = wobCanvas3D.getContext('2d');
+
+  // 环形光斑能量分布 3D 曲面 Canvas（内芯锥形 + 外环环形 + 组合）
+  const wobCanvas3DE = $('wobCanvas3DEnergy');
+  const wobCtx3DE = wobCanvas3DE.getContext('2d');
+
   // ===== 标注/文字位置自定义（编辑模式拖动画布上的文字到任意位置，自动持久化） =====
   // 每个标注保存相对默认位置的偏移 {dx, dy}，存 localStorage，刷新后保持
   let wobLabelPos = {};
   try { wobLabelPos = JSON.parse(localStorage.getItem('fslc_wob_labels') || '{}') || {}; } catch (e) {}
-  let wobLabelRects = {}; // 编辑模式下记录各标注当前画布坐标，供拖动命中检测
+  let wobLabelRects = {};   // 编辑模式下记录 2D 画布标注当前坐标，供拖动命中检测
+  let wobLabelRects3D = {}; // 编辑模式下记录 3D 画布标注当前坐标，供拖动命中检测
+  let wobLabelRects3DE = {};// 编辑模式下记录能量曲面 3D 画布标注当前坐标
   function saveWobLabels() { try { localStorage.setItem('fslc_wob_labels', JSON.stringify(wobLabelPos)); } catch (e) {} }
   // 取标注偏移后的坐标：默认 (dx,dy) + 用户偏移
   function lp(id, dx, dy) {
@@ -3613,52 +3645,70 @@
     const o = wobLabelPos[id] || { dx: 0, dy: 0 };
     return { dx: o.dx || 0, dy: o.dy || 0 };
   }
-  // 编辑模式下记录标注位置并画虚线框（拾取框）
-  function markLabel(id, x, y) {
+  // 编辑模式下记录标注位置并画虚线框（拾取框，宽度随文字自适应；ctx 为空则画在 2D 画布）
+  function markLabel(id, x, y, txtW, ctx) {
+    const c = ctx || wobCtx;
     if (!wobState.editMode) return;
-    wobLabelRects[id] = { x: x, y: y };
-    wobCtx.strokeStyle = 'rgba(255,152,0,0.55)';
-    wobCtx.setLineDash([3, 3]);
-    wobCtx.lineWidth = 1;
-    wobCtx.strokeRect(x - 6, y - 10, 12, 12);
-    wobCtx.setLineDash([]);
+    if (ctx) wobLabelRects3D[id] = { x: x, y: y };
+    else wobLabelRects[id] = { x: x, y: y };
+    const bw = Math.max(txtW || 12, 34);
+    c.strokeStyle = 'rgba(255,152,0,0.6)';
+    c.setLineDash([4, 3]);
+    c.lineWidth = 1.2;
+    c.strokeRect(x - bw / 2, y - 11, bw, 16);
+    c.setLineDash([]);
   }
   // 指针坐标 → 画布逻辑坐标（与 drawWob/resize 同一坐标系：parentElement 的 CSS 像素）
   function wobPointerXY(e) {
     const rect = wobCanvas.parentElement.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
+  // 3D 画布指针坐标（基于 3D canvas 的 parentElement）
+  function wobPointerXY3D(e) {
+    const rect = wobCanvas3D.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
   let dragLabel = null, dragStartX = 0, dragStartY = 0, dragOffX = 0, dragOffY = 0;
-  wobCanvas.addEventListener('pointerdown', (e) => {
-    if (!wobState.editMode) return;
-    const p = wobPointerXY(e);
-    let best = null, bestD = 1e9;
-    for (const id in wobLabelRects) {
-      const r = wobLabelRects[id];
-      const d = Math.hypot(p.x - r.x, p.y - r.y);
-      if (d < bestD) { bestD = d; best = id; }
-    }
-    if (best && bestD < 46) {
-      dragLabel = best;
-      const o = wobLabelPos[best] || { dx: 0, dy: 0 };
-      dragOffX = o.dx || 0; dragOffY = o.dy || 0;
-      dragStartX = p.x; dragStartY = p.y;
-      e.preventDefault();
-    }
-  });
-  wobCanvas.addEventListener('pointermove', (e) => {
-    if (!dragLabel) return;
-    const p = wobPointerXY(e);
-    const o = wobLabelPos[dragLabel] || { dx: 0, dy: 0 };
-    o.dx = dragOffX + (p.x - dragStartX);
-    o.dy = dragOffY + (p.y - dragStartY);
-    wobLabelPos[dragLabel] = o;
-    drawWob();
-    saveWobLabels();
-  });
-  const endDrag = () => { dragLabel = null; };
-  wobCanvas.addEventListener('pointerup', endDrag);
-  wobCanvas.addEventListener('pointercancel', endDrag);
+  function bindWobDrag(canvas, rects, xyFn) {
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!wobState.editMode) return;
+      const p = xyFn(e);
+      let best = null, bestD = 1e9;
+      for (const id in rects) {
+        const r = rects[id];
+        const d = Math.hypot(p.x - r.x, p.y - r.y);
+        if (d < bestD) { bestD = d; best = id; }
+      }
+      if (best && bestD < 46) {
+        dragLabel = best;
+        const o = wobLabelPos[best] || { dx: 0, dy: 0 };
+        dragOffX = o.dx || 0; dragOffY = o.dy || 0;
+        dragStartX = p.x; dragStartY = p.y;
+        e.preventDefault();
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!dragLabel) return;
+      const p = xyFn(e);
+      const o = wobLabelPos[dragLabel] || { dx: 0, dy: 0 };
+      o.dx = dragOffX + (p.x - dragStartX);
+      o.dy = dragOffY + (p.y - dragStartY);
+      wobLabelPos[dragLabel] = o;
+      drawWob();
+      drawWob3D();
+      saveWobLabels();
+    });
+    const endDrag = () => { dragLabel = null; };
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+  }
+  bindWobDrag(wobCanvas, wobLabelRects, wobPointerXY);
+  bindWobDrag(wobCanvas3D, wobLabelRects3D, wobPointerXY3D);
+  function wobPointerXY3DE(e) {
+    const rect = wobCanvas3DE.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  bindWobDrag(wobCanvas3DE, wobLabelRects3DE, wobPointerXY3DE);
 
   function resizeWobCanvas() {
     const rect = wobCanvas.parentElement.getBoundingClientRect();
@@ -3666,6 +3716,14 @@
     wobCanvas.width = rect.width * dpr;
     wobCanvas.height = rect.height * dpr;
     wobCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const rect3 = wobCanvas3D.parentElement.getBoundingClientRect();
+    wobCanvas3D.width = rect3.width * dpr;
+    wobCanvas3D.height = rect3.height * dpr;
+    wobCtx3D.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const rect3E = wobCanvas3DE.parentElement.getBoundingClientRect();
+    wobCanvas3DE.width = rect3E.width * dpr;
+    wobCanvas3DE.height = rect3E.height * dpr;
+    wobCtx3DE.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   // 摆动轨迹归一化横向位移 [-1,1]（xmm=沿焊缝位置，pitch=每周期推进间距）
@@ -3746,12 +3804,14 @@
     // 摆动宽度标注置于右上角，与左上标题同行分居，避免与轨迹/标题重叠（位置可自定义）
     const pB = lp('trackB', w - padR, padT + 9);
     wobCtx.textAlign = 'right';
-    wobCtx.fillText('摆动宽度 B=' + fmt(r.B, 2) + ' mm', pB.x, pB.y);
-    markLabel('trackB', pB.x, pB.y);
+    const txtB = '摆动宽度 B=' + fmt(r.B, 2) + ' mm';
+    wobCtx.fillText(txtB, pB.x, pB.y);
+    markLabel('trackB', pB.x, pB.y, txtB.length * 6);
     // 间距标注置于轨迹下方右侧（位置可自定义）
     const pP = lp('trackP', w - padR, midY + A + 12);
-    wobCtx.fillText('间距 p=' + fmt(r.pitch, 2) + ' mm', pP.x, pP.y);
-    markLabel('trackP', pP.x, pP.y);
+    const txtP = '间距 p=' + fmt(r.pitch, 2) + ' mm';
+    wobCtx.fillText(txtP, pP.x, pP.y);
+    markLabel('trackP', pP.x, pP.y, txtP.length * 6);
 
     // 已走轨迹（采样密度随视野/间距自适应，保证波形圆滑）
     const N = Math.min(Math.max(Math.ceil(viewMm / Math.max(r.pitch, 0.05)) * 12, 240), 2400);
@@ -3824,8 +3884,9 @@
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
     wobCtx.textAlign = 'left';
     const pTt = lp('tracktitle', padL, padT);
-    wobCtx.fillText('顶视 · 摆动轨迹（' + typeName + ' · f=' + fmt(r.f, 1) + 'Hz）', pTt.x, pTt.y);
-    markLabel('tracktitle', pTt.x, pTt.y);
+    const txtTt = '顶视 · 摆动轨迹（' + typeName + ' · f=' + fmt(r.f, 1) + 'Hz）';
+    wobCtx.fillText(txtTt, pTt.x, pTt.y);
+    markLabel('tracktitle', pTt.x, pTt.y, txtTt.length * 6);
   }
 
   function drawWobSection(w, topY, secH, r) {
@@ -3965,13 +4026,16 @@
     if (workH > 26) {
       wobCtx.textAlign = 'left';
       tTy = workTop + workH / 2 + 3 + oTk.dy;
-      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX + 6, tTy);
+      const tTxt = 't=' + thickMm.toFixed(1) + ' mm';
+      wobCtx.fillText(tTxt, tDimX + 6, tTy);
+      markLabel('thick', tDimX + 6, tTy, tTxt.length * 6);
     } else {
       wobCtx.textAlign = 'left';
       tTy = Math.min(workBottom + 12, secBottom) + oTk.dy;
-      wobCtx.fillText('t=' + thickMm.toFixed(1) + ' mm', tDimX, tTy);
+      const tTxt = 't=' + thickMm.toFixed(1) + ' mm';
+      wobCtx.fillText(tTxt, tDimX, tTy);
+      markLabel('thick', tDimX, tTy, tTxt.length * 6);
     }
-    markLabel('thick', tDimX, tTy);
 
     // 熔深标注（贴熔池左侧边，位置可自定义）
     const oDp = wobOff('depth');
@@ -3996,7 +4060,7 @@
     const dpTx = leftOk ? dimX - 6 : dimX + 6;
     const dpTy = Math.max(workTop + depthPx / 2 + 3, workTop + 10) + oDp.dy;
     wobCtx.fillText(depthLabel, dpTx, dpTy);
-    markLabel('depth', dimX, dpTy);
+    markLabel('depth', dpTx, dpTy, depthLabel.length * 6);
 
     // 熔宽标注（底部，位于容器标签留白区上方，位置可自定义）
     const oWd = wobOff('width');
@@ -4013,15 +4077,18 @@
     wobCtx.stroke();
     wobCtx.fillStyle = 'rgba(140,220,255,0.9)';
     wobCtx.textAlign = 'center';
-    wobCtx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', cx + oWd.dx, wY + 14);
-    markLabel('width', cx + oWd.dx, wY + 14);
+    const txtW = '熔宽 ' + fmt(r.width, 2) + ' mm';
+    wobCtx.fillText(txtW, cx + oWd.dx, wY + 14);
+    markLabel('width', cx + oWd.dx, wY + 14, txtW.length * 6);
 
-    // 熔穿提示
+    // 熔穿提示（可拖动）
     if (isBurnThrough) {
       wobCtx.fillStyle = 'rgba(255,120,80,0.95)';
       wobCtx.font = '9px "SF Mono", Consolas, monospace';
       wobCtx.textAlign = 'right';
-      wobCtx.fillText('熔穿', w - 14, workTop + 8);
+      const pBt = lp('burnthrough', w - 14, workTop + 8);
+      wobCtx.fillText('熔穿', pBt.x, pBt.y);
+      markLabel('burnthrough', pBt.x, pBt.y, 26);
     }
 
     // 标题（置于母材表面线上方留白处，与熔池/标注不重叠，位置可自定义）
@@ -4029,8 +4096,9 @@
     wobCtx.fillStyle = 'rgba(255,255,255,0.4)';
     wobCtx.textAlign = 'left';
     wobCtx.font = '9px "SF Mono", Consolas, monospace';
-    wobCtx.fillText('截面 · 熔深/熔宽动态演化', pSt.x, pSt.y);
-    markLabel('sectitle', pSt.x, pSt.y);
+    const txtSt = '截面 · 熔深/熔宽动态演化';
+    wobCtx.fillText(txtSt, pSt.x, pSt.y);
+    markLabel('sectitle', pSt.x, pSt.y, txtSt.length * 6);
 
     // 焊接方向指示（与焊接仿真一致）：箭头置于表面线上方空气区，速度标注在母材左侧（位置可自定义）
     const oDr = wobOff('dir');
@@ -4059,8 +4127,9 @@
     wobCtx.fillText('焊接方向', arrowX0, workTop + 13 + oDr.dy);
     wobCtx.fillStyle = 'rgba(255,255,255,0.75)';
     wobCtx.font = '10px monospace';
-    wobCtx.fillText('V=' + fmt(r.V, 0) + ' mm/s', arrowX0 + 60, workTop + 13 + oDr.dy);
-    markLabel('dir', arrowX0, workTop + 13 + oDr.dy);
+    const txtDir = 'V=' + fmt(r.V, 0) + ' mm/s';
+    wobCtx.fillText(txtDir, arrowX0 + 60, workTop + 13 + oDr.dy);
+    markLabel('dir', arrowX0, workTop + 13 + oDr.dy, 60);
 
     // 模式标注 + 材料标注（右下角母材内，与焊接仿真 KEYHOLE MODE 风格一致，位置可自定义）
     if (workH > 44) {
@@ -4069,12 +4138,347 @@
       wobCtx.textAlign = 'right';
       wobCtx.font = '10px monospace';
       wobCtx.fillStyle = '#ff9800';
-      wobCtx.fillText('WOBBLE KEYHOLE MODE', mX, mY);
-      markLabel('mode', mX, mY);
+      const txtMd = 'WOBBLE KEYHOLE MODE';
+      wobCtx.fillText(txtMd, mX, mY);
+      markLabel('mode', mX, mY, txtMd.length * 6);
       const oMt = wobOff('mat');
       wobCtx.fillStyle = 'rgba(255,255,255,0.6)';
-      wobCtx.fillText(r.matGroup + ' · ' + r.matName, w - 12 + oMt.dx, workBottom - 22 + oMt.dy);
-      markLabel('mat', w - 12 + oMt.dx, workBottom - 22 + oMt.dy);
+      const txtMt = r.matGroup + ' · ' + r.matName;
+      wobCtx.fillText(txtMt, w - 12 + oMt.dx, workBottom - 22 + oMt.dy);
+      markLabel('mat', w - 12 + oMt.dx, workBottom - 22 + oMt.dy, txtMt.length * 6);
+    }
+
+    // 仿真标题（原 WC 标签移入画布，位置可自定义；底部留白 56px 区域）
+    const pTg = lp('wobtag', w * 0.5, Math.min(secBottom + 16, topY + secH - 4));
+    wobCtx.fillStyle = 'rgba(255,255,255,0.5)';
+    wobCtx.textAlign = 'center';
+    wobCtx.font = '9px "SF Mono", Consolas, monospace';
+    const txtTg = 'WOBBLE WELDING SIMULATION · 熔深/熔宽动态演化';
+    wobCtx.fillText(txtTg, pTg.x, pTg.y);
+    markLabel('wobtag', pTg.x, pTg.y, txtTg.length * 6);
+  }
+
+  // ===== 环形光斑动态 3D 演化图（等距伪 3D：工件板 + 熔池/匙孔 + 环形光束 + 摆动轨迹） =====
+  function drawWob3D() {
+    const rect = wobCanvas3D.parentElement.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    const r = wobCalculate();
+    const c = wobCtx3D;
+    c.clearRect(0, 0, w, h);
+    const grow = Math.min(wobState.t / 2.5, 1);
+
+    // 等距投影常量：px=沿板宽、py=沿板长（焊接方向）、pz=向上
+    const K = 0.866, K2 = 0.5;
+    const BW = Math.min(w * 0.42, 205);  // 板宽（px）
+    const BL = Math.min(w * 0.5, 245);   // 板长（焊接方向 px）
+    const BH = Math.min(h * 0.26, 66);   // 板厚（px）
+    // 相对投影（cx=0, baseY=0），随后按包围盒自动缩放居中，确保工件完整在画布内
+    const proj0 = (px, py, pz) => ({ x: (px - py * K2) * K, y: (px * K2 + py) * K2 - pz });
+    const rawPts = [
+      proj0(0, 0, 0), proj0(BW, 0, 0), proj0(BW, BL, 0), proj0(0, BL, 0),
+      proj0(0, 0, BH), proj0(BW, 0, BH), proj0(BW, BL, BH),
+      proj0(BW / 2, BL / 2, 0), proj0(BW / 2, 0, 0), proj0(0, 0, BH * 1.5), proj0(BW, 0, BH * 1.5)
+    ];
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const p of rawPts) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    }
+    const pad = 30;
+    const sc = Math.min((w - pad * 2) / (maxX - minX || 1), (h - pad * 2) / (maxY - minY || 1), 1.4);
+    const cx = w / 2 - (minX + maxX) / 2 * sc;
+    const baseY = h / 2 - (minY + maxY) / 2 * sc;
+    const proj = (px, py, pz) => {
+      const q = proj0(px, py, pz);
+      return { x: cx + q.x * sc, y: baseY + q.y * sc };
+    };
+
+    // 顶面四角（pz=0）与前/右侧面下沿
+    const A = proj(0, 0, 0), B = proj(BW, 0, 0), C = proj(BW, BL, 0), D = proj(0, BL, 0);
+    const A2 = proj(0, 0, BH), B2 = proj(BW, 0, BH), C2 = proj(BW, BL, BH);
+    const matCols = baseColor(r.matGroup);
+
+    // 1) 前侧面
+    c.fillStyle = matCols[1];
+    c.beginPath();
+    c.moveTo(A2.x, A2.y); c.lineTo(A.x, A.y); c.lineTo(B.x, B.y); c.lineTo(B2.x, B2.y);
+    c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(138,150,173,0.45)'; c.lineWidth = 1; c.stroke();
+    // 2) 右侧面
+    c.fillStyle = 'rgba(13,18,32,0.85)';
+    c.beginPath();
+    c.moveTo(B2.x, B2.y); c.lineTo(B.x, B.y); c.lineTo(C.x, C.y); c.lineTo(C2.x, C2.y);
+    c.closePath(); c.fill();
+    c.stroke();
+    // 3) 顶面
+    c.fillStyle = matCols[0];
+    c.beginPath();
+    c.moveTo(A.x, A.y); c.lineTo(B.x, B.y); c.lineTo(C.x, C.y); c.lineTo(D.x, D.y);
+    c.closePath(); c.fill();
+    c.stroke();
+    // 顶面网格（增强 3D 感）
+    c.strokeStyle = 'rgba(255,255,255,0.06)';
+    for (let gx = 0.25; gx < 0.95; gx += 0.25) {
+      const p1 = proj(BW * gx, 0, 0), p2 = proj(BW * gx, BL, 0);
+      c.beginPath(); c.moveTo(p1.x, p1.y); c.lineTo(p2.x, p2.y); c.stroke();
+    }
+
+    // 比例尺与演化尺寸
+    const pxPerMm = Math.min(BH * 0.9 / Math.max(r.depth, 0.01), BW * 0.9 / Math.max(r.width, 0.01));
+    const depthPx = Math.min(r.depth * grow * pxPerMm, BH);
+    const widthPx = Math.min(r.width * pxPerMm, BW * 0.85);
+    const halfW = widthPx / 2;
+    const midP = proj(BW / 2, BL * 0.5, 0);   // 顶面熔池中心
+    const fcx = proj(BW / 2, 0, 0).x;         // 前侧面 x 中心
+    const fBottom = proj(BW / 2, 0, depthPx); // 前侧面熔深底
+
+    // 4) 前侧面熔池 U 形（深=depthPx）
+    if (depthPx > 1.5) {
+      const poolGrad = c.createLinearGradient(0, A.y, 0, Math.max(fBottom.y, A.y + 1));
+      poolGrad.addColorStop(0, 'rgba(255,120,60,0.95)');
+      poolGrad.addColorStop(1, 'rgba(200,50,20,0.7)');
+      c.fillStyle = poolGrad;
+      c.beginPath();
+      c.moveTo(fcx - halfW, A.y);
+      c.quadraticCurveTo(fcx - halfW * 0.7, A.y + depthPx * 0.45, fcx, fBottom.y + depthPx * 0.06);
+      c.quadraticCurveTo(fcx + halfW * 0.7, A.y + depthPx * 0.45, fcx + halfW, A.y);
+      c.closePath(); c.fill();
+      // 匙孔（前侧面窄条）
+      const keyW = Math.max(widthPx * 0.07, 2);
+      c.fillStyle = 'rgba(255,205,120,0.9)';
+      c.fillRect(fcx - keyW / 2, A.y, keyW, Math.max(depthPx * 0.75, 2));
+    }
+
+    // 5) 顶面熔池椭圆（随 grow 展开）+ 匙孔
+    const poolRx = Math.max(halfW, 2), poolRy = Math.max(halfW * 0.38, 2);
+    const poolGrad2 = c.createRadialGradient(midP.x, midP.y, 0, midP.x, midP.y, poolRx);
+    poolGrad2.addColorStop(0, 'rgba(255,130,70,0.95)');
+    poolGrad2.addColorStop(1, 'rgba(255,87,34,0.55)');
+    c.fillStyle = poolGrad2;
+    c.beginPath();
+    c.ellipse(midP.x, midP.y, poolRx, poolRy, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = 'rgba(255,205,120,0.9)';
+    c.beginPath();
+    c.ellipse(midP.x, midP.y, Math.max(poolRx * 0.12, 1.5), Math.max(poolRy * 0.12, 1), 0, 0, Math.PI * 2);
+    c.fill();
+
+    // 6) 摆动轨迹（顶面，沿焊接方向）
+    const Apx = Math.max(r.B / 2 * (BL / 10), 3);
+    c.strokeStyle = 'rgba(0,188,212,0.85)';
+    c.lineWidth = 1.6;
+    c.beginPath();
+    for (let i = 0; i <= 160; i++) {
+      const py = BL * (0.16 + 0.68 * i / 160);
+      const pyMm = (py / BL) * 10;
+      const off = wobTrackOffset(r.type, pyMm, r.pitch);
+      const p = proj(BW / 2 + off * Apx, py, 0);
+      if (i === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+    }
+    c.stroke();
+
+    // 7) 环形光束（锥形 + 光斑）跟随摆动位置
+    const beamProg = (wobState.t / 3.2) % 1;
+    const beamPy = BL * (0.16 + 0.68 * beamProg);
+    const beamPyMm = (beamPy / BL) * 10;
+    const beamOff = wobTrackOffset(r.type, beamPyMm, r.pitch);
+    const beamPx = BW / 2 + beamOff * Apx;
+    const beamP = proj(beamPx, beamPy, 0);
+    const beamTop = proj(beamPx, beamPy, BH * 1.5);
+    c.strokeStyle = 'rgba(255,150,70,0.55)';
+    c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(beamTop.x - 4, beamTop.y); c.lineTo(beamP.x - poolRx * 0.5, beamP.y); c.stroke();
+    c.beginPath();
+    c.moveTo(beamTop.x + 4, beamTop.y); c.lineTo(beamP.x + poolRx * 0.5, beamP.y); c.stroke();
+    c.strokeStyle = 'rgba(255,235,170,0.95)';
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.moveTo(beamTop.x, beamTop.y); c.lineTo(beamP.x, beamP.y); c.stroke();
+    // 光斑（外环 + 内芯）
+    c.strokeStyle = 'rgba(0,188,212,0.95)';
+    c.lineWidth = 1.5;
+    c.beginPath();
+    c.ellipse(beamP.x, beamP.y, poolRx * 0.8, poolRy * 0.8, 0, 0, Math.PI * 2);
+    c.stroke();
+    c.fillStyle = 'rgba(224,247,255,0.9)';
+    c.beginPath();
+    c.ellipse(beamP.x, beamP.y, Math.max(poolRx * 0.22, 1.5), Math.max(poolRy * 0.22, 1), 0, 0, Math.PI * 2);
+    c.fill();
+
+    // 8) 焊接方向箭头（沿板长方向）
+    const dirP0 = proj(BW / 2, BL * 0.05, 0), dirP1 = proj(BW / 2, BL * 0.12, 0);
+    c.strokeStyle = 'rgba(255,152,0,0.7)';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(dirP0.x, dirP0.y); c.lineTo(dirP1.x, dirP1.y); c.stroke();
+    const ang = Math.atan2(dirP1.y - dirP0.y, dirP1.x - dirP0.x);
+    c.fillStyle = '#ff9800';
+    c.beginPath();
+    c.moveTo(dirP1.x, dirP1.y);
+    c.lineTo(dirP1.x - 8 * Math.cos(ang - 0.4), dirP1.y - 8 * Math.sin(ang - 0.4));
+    c.lineTo(dirP1.x - 8 * Math.cos(ang + 0.4), dirP1.y - 8 * Math.sin(ang + 0.4));
+    c.closePath(); c.fill();
+
+    // 9) 可拖标注：标题 / 熔深（前侧面）/ 熔宽（顶面）
+    const p3T = lp('wob3dtitle', w * 0.5, 16);
+    c.fillStyle = 'rgba(255,255,255,0.5)';
+    c.textAlign = 'center';
+    c.font = '9px "SF Mono", Consolas, monospace';
+    const t3T = '环形光斑 · 3D 熔池动态演化';
+    c.fillText(t3T, p3T.x, p3T.y);
+    markLabel('wob3dtitle', p3T.x, p3T.y, t3T.length * 6, c);
+    const p3D = lp('wob3ddepth', fcx - halfW - 8, (A.y + Math.max(fBottom.y, A.y + 2)) / 2);
+    c.fillStyle = 'rgba(255,200,120,0.9)';
+    c.textAlign = 'right';
+    c.font = '9px "SF Mono", Consolas, monospace';
+    const t3D = '熔深 ' + fmt(r.depth * grow, 2) + ' mm';
+    c.fillText(t3D, p3D.x, p3D.y);
+    markLabel('wob3ddepth', p3D.x, p3D.y, t3D.length * 6, c);
+    const p3W = lp('wob3dwidth', midP.x, midP.y - poolRy - 5);
+    c.fillStyle = 'rgba(140,220,255,0.9)';
+    c.textAlign = 'center';
+    c.font = '9px "SF Mono", Consolas, monospace';
+    const t3W = '熔宽 ' + fmt(r.width, 2) + ' mm';
+    c.fillText(t3W, p3W.x, p3W.y);
+    markLabel('wob3dwidth', p3W.x, p3W.y, t3W.length * 6, c);
+  }
+
+  // ===== 环形光斑能量分布 3D 曲面图（内芯锥形 + 外环环形 + 组合，彩色渐变网格曲面） =====
+  function jetColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    let r, g, b;
+    if (t < 0.2) { r = 0; g = t * 5; b = 1; }
+    else if (t < 0.45) { r = 0; g = 1; b = 1 - (t - 0.2) * 4; }
+    else if (t < 0.7) { r = (t - 0.45) * 4; g = 1; b = 0; }
+    else if (t < 0.9) { r = 1; g = 1 - (t - 0.7) * 5; b = 0; }
+    else { r = 1; g = 0; b = (t - 0.9) * 5; }
+    return `rgb(${(r * 255) | 0},${(g * 255) | 0},${(b * 255) | 0})`;
+  }
+
+  function drawWob3DEnergy() {
+    const rect = wobCanvas3DE.parentElement.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    const c = wobCtx3DE;
+    c.clearRect(0, 0, w, h);
+    const grow = Math.min(wobState.t / 2.5, 1);
+    const pulse = 1 + 0.1 * Math.sin(wobState.t * 5);
+
+    // 能量分布参数（µm）
+    const coreD = Math.max(Number($('wobCoreDiaNum').value) || 50, 1);
+    const ringD = Math.max(Number($('wobRingDiaNum').value) || 100, 1);
+    const Pc = Math.max(Number($('wobCorePNum').value) || 1500, 1);
+    const Pr = Math.max(Number($('wobRingPNum').value) || 1500, 1);
+    const sigmaC = coreD / 4, sigmaR = ringD / 6, R0 = ringD / 2;
+    const Rdisp = ringD * 0.95; // 显示半径（µm），让外环完整显示
+    // 归一化半径 rn = r_mm*1000 / Rdisp ∈ [0, ~1.4]
+    const Ecore = (rn) => Math.exp(-Math.pow(rn * Rdisp, 2) / (2 * sigmaC * sigmaC));
+    const Ering = (rn) => Math.exp(-Math.pow(rn * Rdisp - R0, 2) / (2 * sigmaR * sigmaR));
+    const Ecombo = (rn) => Pc * Ecore(rn) + Pr * Ering(rn);
+    const EmaxCombo = Pc + Pr;
+
+    // 三个子图布局
+    const subW = w / 3;
+    const dispR = Math.min(subW * 0.32, h * 0.30); // 每个子图显示半径（px）
+    const Hscale = h * 0.30;
+    const cy = h * 0.58;
+    const subCenters = [subW * 0.5, subW * 1.5, subW * 2.5];
+    const subLabels = ['内芯（高斯锥形）', '外环（环形碗状）', '组合（环形光斑）'];
+    const subEfn = [Ecore, Ering, Ecombo];
+    const subEmax = [1, 1, EmaxCombo];
+
+    const iso = 0.866, iso2 = 0.5;
+    const N = 22;
+
+    for (let s = 0; s < 3; s++) {
+      const cx = subCenters[s];
+      const Efn = subEfn[s], Emax = subEmax[s];
+      const proj = (X, Y, Z) => ({
+        x: cx + (X - Y) * iso * dispR,
+        y: cy - Z * Hscale + (X + Y) * iso2 * dispR * 0.5
+      });
+
+      // 预计算网格高度
+      const grid = [];
+      for (let j = 0; j <= N; j++) {
+        grid[j] = [];
+        for (let i = 0; i <= N; i++) {
+          const X = -1 + 2 * i / N, Y = -1 + 2 * j / N;
+          const rn = Math.hypot(X, Y);
+          grid[j][i] = Math.max(0, Efn(rn) / Emax) * grow * pulse;
+        }
+      }
+
+      // 底面（Z=0 平面，浅色）
+      c.fillStyle = 'rgba(30,40,60,0.5)';
+      c.beginPath();
+      const b00 = proj(-1, -1, 0), b10 = proj(1, -1, 0), b11 = proj(1, 1, 0), b01 = proj(-1, 1, 0);
+      c.moveTo(b00.x, b00.y); c.lineTo(b10.x, b10.y); c.lineTo(b11.x, b11.y); c.lineTo(b01.x, b01.y);
+      c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(138,150,173,0.3)'; c.lineWidth = 0.8; c.stroke();
+
+      // 曲面填充（painter's：j 从远到近）
+      for (let j = 0; j < N; j++) {
+        for (let i = 0; i < N; i++) {
+          const p00 = proj(-1 + 2 * i / N, -1 + 2 * j / N, grid[j][i]);
+          const p10 = proj(-1 + 2 * (i + 1) / N, -1 + 2 * j / N, grid[j][i + 1]);
+          const p11 = proj(-1 + 2 * (i + 1) / N, -1 + 2 * (j + 1) / N, grid[j + 1][i + 1]);
+          const p01 = proj(-1 + 2 * i / N, -1 + 2 * (j + 1) / N, grid[j + 1][i]);
+          const avgZ = (grid[j][i] + grid[j][i + 1] + grid[j + 1][i + 1] + grid[j + 1][i]) / 4;
+          c.fillStyle = jetColor(avgZ);
+          c.beginPath();
+          c.moveTo(p00.x, p00.y); c.lineTo(p10.x, p10.y); c.lineTo(p11.x, p11.y); c.lineTo(p01.x, p01.y);
+          c.closePath(); c.fill();
+        }
+      }
+      // 网格线（横向）
+      c.strokeStyle = 'rgba(0,0,0,0.28)';
+      c.lineWidth = 0.5;
+      for (let j = 0; j <= N; j++) {
+        c.beginPath();
+        for (let i = 0; i <= N; i++) {
+          const p = proj(-1 + 2 * i / N, -1 + 2 * j / N, grid[j][i]);
+          if (i === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+        }
+        c.stroke();
+      }
+      // 网格线（纵向）
+      for (let i = 0; i <= N; i++) {
+        c.beginPath();
+        for (let j = 0; j <= N; j++) {
+          const p = proj(-1 + 2 * i / N, -1 + 2 * j / N, grid[j][i]);
+          if (j === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
+        }
+        c.stroke();
+      }
+
+      // 子图底部名称
+      c.fillStyle = 'rgba(255,255,255,0.6)';
+      c.textAlign = 'center';
+      c.font = '9px "SF Mono", Consolas, monospace';
+      c.fillText(subLabels[s], cx, h - 8);
+    }
+
+    // 可拖标注：标题 + 三个峰值标注
+    const pET = lp('wob3detitle', w * 0.5, 14);
+    c.fillStyle = 'rgba(255,255,255,0.55)';
+    c.textAlign = 'center';
+    c.font = '9px "SF Mono", Consolas, monospace';
+    const tET = '环形光斑能量分布 3D · 内芯 + 外环 = 组合';
+    c.fillText(tET, pET.x, pET.y);
+    markLabel('wob3detitle', pET.x, pET.y, tET.length * 6, c);
+
+    // 峰值标注（每个子图峰顶，可拖）
+    const peakY = cy - Hscale * grow * pulse - 6;
+    const peakIds = ['wob3decore', 'wob3dering', 'wob3decombo'];
+    const peakTexts = ['内芯峰', '外环峰', '组合峰'];
+    for (let s = 0; s < 3; s++) {
+      const p = lp(peakIds[s], subCenters[s], peakY);
+      c.fillStyle = s === 2 ? 'rgba(255,120,80,0.95)' : 'rgba(255,220,120,0.9)';
+      c.textAlign = 'center';
+      c.font = '9px "SF Mono", Consolas, monospace';
+      c.fillText(peakTexts[s], p.x, p.y);
+      markLabel(peakIds[s], p.x, p.y, peakTexts[s].length * 6, c);
     }
   }
 
@@ -4087,6 +4491,8 @@
     wobState._lt = ts;
     wobState.t += dt * 0.016 * wobState.speed;
     drawWob();
+    try { drawWob3D(); } catch (err) { console.error('wob3d:', err.message); }
+    try { drawWob3DEnergy(); } catch (err) { console.error('wob3de:', err.message); }
     wobAnimId = requestAnimationFrame(wobLoop);
   }
 
@@ -4120,7 +4526,11 @@
       $('wobPlay').textContent = wobState.running ? '暂停' : '播放';
     }
     wobLabelRects = {};
+    wobLabelRects3D = {};
+    wobLabelRects3DE = {};
     drawWob();
+    drawWob3D();
+    drawWob3DEnergy();
   });
 
   // 保存环形光斑仿真画面为图片（与焊接仿真一致：原生相册 + 浏览器下载兜底）
@@ -4162,6 +4572,157 @@
     document.body.removeChild(a);
     if (wasRunning) { wobState.running = true; $('wobPlay').textContent = '暂停'; }
     showToast('已开始保存图片');
+  });
+
+  // ===== GIF 动图保存（内嵌 GIF89a 编码器，无三方依赖） =====
+  // 均匀量化 256 色调色板（6×6×6 彩色 + 40 灰阶）
+  const GIF_PALETTE = (() => {
+    const p = [];
+    for (let r = 0; r < 6; r++) for (let g = 0; g < 6; g++) for (let b = 0; b < 6; b++)
+      p.push([r * 51, g * 51, b * 51]);
+    for (let i = 0; i < 40; i++) { const v = Math.round(i * 255 / 39); p.push([v, v, v]); }
+    return p;
+  })();
+  function gifQuantize(r, g, b) {
+    const ri = Math.min(5, Math.round(r / 51)), gi = Math.min(5, Math.round(g / 51)), bi = Math.min(5, Math.round(b / 51));
+    return ri * 36 + gi * 6 + bi;
+  }
+  // GIF LZW 压缩（minCodeSize=8）
+  function gifLzw(indices, minCodeSize) {
+    const clearCode = 1 << minCodeSize, eoiCode = clearCode + 1;
+    let codeSize = minCodeSize + 1;
+    let dict = new Map();
+    const resetDict = () => {
+      dict.clear();
+      for (let i = 0; i < clearCode; i++) dict.set(String(i), i);
+    };
+    resetDict();
+    let nextCode = eoiCode + 1;
+    const bits = [];
+    const writeCode = (code, size) => { for (let i = 0; i < size; i++) bits.push((code >> i) & 1); };
+    writeCode(clearCode, codeSize);
+    let w = String(indices[0]);
+    for (let i = 1; i < indices.length; i++) {
+      const c = indices[i], wc = w + ',' + c;
+      if (dict.has(wc)) { w = wc; continue; }
+      writeCode(dict.get(w), codeSize);
+      if (nextCode < 4096) {
+        dict.set(wc, nextCode++);
+        if (nextCode > (1 << codeSize) && codeSize < 12) codeSize++;
+      } else {
+        writeCode(clearCode, codeSize);
+        codeSize = minCodeSize + 1;
+        resetDict();
+        nextCode = eoiCode + 1;
+      }
+      w = String(c);
+    }
+    writeCode(dict.get(w), codeSize);
+    writeCode(eoiCode, codeSize);
+    const bytes = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      let byte = 0;
+      for (let j = 0; j < 8 && i + j < bits.length; j++) byte |= bits[i + j] << j;
+      bytes.push(byte);
+    }
+    return bytes;
+  }
+  function encodeGif(frames, width, height, fps) {
+    const delay = Math.max(2, Math.round(100 / fps));
+    const out = [];
+    const w16 = (v) => { out.push(v & 255, (v >> 8) & 255); };
+    const wStr = (s) => { for (let i = 0; i < s.length; i++) out.push(s.charCodeAt(i)); };
+    wStr('GIF89a');
+    w16(width); w16(height);
+    out.push(0xF7, 0, 0); // GCT 256 色
+    for (const [r, g, b] of GIF_PALETTE) out.push(r, g, b);
+    // NETSCAPE 无限循环
+    out.push(0x21, 0xFF, 0x0B); wStr('NETSCAPE2.0');
+    out.push(0x03, 0x01, 0x00, 0x00, 0x00);
+    for (const frame of frames) {
+      out.push(0x21, 0xF9, 0x04, 0x00); w16(delay); out.push(0x00, 0x00);
+      out.push(0x2C); w16(0); w16(0); w16(width); w16(height); out.push(0x00);
+      const idx = new Uint8Array(width * height);
+      for (let i = 0; i < width * height; i++)
+        idx[i] = gifQuantize(frame.data[i * 4], frame.data[i * 4 + 1], frame.data[i * 4 + 2]);
+      const lzwBytes = gifLzw(idx, 8);
+      out.push(8);
+      for (let i = 0; i < lzwBytes.length; i += 255) {
+        const chunk = lzwBytes.slice(i, i + 255);
+        out.push(chunk.length);
+        for (const b of chunk) out.push(b);
+      }
+      out.push(0);
+    }
+    out.push(0x3B);
+    return new Uint8Array(out);
+  }
+
+  // 保存 GIF：录制 2D + 3D + 能量曲面三图合成动画
+  $('wobSaveGif').addEventListener('click', () => {
+    const wasRunning = wobState.running;
+    wobState.running = true;
+    $('wobPlay').textContent = '暂停';
+    showToast('正在录制 GIF...');
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = wobCanvas.parentElement.getBoundingClientRect().width;
+    const h1 = wobCanvas.parentElement.getBoundingClientRect().height;
+    const h2 = wobCanvas3D.parentElement.getBoundingClientRect().height;
+    const h3 = wobCanvas3DE.parentElement.getBoundingClientRect().height;
+    const gap = 6;
+    const totalH = h1 + h2 + h3 + gap * 2;
+    const outW = 300;
+    const outH = Math.round(totalH * outW / cssW);
+    const off = document.createElement('canvas');
+    off.width = outW; off.height = outH;
+    const octx = off.getContext('2d');
+    const N = 18, fps = 10;
+    const frames = [];
+    let i = 0;
+    const step = 0.016 * (1000 / fps / 16.67) * wobState.speed;
+    function capture() {
+      octx.fillStyle = '#05080f';
+      octx.fillRect(0, 0, outW, outH);
+      let y = 0;
+      const dh1 = h1 * outW / cssW, dh2 = h2 * outW / cssW, dh3 = h3 * outW / cssW;
+      octx.drawImage(wobCanvas, 0, y, outW, dh1); y += dh1 + gap;
+      octx.drawImage(wobCanvas3D, 0, y, outW, dh2); y += dh2 + gap;
+      octx.drawImage(wobCanvas3DE, 0, y, outW, dh3);
+      frames.push(octx.getImageData(0, 0, outW, outH));
+      i++;
+      if (i < N) {
+        wobState.t += step;
+        drawWob(); drawWob3D(); drawWob3DEnergy();
+        setTimeout(capture, 20);
+      } else {
+        try {
+          const gifBytes = encodeGif(frames, outW, outH, fps);
+          const blob = new Blob([gifBytes], { type: 'image/gif' });
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            if (window.AndroidBridge && typeof AndroidBridge.saveGif === 'function') {
+              window.__lastGifDataUrl = dataUrl;
+              AndroidBridge.saveGif();
+              showToast('GIF 已保存到相册 · 光斑计算器');
+            } else {
+              const a = document.createElement('a');
+              a.href = dataUrl;
+              a.download = '环形光斑仿真_' + new Date().toISOString().slice(0, 10) + '.gif';
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              showToast('GIF 已开始下载');
+            }
+            if (wasRunning) { wobState.running = true; $('wobPlay').textContent = '暂停'; }
+            else { wobState.running = false; $('wobPlay').textContent = '播放'; }
+          };
+          reader.readAsDataURL(blob);
+        } catch (e) {
+          showToast('GIF 生成失败：' + e.message);
+          if (wasRunning) { wobState.running = true; $('wobPlay').textContent = '暂停'; }
+        }
+      }
+    }
+    capture();
   });
 
   // 输入绑定（滑动条与数字框联动）
