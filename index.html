@@ -3845,8 +3845,9 @@
       wobCtx.fillRect(cx - keyW / 2, workTop, keyW, keyH);
     }
 
-    // 环形光束（外环+内芯）沿表面摆动
-    const wobAmp = Math.min(r.B / 2 * pxPerMm, widthPx * 0.45);
+    // 环形光束（外环+内芯）沿表面摆动：摆动幅度按固定参考比例随 B 线性变化（避免被熔宽/比例尺耦合钳制）
+    const wobRef = Math.max(w * 0.7 / 6, 10); // 参考：6mm 摆动宽度对应的像素基准
+    const wobAmp = Math.min(r.B / 2 * wobRef, Math.max(widthPx * 0.8, w * 0.35));
     const beamX = cx + wobTrackOffset(r.type, wobState.t, r.pitch) * wobAmp;
     wobCtx.beginPath();
     wobCtx.arc(beamX, workTop, Math.max(widthPx * 0.09, 2.5), 0, Math.PI * 2);
