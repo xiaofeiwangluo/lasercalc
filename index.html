@@ -979,14 +979,25 @@
     position: relative;
   }
   .weld-hero .wh-right .wh-sub-label {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
   .weld-hero .wh-right .wh-sub {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
+    font-size: 34px;
+    font-weight: 800;
     font-family: "SF Mono", "Consolas", monospace;
+    background: linear-gradient(135deg, var(--laser-2), var(--laser));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+  .weld-hero .wh-right .wh-sub .unit {
+    font-size: 14px;
+    -webkit-text-fill-color: var(--text-2);
+    font-weight: 400;
   }
 
   .weld-canvas-wrap {
@@ -1009,6 +1020,22 @@
     display: block;
     touch-action: none;
   }
+  .wc-save-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 5;
+    background: rgba(10,15,30,0.7);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.65);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    line-height: 1.4;
+  }
+  .wc-save-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
   .weld-canvas-wrap .wc-tag {
     position: absolute;
     bottom: 28px; left: 12px;
@@ -1855,7 +1882,7 @@
         </div>
         <div class="wh-right">
           <div class="wh-sub-label">预估熔宽</div>
-          <div class="wh-sub"><span id="wobWidthOut">0</span> mm</div>
+          <div class="wh-sub"><span id="wobWidthOut">0</span><span class="unit"> mm</span></div>
         </div>
       </div>
 
@@ -1993,6 +2020,7 @@
       <!-- 熔深 / 熔宽动态演化 -->
       <div class="weld-canvas-wrap">
         <canvas id="wobCanvas"></canvas>
+        <button class="wc-save-btn" data-save="wobCanvas">保存</button>
         <div class="wc-legend">
           <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
           <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
@@ -2004,6 +2032,7 @@
       <!-- 环形光斑动态 3D 演化图 -->
       <div class="weld-canvas-wrap" style="margin-top:12px;">
         <canvas id="wobCanvas3D"></canvas>
+        <button class="wc-save-btn" data-save="wobCanvas3D">保存</button>
         <div class="wc-legend">
           <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
           <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
@@ -2014,6 +2043,7 @@
       <!-- 环形光斑能量分布 3D 曲面图（内芯锥形 + 外环环形 + 组合） -->
       <div class="weld-canvas-wrap" style="margin-top:12px;">
         <canvas id="wobCanvas3DEnergy"></canvas>
+        <button class="wc-save-btn" data-save="wobCanvas3DEnergy">保存</button>
         <div class="wc-legend">
           <span class="lg"><span class="dot" style="background:#ff5722;"></span>高能区</span>
           <span class="lg"><span class="dot" style="background:#ffd54f;"></span>中能区</span>
@@ -4167,7 +4197,8 @@
     const r = wobCalculate();
     const c = wobCtx3D;
     c.clearRect(0, 0, w, h);
-    const grow = Math.min(wobState.t / 2.5, 1);
+    if (!window.__wob3dStartTime) window.__wob3dStartTime = Date.now();
+    const grow = Math.min((Date.now() - window.__wob3dStartTime) / 2500, 1);
 
     // 等距投影常量：px=沿板宽、py=沿板长（焊接方向）、pz=向上
     const K = 0.866, K2 = 0.5;
@@ -4363,31 +4394,44 @@
     const w = rect.width, h = rect.height;
     const c = wobCtx3DE;
     c.clearRect(0, 0, w, h);
-    const grow = Math.min(wobState.t / 2.5, 1);
-    const pulse = 1 + 0.1 * Math.sin(wobState.t * 5);
+    // 独立计时的升起动画（不依赖 wobState.t，避免编辑模式/暂停时曲面塌陷）
+    if (!window.__wob3deStartTime) window.__wob3deStartTime = Date.now();
+    const grow = Math.min((Date.now() - window.__wob3deStartTime) / 2500, 1);
+    const pulse = 1 + 0.08 * Math.sin(Date.now() / 400);
 
-    // 能量分布参数（µm）
+    // 能量分布参数（µm）—— 基于实际功率密度模型
+    // 文献依据：环形光斑（ARM）激光器 = 内芯高斯光束 + 外环空心光束
+    // 内芯峰值功率密度 Ic0 = Pc/(π·σc²)，外环峰值功率密度 Ir0 = Pr/(2π·R0·σr)
+    // 因内芯芯径远小于外环，内芯峰值功率密度通常是外环的 3~10 倍
     const coreD = Math.max(Number($('wobCoreDiaNum').value) || 50, 1);
     const ringD = Math.max(Number($('wobRingDiaNum').value) || 100, 1);
     const Pc = Math.max(Number($('wobCorePNum').value) || 1500, 1);
     const Pr = Math.max(Number($('wobRingPNum').value) || 1500, 1);
-    const sigmaC = coreD / 4, sigmaR = ringD / 6, R0 = ringD / 2;
-    const Rdisp = ringD * 0.95; // 显示半径（µm），让外环完整显示
-    // 归一化半径 rn = r_mm*1000 / Rdisp ∈ [0, ~1.4]
-    const Ecore = (rn) => Math.exp(-Math.pow(rn * Rdisp, 2) / (2 * sigmaC * sigmaC));
-    const Ering = (rn) => Math.exp(-Math.pow(rn * Rdisp - R0, 2) / (2 * sigmaR * sigmaR));
-    const Ecombo = (rn) => Pc * Ecore(rn) + Pr * Ering(rn);
-    const EmaxCombo = Pc + Pr;
+    const sigmaC = coreD / 4;                           // 内芯高斯束腰半径（µm）
+    const R0 = (ringD + coreD) / 4;                    // 外环中心半径（µm）
+    const sigmaR = Math.max((ringD - coreD) / 8, 2);   // 外环宽度标准差（µm）
+    const Rdisp = ringD * 1.05;                         // 显示半径（µm），让外环完整显示
+    // 实际功率密度函数（W/µm²），rn = 归一化半径（r/Rdisp）
+    const Icore = (rn) => (Pc / (Math.PI * sigmaC * sigmaC)) * Math.exp(-Math.pow(rn * Rdisp, 2) / (2 * sigmaC * sigmaC));
+    const Iring = (rn) => (Pr / (2 * Math.PI * R0 * sigmaR)) * Math.exp(-Math.pow(rn * Rdisp - R0, 2) / (2 * sigmaR * sigmaR));
+    const Icombo = (rn) => Icore(rn) + Iring(rn);
+    // 全局最大值（用组合图峰值统一归一化，使三个子图高度可比）
+    let IglobalMax = 0;
+    for (let i = 0; i <= 60; i++) {
+      const rn = 1.42 * i / 60;
+      IglobalMax = Math.max(IglobalMax, Icombo(rn));
+    }
+    IglobalMax = Math.max(IglobalMax, 0.001);
 
     // 三个子图布局
     const subW = w / 3;
-    const dispR = Math.min(subW * 0.32, h * 0.30); // 每个子图显示半径（px）
-    const Hscale = h * 0.30;
-    const cy = h * 0.58;
+    const dispR = Math.min(subW * 0.32, h * 0.28); // 每个子图显示半径（px）
+    const Hscale = h * 0.36;
+    const cy = h * 0.60;
     const subCenters = [subW * 0.5, subW * 1.5, subW * 2.5];
     const subLabels = ['内芯（高斯锥形）', '外环（环形碗状）', '组合（环形光斑）'];
-    const subEfn = [Ecore, Ering, Ecombo];
-    const subEmax = [1, 1, EmaxCombo];
+    const subEfn = [Icore, Iring, Icombo];
+    const subEmax = [IglobalMax, IglobalMax, IglobalMax];
 
     const iso = 0.866, iso2 = 0.5;
     const N = 22;
@@ -4455,10 +4499,10 @@
       }
 
       // 子图底部名称
-      c.fillStyle = 'rgba(255,255,255,0.6)';
+      c.fillStyle = 'rgba(255,255,255,0.55)';
       c.textAlign = 'center';
       c.font = '9px "SF Mono", Consolas, monospace';
-      c.fillText(subLabels[s], cx, h - 8);
+      c.fillText(subLabels[s], cx, h - 14);
     }
 
     // 可拖标注：标题 + 三个峰值标注
@@ -4470,11 +4514,17 @@
     c.fillText(tET, pET.x, pET.y);
     markLabel('wob3detitle', pET.x, pET.y, tET.length * 6, c);
 
-    // 峰值标注（每个子图峰顶，可拖）
-    const peakY = cy - Hscale * grow * pulse - 6;
+    // 峰值标注（每个子图按实际峰值高度定位，可拖）
     const peakIds = ['wob3decore', 'wob3dering', 'wob3decombo'];
     const peakTexts = ['内芯峰', '外环峰', '组合峰'];
+    // 各子图峰值归一化高度
+    const corePeak = Icore(0) / IglobalMax;
+    const ringPeak = Iring(R0 / Rdisp) / IglobalMax;
+    const comboPeak = Icombo(0) / IglobalMax;
+    const peakHeights = [corePeak, ringPeak, comboPeak];
     for (let s = 0; s < 3; s++) {
+      const ph = peakHeights[s] * grow * pulse;
+      const peakY = cy - Hscale * ph - 6;
       const p = lp(peakIds[s], subCenters[s], peakY);
       c.fillStyle = s === 2 ? 'rgba(255,120,80,0.95)' : 'rgba(255,220,120,0.9)';
       c.textAlign = 'center';
@@ -4577,6 +4627,49 @@
     showToast('已开始保存图片');
   });
 
+  // 单个 canvas 保存为 PNG（右上角"保存"按钮）
+  function saveSingleCanvas(canvasId, filename) {
+    const canvas = $(canvasId);
+    if (!canvas) return;
+    const wasRunning = wobState.running;
+    wobState.running = false;
+    if ($('wobPlay')) $('wobPlay').textContent = '播放';
+    resizeWobCanvas();
+    if (canvasId === 'wobCanvas') drawWob();
+    else if (canvasId === 'wobCanvas3D') drawWob3D();
+    else if (canvasId === 'wobCanvas3DEnergy') drawWob3DEnergy();
+    let dataUrl;
+    try {
+      dataUrl = canvas.toDataURL('image/png');
+    } catch (e) {
+      showToast('保存失败');
+      if (wasRunning) { wobState.running = true; if ($('wobPlay')) $('wobPlay').textContent = '暂停'; }
+      return;
+    }
+    if (window.AndroidBridge && typeof window.AndroidBridge.savePng === 'function') {
+      try {
+        window.AndroidBridge.savePng(dataUrl);
+        if (wasRunning) { wobState.running = true; if ($('wobPlay')) $('wobPlay').textContent = '暂停'; }
+        showToast('已保存到手机相册');
+        return;
+      } catch (e) { /* 兜底 */ }
+    }
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename + '_' + new Date().toISOString().slice(0, 10) + '.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    if (wasRunning) { wobState.running = true; if ($('wobPlay')) $('wobPlay').textContent = '暂停'; }
+    showToast('已开始保存图片');
+  }
+  document.querySelectorAll('.wc-save-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cid = btn.getAttribute('data-save');
+      const names = { wobCanvas: '熔深熔宽动态演化', wobCanvas3D: '环形光斑3D演化', wobCanvas3DEnergy: '环形光斑能量分布' };
+      saveSingleCanvas(cid, names[cid] || '仿真图');
+    });
+  });
+
   // ===== GIF 动图保存（内嵌 GIF89a 编码器，无三方依赖） =====
   // 均匀量化 256 色调色板（6×6×6 彩色 + 40 灰阶）
   const GIF_PALETTE = (() => {
@@ -4674,12 +4767,14 @@
     const h3 = wobCanvas3DE.parentElement.getBoundingClientRect().height;
     const gap = 6;
     const totalH = h1 + h2 + h3 + gap * 2;
-    const outW = 300;
+    const outW = 480;
     const outH = Math.round(totalH * outW / cssW);
     const off = document.createElement('canvas');
     off.width = outW; off.height = outH;
     const octx = off.getContext('2d');
-    const N = 18, fps = 10;
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = 'high';
+    const N = 20, fps = 10;
     const frames = [];
     let i = 0;
     const step = 0.016 * (1000 / fps / 16.67) * wobState.speed;
