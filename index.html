@@ -1046,24 +1046,7 @@
     z-index: 2;
   }
   .weld-canvas-wrap .wc-legend {
-    position: absolute;
-    bottom: 8px; left: 12px;
-    display: flex;
-    gap: 12px;
-    font-size: 9px;
-    color: rgba(255,255,255,0.5);
-    pointer-events: none;
-    z-index: 2;
-  }
-  .weld-canvas-wrap .wc-legend .lg {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .weld-canvas-wrap .wc-legend .lg .dot {
-    width: 8px; height: 8px;
-    border-radius: 2px;
-    display: inline-block;
+    display: none; /* 图例已绘入canvas，支持标注位置自定义拖动 */
   }
 
   .weld-controls {
@@ -4204,6 +4187,26 @@
     const txtTg = 'WOBBLE WELDING SIMULATION · 熔深/熔宽动态演化';
     wobCtx.fillText(txtTg, pTg.x, pTg.y);
     markLabel('wobtag', pTg.x, pTg.y, txtTg.length * 6);
+
+    // 可拖动图例（熔池/匙孔/母材/摆动光束）— 顶视图左上角
+    const leg2d = [
+      { id: 'wobLegPool', color: '#ff5722', text: '熔池' },
+      { id: 'wobLegKeyhole', color: '#ffb74d', text: '匙孔' },
+      { id: 'wobLegBase', color: '#1a2340', text: '母材' },
+      { id: 'wobLegBeam', color: '#00bcd4', text: '摆动光束' }
+    ];
+    const leg2dY = 14;
+    for (let li = 0; li < leg2d.length; li++) {
+      const lx = 12 + li * 62;
+      const p = lp(leg2d[li].id, lx, leg2dY);
+      wobCtx.fillStyle = leg2d[li].color;
+      wobCtx.fillRect(p.x - 10, p.y - 4, 8, 8);
+      wobCtx.fillStyle = 'rgba(255,255,255,0.55)';
+      wobCtx.textAlign = 'left';
+      wobCtx.font = '8px "SF Mono", Consolas, monospace';
+      wobCtx.fillText(leg2d[li].text, p.x + 1, p.y + 4);
+      markLabel(leg2d[li].id, p.x, p.y, leg2d[li].text.length * 5 + 12);
+    }
   }
 
   // ===== 环形光斑动态 3D 演化图（等距伪 3D：工件板 + 熔池/匙孔 + 环形光束 + 摆动轨迹） =====
@@ -4395,6 +4398,25 @@
     const t3W = '熔宽 ' + fmt(r.width, 2) + ' mm';
     c.fillText(t3W, p3W.x, p3W.y);
     markLabel('wob3dwidth', p3W.x, p3W.y, t3W.length * 6, c);
+
+    // 可拖动图例（熔池/匙孔/环形光束）
+    const leg3d = [
+      { id: 'wob3dLegPool', color: '#ff5722', text: '熔池' },
+      { id: 'wob3dLegKeyhole', color: '#ffb74d', text: '匙孔' },
+      { id: 'wob3dLegBeam', color: '#00bcd4', text: '环形光束' }
+    ];
+    const leg3dY = h - 12;
+    for (let li = 0; li < leg3d.length; li++) {
+      const lx = 12 + li * 62;
+      const p = lp(leg3d[li].id, lx, leg3dY);
+      c.fillStyle = leg3d[li].color;
+      c.fillRect(p.x - 10, p.y - 4, 8, 8);
+      c.fillStyle = 'rgba(255,255,255,0.55)';
+      c.textAlign = 'left';
+      c.font = '8px "SF Mono", Consolas, monospace';
+      c.fillText(leg3d[li].text, p.x + 1, p.y + 4);
+      markLabel(leg3d[li].id, p.x, p.y, leg3d[li].text.length * 5 + 12, c);
+    }
   }
 
   // ===== 环形光斑能量分布 3D 曲面图（内芯锥形 + 外环环形 + 组合，彩色渐变网格曲面） =====
@@ -4609,6 +4631,25 @@
     c.fillText('峰值', barX + barW + 2, barY + barH + 8);
     c.textAlign = 'center';
     c.fillText('功率密度 (W/µm²) — 各自归一化', w / 2, barY - 3);
+
+    // 可拖动图例（高能区/中能区/低能区）— 颜色条下方
+    const legItems = [
+      { id: 'wob3deLegHigh', color: '#ff5722', text: '高能区' },
+      { id: 'wob3deLegMid', color: '#ffd54f', text: '中能区' },
+      { id: 'wob3deLegLow', color: '#4fc3f7', text: '低能区' }
+    ];
+    const legStartX = w * 0.5 - 70, legY = barY + barH + 16;
+    for (let li = 0; li < legItems.length; li++) {
+      const lx = legStartX + li * 50;
+      const p = lp(legItems[li].id, lx, legY);
+      c.fillStyle = legItems[li].color;
+      c.fillRect(p.x - 10, p.y - 4, 8, 8);
+      c.fillStyle = 'rgba(255,255,255,0.6)';
+      c.textAlign = 'left';
+      c.font = '8px "SF Mono", Consolas, monospace';
+      c.fillText(legItems[li].text, p.x + 1, p.y + 4);
+      markLabel(legItems[li].id, p.x, p.y, legItems[li].text.length * 5 + 12, c);
+    }
 
     // 总标题（可拖标注）
     const pET = lp('wob3detitle', w * 0.5, 10);
