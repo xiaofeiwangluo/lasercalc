@@ -3766,8 +3766,23 @@
       // 正弦：正V/反V交替（三角波，尖角峰谷）
       return ph < 0.5 ? 1 - 4 * ph : 4 * (ph - 0.5) - 1;
     }
-    // 弓字 / 螺旋（圆运动在焊缝平面投影）
+    if (type === 'zigzag') {
+      // 弓字：正U/反U交替（波峰、波谷均为半圆的圆弧三角波）
+      const seg = 0.25;
+      if (ph < seg) return Math.sin(Math.PI * ph / seg) * 2 - 1;
+      if (ph < 0.5) return 1 - 2 * (ph - seg) / (0.5 - seg);
+      if (ph < 0.5 + seg) return -(Math.sin(Math.PI * (ph - 0.5) / seg) * 2 - 1);
+      return -1 + 2 * (ph - 0.5 - seg) / (0.5 - seg);
+    }
+    // 螺旋：圆周运动的横向投影（正弦）
     return Math.sin(2 * Math.PI * ph);
+  }
+  // 摆动轨迹纵向位移（仅螺旋摆动有纵向振荡，模拟圆周运动；其他类型为0）
+  function wobTrackOffsetY(type, xmm, pitch) {
+    if (type !== 'spiral') return 0;
+    const p = Math.max(pitch, 0.05);
+    const ph = (xmm / p) % 1;
+    return Math.cos(2 * Math.PI * ph) * 0.4; // 纵向幅度为横向的40%
   }
 
   // 弓字顶视轨迹：正U/反U交替（波峰、波谷均为半圆的圆弧三角波）
@@ -4298,6 +4313,7 @@
 
     // 6) 摆动轨迹（顶面，沿焊接方向）
     const Apx = Math.max(r.B / 2 * (BL / 10), 3);
+    const Apy = Apx * 0.5; // 纵向摆动幅度
     c.strokeStyle = 'rgba(0,188,212,0.85)';
     c.lineWidth = 1.6;
     c.beginPath();
@@ -4305,7 +4321,8 @@
       const py = BL * (0.16 + 0.68 * i / 160);
       const pyMm = (py / BL) * 10;
       const off = wobTrackOffset(r.type, pyMm, r.pitch);
-      const p = proj(BW / 2 + off * Apx, py, 0);
+      const offY = wobTrackOffsetY(r.type, pyMm, r.pitch);
+      const p = proj(BW / 2 + off * Apx, py + offY * Apy, 0);
       if (i === 0) c.moveTo(p.x, p.y); else c.lineTo(p.x, p.y);
     }
     c.stroke();
@@ -4315,9 +4332,11 @@
     const beamPy = BL * (0.16 + 0.68 * beamProg);
     const beamPyMm = (beamPy / BL) * 10;
     const beamOff = wobTrackOffset(r.type, beamPyMm, r.pitch);
+    const beamOffY = wobTrackOffsetY(r.type, beamPyMm, r.pitch);
     const beamPx = BW / 2 + beamOff * Apx;
-    const beamP = proj(beamPx, beamPy, 0);
-    const beamTop = proj(beamPx, beamPy, BH * 1.5);
+    const beamPyFinal = beamPy + beamOffY * Apy;
+    const beamP = proj(beamPx, beamPyFinal, 0);
+    const beamTop = proj(beamPx, beamPyFinal, BH * 1.5);
     c.strokeStyle = 'rgba(255,150,70,0.55)';
     c.lineWidth = 1.4;
     c.beginPath();
@@ -4521,8 +4540,8 @@
       }
     }
 
-    // ===== 2D 顶视热力图 =====
-    const M = 36; // 热力图网格分辨率
+    // ===== 2D 顶视热力图（高分辨率逐像素渲染）=====
+    const M = 64; // 热力图网格分辨率（越高越清晰）
     for (let s = 0; s < 3; s++) {
       const cx = subW * (s + 0.5);
       const heatSize = Math.min(subW * 0.56, row2dH * 0.78);
@@ -4914,7 +4933,7 @@
       slider.value = v;
       num.value = v;
       updateWob();
-      if (wobCtx) drawWob();
+      if (wobCtx) { drawWob(); drawWob3D(); drawWob3DEnergy(); }
     };
     slider.addEventListener('input', () => sync(parseFloat(slider.value)));
     num.addEventListener('change', () => {
