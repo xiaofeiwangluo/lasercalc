@@ -4587,7 +4587,7 @@
     const Pr = Math.max(Number($('wobRingPNum').value) || 1500, 1);
     const sigmaC = coreD / 4;
     const R0 = (ringD + coreD) / 4;
-    const sigmaR = Math.max((ringD - coreD) / 8, 2);
+    const sigmaR = Math.max((ringD - coreD) / 5.5, 3); // 加宽环形使边缘更圆滑
     const Rdisp = ringD * 1.05;
     const Icore = (rn) => (Pc / (Math.PI * sigmaC * sigmaC)) * Math.exp(-Math.pow(rn * Rdisp, 2) / (2 * sigmaC * sigmaC));
     const Iring = (rn) => (Pr / (2 * Math.PI * R0 * sigmaR)) * Math.exp(-Math.pow(rn * Rdisp - R0, 2) / (2 * sigmaR * sigmaR));
@@ -4617,7 +4617,7 @@
 
     // ===== 3D 曲面（带坐标轴网格，论文风格）=====
     const iso = 0.866, iso2 = 0.5;
-    const N = 18;
+    const N = 26; // 网格分辨率，越高曲面越圆滑
     for (let s = 0; s < 3; s++) {
       const cx = subW * (s + 0.5);
       const cy3d = y3d + row3dH * 0.62;
