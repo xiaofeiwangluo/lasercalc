@@ -4415,12 +4415,16 @@
     const Icore = (rn) => (Pc / (Math.PI * sigmaC * sigmaC)) * Math.exp(-Math.pow(rn * Rdisp, 2) / (2 * sigmaC * sigmaC));
     const Iring = (rn) => (Pr / (2 * Math.PI * R0 * sigmaR)) * Math.exp(-Math.pow(rn * Rdisp - R0, 2) / (2 * sigmaR * sigmaR));
     const Icombo = (rn) => Icore(rn) + Iring(rn);
-    // 全局最大值（用组合图峰值统一归一化，使三个子图高度可比）
-    let IglobalMax = 0;
+    // 各自峰值（内芯/外环子图独立归一化，确保任意芯径比下峰形均可见；组合图用全局归一化体现真实峰高差）
+    let IcoreMax = 0, IringMax = 0, IglobalMax = 0;
     for (let i = 0; i <= 60; i++) {
       const rn = 1.42 * i / 60;
+      IcoreMax = Math.max(IcoreMax, Icore(rn));
+      IringMax = Math.max(IringMax, Iring(rn));
       IglobalMax = Math.max(IglobalMax, Icombo(rn));
     }
+    IcoreMax = Math.max(IcoreMax, 0.001);
+    IringMax = Math.max(IringMax, 0.001);
     IglobalMax = Math.max(IglobalMax, 0.001);
 
     // 三个子图布局
@@ -4431,7 +4435,7 @@
     const subCenters = [subW * 0.5, subW * 1.5, subW * 2.5];
     const subLabels = ['内芯（高斯锥形）', '外环（环形碗状）', '组合（环形光斑）'];
     const subEfn = [Icore, Iring, Icombo];
-    const subEmax = [IglobalMax, IglobalMax, IglobalMax];
+    const subEmax = [IcoreMax, IringMax, IglobalMax];
 
     const iso = 0.866, iso2 = 0.5;
     const N = 22;
@@ -4517,11 +4521,8 @@
     // 峰值标注（每个子图按实际峰值高度定位，可拖）
     const peakIds = ['wob3decore', 'wob3dering', 'wob3decombo'];
     const peakTexts = ['内芯峰', '外环峰', '组合峰'];
-    // 各子图峰值归一化高度
-    const corePeak = Icore(0) / IglobalMax;
-    const ringPeak = Iring(R0 / Rdisp) / IglobalMax;
-    const comboPeak = Icombo(0) / IglobalMax;
-    const peakHeights = [corePeak, ringPeak, comboPeak];
+    // 内芯/外环子图独立归一化→峰高=1；组合图用全局归一化→内芯峰主导
+    const peakHeights = [1.0, 1.0, Icore(0) / IglobalMax];
     for (let s = 0; s < 3; s++) {
       const ph = peakHeights[s] * grow * pulse;
       const peakY = cy - Hscale * ph - 6;
