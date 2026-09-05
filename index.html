@@ -1052,19 +1052,21 @@
   .weld-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 12px;
+    flex-wrap: wrap;
   }
   .weld-btn {
     background: var(--laser);
     color: #fff;
     border: none;
     border-radius: 20px;
-    padding: 8px 20px;
-    font-size: 13px;
+    padding: 7px 14px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
+    white-space: nowrap;
   }
   .weld-btn:active { opacity: 0.8; }
   .weld-btn.secondary {
@@ -1080,7 +1082,6 @@
     box-shadow: 0 0 0 1px rgba(255,152,0,0.4);
   }
   .weld-speed-select {
-    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 6px;
