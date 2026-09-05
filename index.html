@@ -4619,10 +4619,43 @@
       c.rotate(-Math.PI / 2);
       c.fillText('Y (µm)', 0, 0);
       c.restore();
-      // 半径标注
+      // 实际芯径虚线圆 + 直径标注（与设置的光纤芯径对应）
+      // 热力图归一化半径 rn∈[0,1] 对应实际半径 Rdisp，像素半径=half
+      const pxPerUm = half / Rdisp; // 每µm对应的像素
+      const drawDiaCircle = function(diaUm, color, label) {
+        if (diaUm <= 0) return;
+        const rpx = (diaUm / 2) * pxPerUm;
+        if (rpx < 2 || rpx > half * 1.2) return;
+        c.strokeStyle = color;
+        c.lineWidth = 1;
+        c.setLineDash([3, 2]);
+        c.beginPath();
+        c.arc(cx, hy + heatSize / 2, rpx, 0, Math.PI * 2);
+        c.stroke();
+        c.setLineDash([]);
+        // 直径标注在圆上方
+        c.fillStyle = color;
+        c.font = '7px "SF Mono", Consolas, monospace';
+        c.textAlign = 'center';
+        c.fillText(label, cx, hy + heatSize / 2 - rpx - 3);
+      };
+      if (s === 0) {
+        // 内芯子图：标注内芯直径
+        drawDiaCircle(coreD, 'rgba(255,220,120,0.8)', 'Ø' + coreD + 'µm(内芯)');
+      } else if (s === 1) {
+        // 外环子图：标注外环直径 + 内芯直径
+        drawDiaCircle(coreD, 'rgba(255,220,120,0.6)', '');
+        drawDiaCircle(ringD, 'rgba(0,200,255,0.8)', 'Ø' + ringD + 'µm(外环)');
+      } else {
+        // 组合子图：标注外环直径 + 内芯直径
+        drawDiaCircle(coreD, 'rgba(255,220,120,0.6)', '');
+        drawDiaCircle(ringD, 'rgba(0,200,255,0.8)', 'Ø' + ringD + 'µm(外环)');
+      }
+      // 左上角显示实际渲染范围
       c.fillStyle = 'rgba(255,255,255,0.35)';
       c.textAlign = 'left';
-      c.fillText('Ø' + ringD + 'µm', hx + 3, hy + 8);
+      c.font = '6.5px "SF Mono", Consolas, monospace';
+      c.fillText('视野Ø' + Math.round(2 * Rdisp) + 'µm', hx + 3, hy + 8);
     }
 
     // ===== 颜色条 =====
