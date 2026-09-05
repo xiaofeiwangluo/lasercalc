@@ -3778,11 +3778,12 @@
     return Math.sin(2 * Math.PI * ph);
   }
   // 摆动轨迹纵向位移（仅螺旋摆动有纵向振荡，模拟圆周运动；其他类型为0）
+  // 横纵幅度均为1.0，与2D顶视图正圆轨迹对应；等距投影下自然呈现椭圆透视
   function wobTrackOffsetY(type, xmm, pitch) {
     if (type !== 'spiral') return 0;
     const p = Math.max(pitch, 0.05);
     const ph = (xmm / p) % 1;
-    return Math.cos(2 * Math.PI * ph) * 0.4; // 纵向幅度为横向的40%
+    return Math.cos(2 * Math.PI * ph);
   }
 
   // 弓字顶视轨迹：正U/反U交替（波峰、波谷均为半圆的圆弧三角波）
