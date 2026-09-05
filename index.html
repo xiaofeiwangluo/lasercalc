@@ -3858,6 +3858,39 @@
     wobCtx.fillStyle = 'rgba(224,247,255,0.9)';
     wobCtx.fill();
 
+    // 激光束动画（与焊接仿真一致）：锥形光束 + 内芯亮线 + 表面脉动光晕，跟随摆动位置
+    const beamTop = Math.max(workTop - secH * 0.16 + 3, topY + 2);
+    const surfW = Math.max(widthPx, 6); // 表面光斑宽度
+    const beamGrad = wobCtx.createLinearGradient(0, beamTop, 0, workTop);
+    beamGrad.addColorStop(0, 'rgba(255,150,70,0.03)');
+    beamGrad.addColorStop(1, 'rgba(255,150,70,0.30)');
+    wobCtx.fillStyle = beamGrad;
+    wobCtx.beginPath();
+    wobCtx.moveTo(beamX - 5, beamTop);
+    wobCtx.lineTo(beamX + 5, beamTop);
+    wobCtx.lineTo(beamX + surfW / 2, workTop);
+    wobCtx.lineTo(beamX - surfW / 2, workTop);
+    wobCtx.closePath();
+    wobCtx.fill();
+    // 内芯亮线（高能量密度芯束）
+    wobCtx.strokeStyle = 'rgba(255,235,170,0.95)';
+    wobCtx.lineWidth = 1.5;
+    wobCtx.beginPath();
+    wobCtx.moveTo(beamX, beamTop);
+    wobCtx.lineTo(beamX, workTop);
+    wobCtx.stroke();
+    // 表面脉动光晕
+    const pulse = 0.7 + 0.3 * Math.sin(wobState.t * 8);
+    const glowR = Math.max(surfW * 0.9, 10);
+    const glowGrad = wobCtx.createRadialGradient(beamX, workTop, 0, beamX, workTop, glowR);
+    glowGrad.addColorStop(0, 'rgba(255,170,80,' + (0.38 * pulse).toFixed(3) + ')');
+    glowGrad.addColorStop(0.6, 'rgba(255,140,60,' + (0.18 * pulse).toFixed(3) + ')');
+    glowGrad.addColorStop(1, 'rgba(255,120,50,0)');
+    wobCtx.fillStyle = glowGrad;
+    wobCtx.beginPath();
+    wobCtx.arc(beamX, workTop, glowR, 0, Math.PI * 2);
+    wobCtx.fill();
+
     // 母材厚度标注（最左侧尺寸线，位置可自定义）
     const oTk = wobOff('thick');
     const tDimX = w * 0.045 + oTk.dx;
