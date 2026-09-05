@@ -1855,7 +1855,7 @@
         </div>
         <div class="wh-right">
           <div class="wh-sub-label">预估熔宽</div>
-          <div class="wh-sub"><span id="wobWidth">0</span> mm</div>
+          <div class="wh-sub"><span id="wobWidthOut">0</span> mm</div>
         </div>
       </div>
 
@@ -3525,7 +3525,7 @@
   function updateWob() {
     const r = wobCalculate();
     $('wobDepth').textContent = fmt(r.depth, 2);
-    $('wobWidth').textContent = fmt(r.width, 2);
+    $('wobWidthOut').textContent = fmt(r.width, 2);
     $('wobFreq').textContent = fmt(r.f, 1) + ' Hz';
     $('wobSpotCore').textContent = fmt(r.core.d0Um, 0) + ' μm';
     $('wobSpotRing').textContent = fmt(r.ring.d0Um, 0) + ' μm';
