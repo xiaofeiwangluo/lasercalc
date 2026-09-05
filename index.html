@@ -4394,28 +4394,22 @@
     const w = rect.width, h = rect.height;
     const c = wobCtx3DE;
     c.clearRect(0, 0, w, h);
-    // 独立计时的升起动画（不依赖 wobState.t，避免编辑模式/暂停时曲面塌陷）
     if (!window.__wob3deStartTime) window.__wob3deStartTime = Date.now();
     const grow = Math.min((Date.now() - window.__wob3deStartTime) / 2500, 1);
-    const pulse = 1 + 0.08 * Math.sin(Date.now() / 400);
+    const pulse = 1 + 0.06 * Math.sin(Date.now() / 500);
 
-    // 能量分布参数（µm）—— 基于实际功率密度模型
-    // 文献依据：环形光斑（ARM）激光器 = 内芯高斯光束 + 外环空心光束
-    // 内芯峰值功率密度 Ic0 = Pc/(π·σc²)，外环峰值功率密度 Ir0 = Pr/(2π·R0·σr)
-    // 因内芯芯径远小于外环，内芯峰值功率密度通常是外环的 3~10 倍
+    // 能量分布参数（µm）
     const coreD = Math.max(Number($('wobCoreDiaNum').value) || 50, 1);
     const ringD = Math.max(Number($('wobRingDiaNum').value) || 100, 1);
     const Pc = Math.max(Number($('wobCorePNum').value) || 1500, 1);
     const Pr = Math.max(Number($('wobRingPNum').value) || 1500, 1);
-    const sigmaC = coreD / 4;                           // 内芯高斯束腰半径（µm）
-    const R0 = (ringD + coreD) / 4;                    // 外环中心半径（µm）
-    const sigmaR = Math.max((ringD - coreD) / 8, 2);   // 外环宽度标准差（µm）
-    const Rdisp = ringD * 1.05;                         // 显示半径（µm），让外环完整显示
-    // 实际功率密度函数（W/µm²），rn = 归一化半径（r/Rdisp）
+    const sigmaC = coreD / 4;
+    const R0 = (ringD + coreD) / 4;
+    const sigmaR = Math.max((ringD - coreD) / 8, 2);
+    const Rdisp = ringD * 1.05;
     const Icore = (rn) => (Pc / (Math.PI * sigmaC * sigmaC)) * Math.exp(-Math.pow(rn * Rdisp, 2) / (2 * sigmaC * sigmaC));
     const Iring = (rn) => (Pr / (2 * Math.PI * R0 * sigmaR)) * Math.exp(-Math.pow(rn * Rdisp - R0, 2) / (2 * sigmaR * sigmaR));
     const Icombo = (rn) => Icore(rn) + Iring(rn);
-    // 各自峰值（内芯/外环子图独立归一化，确保任意芯径比下峰形均可见；组合图用全局归一化体现真实峰高差）
     let IcoreMax = 0, IringMax = 0, IglobalMax = 0;
     for (let i = 0; i <= 60; i++) {
       const rn = 1.42 * i / 60;
@@ -4423,32 +4417,66 @@
       IringMax = Math.max(IringMax, Iring(rn));
       IglobalMax = Math.max(IglobalMax, Icombo(rn));
     }
-    IcoreMax = Math.max(IcoreMax, 0.001);
-    IringMax = Math.max(IringMax, 0.001);
-    IglobalMax = Math.max(IglobalMax, 0.001);
+    IcoreMax = Math.max(IcoreMax, 0.001); IringMax = Math.max(IringMax, 0.001); IglobalMax = Math.max(IglobalMax, 0.001);
 
-    // 三个子图布局
+    // 布局：标题 + 3D曲面行 + 2D顶视行 + 颜色条
+    const titleH = 16;
+    const row3dH = (h - titleH - 28) * 0.56;  // 3D行高度
+    const row2dH = (h - titleH - 28) * 0.40;  // 2D行高度
+    const gap = 4;
+    const y3d = titleH + 2;
+    const y2d = y3d + row3dH + gap;
+    const yBar = y2d + row2dH + 4;
     const subW = w / 3;
-    const dispR = Math.min(subW * 0.32, h * 0.28); // 每个子图显示半径（px）
-    const Hscale = h * 0.36;
-    const cy = h * 0.60;
-    const subCenters = [subW * 0.5, subW * 1.5, subW * 2.5];
-    const subLabels = ['内芯（高斯锥形）', '外环（环形碗状）', '组合（环形光斑）'];
+    const subLabels = ['内芯', '外环', '组合'];
     const subEfn = [Icore, Iring, Icombo];
     const subEmax = [IcoreMax, IringMax, IglobalMax];
+    const subUnits = ['W/µm²', 'W/µm²', 'W/µm²'];
 
+    // ===== 3D 曲面（带坐标轴网格，论文风格）=====
     const iso = 0.866, iso2 = 0.5;
-    const N = 22;
-
+    const N = 18;
     for (let s = 0; s < 3; s++) {
-      const cx = subCenters[s];
+      const cx = subW * (s + 0.5);
+      const cy3d = y3d + row3dH * 0.62;
+      const dispR = Math.min(subW * 0.30, row3dH * 0.34);
+      const Hscale = row3dH * 0.38;
       const Efn = subEfn[s], Emax = subEmax[s];
       const proj = (X, Y, Z) => ({
         x: cx + (X - Y) * iso * dispR,
-        y: cy - Z * Hscale + (X + Y) * iso2 * dispR * 0.5
+        y: cy3d - Z * Hscale + (X + Y) * iso2 * dispR * 0.4
       });
 
-      // 预计算网格高度
+      // 子图标题
+      c.fillStyle = 'rgba(255,255,255,0.7)';
+      c.textAlign = 'center';
+      c.font = '9px "SF Mono", Consolas, monospace';
+      c.fillText(subLabels[s], cx, y3d + 10);
+
+      // 坐标轴（白色网格）
+      const o = proj(-1, -1, 0), xEnd = proj(1, -1, 0), yEnd = proj(-1, 1, 0), zEnd = proj(-1, -1, 1);
+      c.strokeStyle = 'rgba(255,255,255,0.35)';
+      c.lineWidth = 0.8;
+      // X轴
+      c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(xEnd.x, xEnd.y); c.stroke();
+      // Y轴
+      c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(yEnd.x, yEnd.y); c.stroke();
+      // Z轴
+      c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(zEnd.x, zEnd.y); c.stroke();
+      // 网格线（X方向）
+      c.strokeStyle = 'rgba(255,255,255,0.12)';
+      for (let gi = 1; gi < 4; gi++) {
+        const t = -1 + 2 * gi / 4;
+        c.beginPath(); c.moveTo(proj(t, -1, 0).x, proj(t, -1, 0).y); c.lineTo(proj(t, 1, 0).x, proj(t, 1, 0).y); c.stroke();
+        c.beginPath(); c.moveTo(proj(-1, t, 0).x, proj(-1, t, 0).y); c.lineTo(proj(1, t, 0).x, proj(1, t, 0).y); c.stroke();
+      }
+      // Z轴刻度
+      c.fillStyle = 'rgba(255,255,255,0.4)';
+      c.font = '7px "SF Mono", Consolas, monospace';
+      c.textAlign = 'right';
+      c.fillText('Irradiance', zEnd.x - 2, zEnd.y + 2);
+
+      // 预计算网格
       const grid = [];
       for (let j = 0; j <= N; j++) {
         grid[j] = [];
@@ -4458,16 +4486,7 @@
           grid[j][i] = Math.max(0, Efn(rn) / Emax) * grow * pulse;
         }
       }
-
-      // 底面（Z=0 平面，浅色）
-      c.fillStyle = 'rgba(30,40,60,0.5)';
-      c.beginPath();
-      const b00 = proj(-1, -1, 0), b10 = proj(1, -1, 0), b11 = proj(1, 1, 0), b01 = proj(-1, 1, 0);
-      c.moveTo(b00.x, b00.y); c.lineTo(b10.x, b10.y); c.lineTo(b11.x, b11.y); c.lineTo(b01.x, b01.y);
-      c.closePath(); c.fill();
-      c.strokeStyle = 'rgba(138,150,173,0.3)'; c.lineWidth = 0.8; c.stroke();
-
-      // 曲面填充（painter's：j 从远到近）
+      // 曲面填充
       for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {
           const p00 = proj(-1 + 2 * i / N, -1 + 2 * j / N, grid[j][i]);
@@ -4481,10 +4500,10 @@
           c.closePath(); c.fill();
         }
       }
-      // 网格线（横向）
-      c.strokeStyle = 'rgba(0,0,0,0.28)';
-      c.lineWidth = 0.5;
-      for (let j = 0; j <= N; j++) {
+      // 曲面网格线
+      c.strokeStyle = 'rgba(0,0,0,0.2)';
+      c.lineWidth = 0.4;
+      for (let j = 0; j <= N; j += 2) {
         c.beginPath();
         for (let i = 0; i <= N; i++) {
           const p = proj(-1 + 2 * i / N, -1 + 2 * j / N, grid[j][i]);
@@ -4492,8 +4511,7 @@
         }
         c.stroke();
       }
-      // 网格线（纵向）
-      for (let i = 0; i <= N; i++) {
+      for (let i = 0; i <= N; i += 2) {
         c.beginPath();
         for (let j = 0; j <= N; j++) {
           const p = proj(-1 + 2 * i / N, -1 + 2 * j / N, grid[j][i]);
@@ -4501,37 +4519,102 @@
         }
         c.stroke();
       }
-
-      // 子图底部名称
-      c.fillStyle = 'rgba(255,255,255,0.55)';
-      c.textAlign = 'center';
-      c.font = '9px "SF Mono", Consolas, monospace';
-      c.fillText(subLabels[s], cx, h - 14);
     }
 
-    // 可拖标注：标题 + 三个峰值标注
-    const pET = lp('wob3detitle', w * 0.5, 14);
-    c.fillStyle = 'rgba(255,255,255,0.55)';
+    // ===== 2D 顶视热力图 =====
+    const M = 36; // 热力图网格分辨率
+    for (let s = 0; s < 3; s++) {
+      const cx = subW * (s + 0.5);
+      const heatSize = Math.min(subW * 0.56, row2dH * 0.78);
+      const half = heatSize / 2;
+      const hx = cx - half, hy = y2d + (row2dH - heatSize) / 2;
+      const Efn = subEfn[s], Emax = subEmax[s];
+      const cell = heatSize / M;
+
+      // 背景框
+      c.fillStyle = 'rgba(10,15,30,0.6)';
+      c.fillRect(hx - 1, hy - 1, heatSize + 2, heatSize + 2);
+
+      // 逐格渲染热力图
+      for (let j = 0; j < M; j++) {
+        for (let i = 0; i < M; i++) {
+          const X = -1 + 2 * (i + 0.5) / M;
+          const Y = -1 + 2 * (j + 0.5) / M;
+          const rn = Math.hypot(X, Y);
+          if (rn > 1.35) { c.fillStyle = '#000020'; }
+          else {
+            const v = Math.max(0, Math.min(1, Efn(rn) / Emax * grow * pulse));
+            c.fillStyle = jetColor(v);
+          }
+          c.fillRect(hx + i * cell, hy + j * cell, cell + 0.5, cell + 0.5);
+        }
+      }
+      // 边框
+      c.strokeStyle = 'rgba(255,255,255,0.3)';
+      c.lineWidth = 0.8;
+      c.strokeRect(hx, hy, heatSize, heatSize);
+      // 轴标签
+      c.fillStyle = 'rgba(255,255,255,0.45)';
+      c.font = '7px "SF Mono", Consolas, monospace';
+      c.textAlign = 'center';
+      c.fillText('X (µm)', cx, hy + heatSize + 9);
+      c.save();
+      c.translate(hx - 8, hy + heatSize / 2);
+      c.rotate(-Math.PI / 2);
+      c.fillText('Y (µm)', 0, 0);
+      c.restore();
+      // 半径标注
+      c.fillStyle = 'rgba(255,255,255,0.35)';
+      c.textAlign = 'left';
+      c.fillText('Ø' + ringD + 'µm', hx + 3, hy + 8);
+    }
+
+    // ===== 颜色条 =====
+    const barW = w * 0.5, barH = 8;
+    const barX = (w - barW) / 2, barY = yBar;
+    const grad = c.createLinearGradient(barX, 0, barX + barW, 0);
+    for (let i = 0; i <= 10; i++) {
+      grad.addColorStop(i / 10, jetColor(i / 10));
+    }
+    c.fillStyle = grad;
+    c.fillRect(barX, barY, barW, barH);
+    c.strokeStyle = 'rgba(255,255,255,0.3)';
+    c.lineWidth = 0.6;
+    c.strokeRect(barX, barY, barW, barH);
+    c.fillStyle = 'rgba(255,255,255,0.5)';
+    c.font = '7px "SF Mono", Consolas, monospace';
+    c.textAlign = 'left';
+    c.fillText('0', barX - 2, barY + barH + 8);
+    c.textAlign = 'right';
+    c.fillText('峰值', barX + barW + 2, barY + barH + 8);
+    c.textAlign = 'center';
+    c.fillText('功率密度 (W/µm²) — 各自归一化', w / 2, barY - 3);
+
+    // 总标题（可拖标注）
+    const pET = lp('wob3detitle', w * 0.5, 10);
+    c.fillStyle = 'rgba(255,255,255,0.6)';
     c.textAlign = 'center';
     c.font = '9px "SF Mono", Consolas, monospace';
-    const tET = '环形光斑能量分布 3D · 内芯 + 外环 = 组合';
+    const tET = '环形光斑能量分布 · 内芯 + 外环 = 组合';
     c.fillText(tET, pET.x, pET.y);
-    markLabel('wob3detitle', pET.x, pET.y, tET.length * 6, c);
+    markLabel('wob3detitle', pET.x, pET.y, tET.length * 5.5, c);
 
-    // 峰值标注（每个子图按实际峰值高度定位，可拖）
+    // 峰值标注（可拖）
     const peakIds = ['wob3decore', 'wob3dering', 'wob3decombo'];
     const peakTexts = ['内芯峰', '外环峰', '组合峰'];
-    // 内芯/外环子图独立归一化→峰高=1；组合图用全局归一化→内芯峰主导
     const peakHeights = [1.0, 1.0, Icore(0) / IglobalMax];
     for (let s = 0; s < 3; s++) {
+      const cx = subW * (s + 0.5);
+      const cy3d = y3d + row3dH * 0.62;
+      const Hscale = row3dH * 0.38;
       const ph = peakHeights[s] * grow * pulse;
-      const peakY = cy - Hscale * ph - 6;
-      const p = lp(peakIds[s], subCenters[s], peakY);
-      c.fillStyle = s === 2 ? 'rgba(255,120,80,0.95)' : 'rgba(255,220,120,0.9)';
+      const peakY = cy3d - Hscale * ph - 4;
+      const p = lp(peakIds[s], cx, peakY);
+      c.fillStyle = s === 2 ? 'rgba(255,120,80,0.9)' : 'rgba(255,220,120,0.85)';
       c.textAlign = 'center';
-      c.font = '9px "SF Mono", Consolas, monospace';
+      c.font = '8px "SF Mono", Consolas, monospace';
       c.fillText(peakTexts[s], p.x, p.y);
-      markLabel(peakIds[s], p.x, p.y, peakTexts[s].length * 6, c);
+      markLabel(peakIds[s], p.x, p.y, peakTexts[s].length * 5, c);
     }
   }
 
@@ -4852,13 +4935,13 @@
   bindWobPair('wobFc', 'wobFcNum');
   bindWobPair('wobFf', 'wobFfNum');
   bindWobPair('wobLen', 'wobLenNum');
-  $('wobType').addEventListener('change', () => { updateWob(); if (wobCtx) drawWob(); });
+  $('wobType').addEventListener('change', () => { updateWob(); if (wobCtx) { drawWob(); drawWob3D(); drawWob3DEnergy(); } });
   // 测试专区材料切换：更新计算与母材颜色
   $('wobMaterial').addEventListener('change', (e) => {
     const mat = MATERIALS[e.target.value];
     if (mat) {
       updateWob();
-      if (wobCtx) drawWob();
+      if (wobCtx) { drawWob(); drawWob3D(); drawWob3DEnergy(); }
       const lgDot = document.querySelector('#view-lib .wc-legend .lg:nth-child(3) .dot');
       if (lgDot) {
         const c = baseColor(mat.group);
