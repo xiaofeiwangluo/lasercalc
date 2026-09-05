@@ -1009,6 +1009,13 @@
     margin-bottom: 10px;
     position: relative;
   }
+  /* 移动端加大画布高度，避免拥挤 */
+  @media (max-width: 600px) {
+    .weld-canvas-wrap {
+      aspect-ratio: 4 / 3;
+      min-height: 280px;
+    }
+  }
   #weldCanvas {
     width: 100%;
     height: 100%;
@@ -1018,6 +1025,12 @@
     width: 100%;
     height: 100%;
     display: block;
+    touch-action: auto; /* 默认允许页面滚动 */
+  }
+  /* 仅标注编辑模式下拦截触摸，支持拖动标注 */
+  .wob-edit-active #wobCanvas,
+  .wob-edit-active #wobCanvas3D,
+  .wob-edit-active #wobCanvas3DEnergy {
     touch-action: none;
   }
   .wc-save-btn {
@@ -4715,6 +4728,9 @@
   $('wobEdit').addEventListener('click', () => {
     wobState.editMode = !wobState.editMode;
     $('wobEdit').classList.toggle('edit-on', wobState.editMode);
+    // 编辑模式下给容器加类，仅此时拦截触摸支持拖动；正常模式允许页面滚动
+    const libView = $('view-lib');
+    if (libView) libView.classList.toggle('wob-edit-active', wobState.editMode);
     if (wobState.editMode) {
       wobState._prevRunning = wobState.running;
       wobState.running = false;
