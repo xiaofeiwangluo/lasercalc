@@ -2907,22 +2907,24 @@
   //    匙孔形成后显著升高；铜对红外激光初始吸收率仅2-5%，深熔后约15-20%）
   // k：材料导热率 W/(m·K)，用于导热修正（高导热材料热量散失快，同线能量熔深更浅）
   // 导热修正因子 λ = (k_ref/k)^0.5，k_ref=16 为不锈钢基准（与基础公式一致，λ=1）
-  // 材料热物性参数（v59铜焊接专版校准）
+  // 材料热物性参数（v60全材料深熔模式校准版）
   // eta:室温吸收率, k:室温导热系数W/m·K, rho:密度kg/m³, c:比热容J/kg·K
   // Tm:熔点K, Tv:汽化点K, alpha:热扩散率m²/s
   // etaKH:匙孔深熔模式吸收率(多次反射), kWeld:焊接区有效热导率(熔化后骤降)
   // IKH:匙孔功率密度阈值W/mm², C1:熔深系数, C3:熔宽系数
-  // 铜文献依据：固态吸收率3-5%→匙孔60-90%；热导率401→熔化后160-200；
-  //   2kW单模焊紫铜熔深2.3mm；4.5kW焊透熔宽2.28mm；阈值~50MW/cm²
+  // 文献依据：
+  //   钢：4kW/50mm/s→3mm熔深；1kW≈1mm匙孔熔深经验法则
+  //   铝：6061 3kW/25mm/s摆动→1mm熔透；2kW/33mm/s→良好焊缝；室温吸收5-10%→匙孔30-40%
+  //   铜：固态3-5%→匙孔60-90%；热导率401→熔化后160-200；2kW单模→2.3mm；阈值~50MW/cm²
   const MATERIALS = {
-    steel:   { name: '碳钢/不锈钢', group: '钢',  eta: 0.40, k: 16,   rho: 7850, c: 500,  Tm: 1811, Tv: 3134, alpha: 4.08e-6, etaKH: 0.45, kWeld: 22,  IKH: 10,  C1: 0.12, C3: 0.15, note: '基准材料，匙孔稳定' },
-    al1060:  { name: '1060 纯铝',   group: '铝合金', eta: 0.22, k: 235,  rho: 2700, c: 900,  Tm: 933,  Tv: 2792, alpha: 9.67e-5, etaKH: 0.38, kWeld: 130, IKH: 25,  C1: 0.15, C3: 0.18, note: '工业纯铝，导热极高' },
-    al3003:  { name: '3003',        group: '铝合金', eta: 0.25, k: 190,  rho: 2730, c: 900,  Tm: 925,  Tv: 2700, alpha: 7.73e-5, etaKH: 0.38, kWeld: 120, IKH: 25,  C1: 0.15, C3: 0.18, note: 'Al-Mn系' },
-    al5052:  { name: '5052',        group: '铝合金', eta: 0.28, k: 138,  rho: 2680, c: 900,  Tm: 895,  Tv: 2700, alpha: 5.72e-5, etaKH: 0.40, kWeld: 100, IKH: 20,  C1: 0.15, C3: 0.18, note: 'Al-Mg系' },
-    al5083:  { name: '5083',        group: '铝合金', eta: 0.30, k: 125,  rho: 2660, c: 900,  Tm: 890,  Tv: 2700, alpha: 5.21e-5, etaKH: 0.40, kWeld: 95,  IKH: 20,  C1: 0.15, C3: 0.18, note: 'Al-Mg系，船用' },
-    al6061:  { name: '6061',        group: '铝合金', eta: 0.30, k: 167,  rho: 2700, c: 896,  Tm: 893,  Tv: 2700, alpha: 6.90e-5, etaKH: 0.40, kWeld: 110, IKH: 22,  C1: 0.15, C3: 0.18, note: 'Al-Mg-Si系' },
-    al6063:  { name: '6063',        group: '铝合金', eta: 0.30, k: 200,  rho: 2700, c: 900,  Tm: 915,  Tv: 2700, alpha: 8.23e-5, etaKH: 0.38, kWeld: 125, IKH: 25,  C1: 0.15, C3: 0.18, note: 'Al-Mg-Si系' },
-    al7075:  { name: '7075',        group: '铝合金', eta: 0.32, k: 130,  rho: 2810, c: 960,  Tm: 890,  Tv: 2700, alpha: 4.82e-5, etaKH: 0.42, kWeld: 100, IKH: 20,  C1: 0.15, C3: 0.18, note: 'Al-Zn系，高强' },
+    steel:   { name: '碳钢/不锈钢', group: '钢',  eta: 0.40, k: 16,   rho: 7850, c: 500,  Tm: 1811, Tv: 3134, alpha: 4.08e-6, etaKH: 0.48, kWeld: 22,  IKH: 10,  C1: 0.12, C3: 0.15, note: '基准材料，匙孔稳定，1kW≈1mm熔深' },
+    al1060:  { name: '1060 纯铝',   group: '铝合金', eta: 0.10, k: 235,  rho: 2700, c: 900,  Tm: 933,  Tv: 2792, alpha: 9.67e-5, etaKH: 0.35, kWeld: 140, IKH: 30,  C1: 0.14, C3: 0.19, note: '工业纯铝，导热极高，需高功率密度' },
+    al3003:  { name: '3003',        group: '铝合金', eta: 0.12, k: 190,  rho: 2730, c: 900,  Tm: 925,  Tv: 2700, alpha: 7.73e-5, etaKH: 0.36, kWeld: 130, IKH: 28,  C1: 0.15, C3: 0.18, note: 'Al-Mn系，中等导热' },
+    al5052:  { name: '5052',        group: '铝合金', eta: 0.15, k: 138,  rho: 2680, c: 900,  Tm: 895,  Tv: 2700, alpha: 5.72e-5, etaKH: 0.38, kWeld: 110, IKH: 24,  C1: 0.17, C3: 0.18, note: 'Al-Mg系，焊接性良好' },
+    al5083:  { name: '5083',        group: '铝合金', eta: 0.16, k: 125,  rho: 2660, c: 900,  Tm: 890,  Tv: 2700, alpha: 5.21e-5, etaKH: 0.39, kWeld: 105, IKH: 22,  C1: 0.17, C3: 0.18, note: 'Al-Mg系，船用，低导热' },
+    al6061:  { name: '6061',        group: '铝合金', eta: 0.14, k: 167,  rho: 2700, c: 896,  Tm: 893,  Tv: 2700, alpha: 6.90e-5, etaKH: 0.40, kWeld: 115, IKH: 25,  C1: 0.18, C3: 0.18, note: 'Al-Mg-Si系，3kW/25mm/s→1mm熔透' },
+    al6063:  { name: '6063',        group: '铝合金', eta: 0.12, k: 200,  rho: 2700, c: 900,  Tm: 915,  Tv: 2700, alpha: 8.23e-5, etaKH: 0.36, kWeld: 135, IKH: 28,  C1: 0.15, C3: 0.19, note: 'Al-Mg-Si系，高导热' },
+    al7075:  { name: '7075',        group: '铝合金', eta: 0.16, k: 130,  rho: 2810, c: 960,  Tm: 890,  Tv: 2700, alpha: 4.82e-5, etaKH: 0.42, kWeld: 105, IKH: 22,  C1: 0.19, C3: 0.17, note: 'Al-Zn系，高强，高吸收率' },
     cu_t2:   { name: 'T2 紫铜',     group: '铜',  eta: 0.05, k: 401,  rho: 8960, c: 385,  Tm: 1358, Tv: 2835, alpha: 1.16e-4, etaKH: 0.42, kWeld: 180, IKH: 500, C1: 0.16, C3: 0.20, note: 'C1100纯铜，高反高导，匙孔后吸收率骤升' },
     cu_c1020:{ name: 'C1020 无氧铜',group: '铜',  eta: 0.05, k: 398,  rho: 8940, c: 385,  Tm: 1357, Tv: 2835, alpha: 1.16e-4, etaKH: 0.42, kWeld: 178, IKH: 500, C1: 0.16, C3: 0.20, note: '高导电导热' },
     cu_h62:  { name: 'H62 黄铜',    group: '铜',  eta: 0.12, k: 116,  rho: 8500, c: 385,  Tm: 1188, Tv: 2500, alpha: 3.54e-5, etaKH: 0.40, kWeld: 90,  IKH: 100, C1: 0.15, C3: 0.18, note: 'Cu-Zn系，含锌提高吸收' },
