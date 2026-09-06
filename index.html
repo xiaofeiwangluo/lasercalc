@@ -4757,11 +4757,13 @@
           const p11 = proj(-1 + 2 * (i + 1) / N, -1 + 2 * (j + 1) / N, grid[j + 1][i + 1]);
           const p01 = proj(-1 + 2 * i / N, -1 + 2 * (j + 1) / N, grid[j + 1][i]);
           const avgZ = (grid[j][i] + grid[j][i + 1] + grid[j + 1][i + 1] + grid[j + 1][i]) / 4;
+          // 组合图(s=2)用平方根颜色拉伸，使低能外环更明显
+          const colorZ = (s === 2) ? Math.sqrt(avgZ) : avgZ;
           // 光照系数：基于面片中心的X/Y位置模拟左上光源
           const lightX = (i / N - 0.3) * 0.3 + 0.85;
           const lightY = (j / N - 0.3) * 0.2 + 0.9;
           const light = Math.max(0.6, Math.min(1.15, lightX * lightY));
-          const baseColor = jetColor(avgZ);
+          const baseColor = jetColor(colorZ);
           // 解析jetColor的rgb并应用光照
           const m = baseColor.match(/\d+/g);
           if (m) {
@@ -4829,7 +4831,8 @@
           if (cnt === 0) { c.fillStyle = '#000020'; }
           else {
             const avgE = sumE / cnt;
-            const v = Math.max(0, Math.min(1, avgE / Emax * grow * pulse));
+            let v = Math.max(0, Math.min(1, avgE / Emax * grow * pulse));
+            if (s === 2) v = Math.sqrt(v); // 组合图平方根拉伸，外环更明显
             c.fillStyle = jetColor(v);
           }
           c.fillRect(hx + i * cell, hy + j * cell, cell + 0.5, cell + 0.5);
