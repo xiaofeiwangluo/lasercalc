@@ -2113,7 +2113,7 @@
           <div class="input-label"><span>工件材料</span><span class="unit" id="wobMatSpec">钢/不锈钢 · k=16 W/m·K</span></div>
           <select class="weld-material-select" id="wobMaterial">
             <optgroup label="—— 钢/不锈钢 ——">
-              <option value="steel" selected>碳钢 / 不锈钢（基准）</option>
+              <option value="steel" selected>碳钢 / 不锈钢</option>
             </optgroup>
             <optgroup label="—— 铝合金 ——">
               <option value="al1060">铝合金 1060（工业纯铝）</option>
@@ -2371,7 +2371,7 @@
           <div class="input-label"><span>工件材料</span><span class="unit" id="wMatSpec">钢 · k=16</span></div>
           <select class="weld-material-select" id="wMaterial">
             <optgroup label="—— 钢/不锈钢 ——">
-              <option value="steel" selected>碳钢 / 不锈钢（基准）</option>
+              <option value="steel" selected>碳钢 / 不锈钢</option>
             </optgroup>
             <optgroup label="—— 铝合金 ——">
               <option value="al1060">铝合金 1060（工业纯铝）</option>
@@ -2917,7 +2917,7 @@
   //   铝：6061 3kW/25mm/s摆动→1mm熔透；2kW/33mm/s→良好焊缝；室温吸收5-10%→匙孔30-40%
   //   铜：固态3-5%→匙孔60-90%；热导率401→熔化后160-200；2kW单模→2.3mm；阈值~50MW/cm²
   const MATERIALS = {
-    steel:   { name: '碳钢/不锈钢', group: '钢',  eta: 0.40, k: 16,   rho: 7850, c: 500,  Tm: 1811, Tv: 3134, alpha: 4.08e-6, etaKH: 0.48, kWeld: 22,  IKH: 10,  C1: 0.12, C3: 0.15, note: '基准材料，匙孔稳定，1kW≈1mm熔深' },
+    steel:   { name: '碳钢/不锈钢', group: '钢',  eta: 0.40, k: 16,   rho: 7850, c: 500,  Tm: 1811, Tv: 3134, alpha: 4.08e-6, etaKH: 0.48, kWeld: 22,  IKH: 10,  C1: 0.12, C3: 0.15, note: '匙孔稳定，1kW≈1mm熔深' },
     al1060:  { name: '1060 纯铝',   group: '铝合金', eta: 0.10, k: 235,  rho: 2700, c: 900,  Tm: 933,  Tv: 2792, alpha: 9.67e-5, etaKH: 0.35, kWeld: 140, IKH: 30,  C1: 0.14, C3: 0.19, note: '工业纯铝，导热极高，需高功率密度' },
     al3003:  { name: '3003',        group: '铝合金', eta: 0.12, k: 190,  rho: 2730, c: 900,  Tm: 925,  Tv: 2700, alpha: 7.73e-5, etaKH: 0.36, kWeld: 130, IKH: 28,  C1: 0.15, C3: 0.18, note: 'Al-Mn系，中等导热' },
     al5052:  { name: '5052',        group: '铝合金', eta: 0.15, k: 138,  rho: 2680, c: 900,  Tm: 895,  Tv: 2700, alpha: 5.72e-5, etaKH: 0.38, kWeld: 110, IKH: 24,  C1: 0.17, C3: 0.18, note: 'Al-Mg系，焊接性良好' },
@@ -4685,14 +4685,14 @@
     }
     IcoreMax = Math.max(IcoreMax, 0.001); IringMax = Math.max(IringMax, 0.001); IglobalMax = Math.max(IglobalMax, 0.001);
 
-    // 布局：标题 + 3D曲面行 + 2D顶视行 + 颜色条
+    // 布局：标题 + 3D曲面行 + 2D顶视行 + 颜色条（紧凑布局）
     const titleH = 16;
-    const row3dH = (h - titleH - 28) * 0.56;  // 3D行高度
-    const row2dH = (h - titleH - 28) * 0.40;  // 2D行高度
-    const gap = 4;
+    const row3dH = (h - titleH - 24) * 0.54;  // 3D行高度
+    const row2dH = (h - titleH - 24) * 0.42;  // 2D行高度
+    const gap = 2;
     const y3d = titleH + 2;
     const y2d = y3d + row3dH + gap;
-    const yBar = y2d + row2dH + 4;
+    const yBar = y2d + row2dH + 2;
     const subW = w / 3;
     const subLabels = ['内芯', '外环', '组合'];
     const subEfn = [Icore, Iring, Icombo];
@@ -4704,9 +4704,9 @@
     const N = 26; // 网格分辨率，越高曲面越圆滑
     for (let s = 0; s < 3; s++) {
       const cx = subW * (s + 0.5);
-      const cy3d = y3d + row3dH * 0.62;
-      const dispR = Math.min(subW * 0.30, row3dH * 0.34);
-      const Hscale = row3dH * 0.38;
+      const cy3d = y3d + row3dH * 0.72;
+      const dispR = Math.min(subW * 0.30, row3dH * 0.32);
+      const Hscale = row3dH * 0.36;
       const Efn = subEfn[s], Emax = subEmax[s];
       const proj = (X, Y, Z) => ({
         x: cx + (X - Y) * iso * dispR,
@@ -4791,9 +4791,9 @@
     const M = 96; // 热力图网格分辨率
     for (let s = 0; s < 3; s++) {
       const cx = subW * (s + 0.5);
-      const heatSize = Math.min(subW * 0.56, row2dH * 0.78);
+      const heatSize = Math.min(subW * 0.56, row2dH * 0.82);
       const half = heatSize / 2;
-      const hx = cx - half, hy = y2d + (row2dH - heatSize) / 2;
+      const hx = cx - half, hy = y2d + 1;
       const Efn = subEfn[s], Emax = subEmax[s];
       const cell = heatSize / M;
 
@@ -5302,8 +5302,6 @@
     const core = state.wCore;
     const fc = state.wFc;
     const ff = state.wFf;
-    // 焊接速度为 0 或负值会触发 theory=Infinity 且 correction=0，产生 Infinity*0=NaN 使动画消失；
-    // 工程上按最小 0.5mm/s 保守估算，保证计算与动画始终有效
     const V = Math.max(Number(state.wV) || 0.5, 0.5);
     const eta = state.wEta;
     const def = state.wDefocus;
@@ -5311,41 +5309,59 @@
 
     // 焦点光斑直径 (µm)
     const d = core * ff / fc;
-    // 焦点功率密度 (W/cm²)
-    const r_cm = (d / 2) / 10000; // µm → cm
-    const area_cm2 = Math.PI * r_cm * r_cm;
-    const density = area_cm2 > 0 ? P / area_cm2 : 0;
+    // 焦点功率密度 (W/mm²)
+    const r_mm = (d / 2) / 1000;
+    const area_mm2 = Math.PI * r_mm * r_mm;
+    const density = area_mm2 > 0 ? P / area_mm2 : 0;
     // 有效热线能量 (J/mm)
     const heat = P * eta / V;
-    // 焊接模式判定：功率密度 > 1e6 W/cm² 深熔匙孔
-    const keyhole = density > 1e6;
-    // 纯理论推演熔深 (mm)
-    const K = keyhole ? 80 : 15;
+
+    // ===== 材料专属参数（单光束经典模型，与摆动焊接区分）=====
+    // K_keyhole: 深熔模式熔深系数, K_cond: 热导模式熔深系数
+    // IKH_w: 单光束功率密度阈值(W/mm²), kRef_w: 该材料导热基准
+    const matParams = {
+      steel:   { Kk: 80,  Kc: 15, IKH: 10,  kRef: 16  },
+      al1060:  { Kk: 48,  Kc: 9,  IKH: 30,  kRef: 235 },
+      al3003:  { Kk: 52,  Kc: 10, IKH: 28,  kRef: 190 },
+      al5052:  { Kk: 58,  Kc: 11, IKH: 24,  kRef: 138 },
+      al5083:  { Kk: 60,  Kc: 11, IKH: 22,  kRef: 125 },
+      al6061:  { Kk: 56,  Kc: 10, IKH: 25,  kRef: 167 },
+      al6063:  { Kk: 50,  Kc: 9,  IKH: 28,  kRef: 200 },
+      al7075:  { Kk: 62,  Kc: 12, IKH: 22,  kRef: 130 },
+      cu_t2:   { Kk: 38,  Kc: 7,  IKH: 500, kRef: 401 },
+      cu_c1020:{ Kk: 38,  Kc: 7,  IKH: 500, kRef: 398 },
+      cu_h62:  { Kk: 50,  Kc: 9,  IKH: 100, kRef: 116 },
+      cu_c5191:{ Kk: 55,  Kc: 10, IKH: 80,  kRef: 62  },
+      cu_qbe2: { Kk: 52,  Kc: 9,  IKH: 90,  kRef: 105 }
+    };
+    const mp = matParams[state.wMaterial] || matParams.steel;
+
+    // 焊接模式判定：材料专属功率密度阈值
+    const keyhole = density > mp.IKH;
+    // 纯理论推演熔深 (mm) — 材料专属K值
+    const K = keyhole ? mp.Kk : mp.Kc;
     const theory = K * P * eta / (V * d);
     // 预估熔深（工艺修正）
     const correction = 1 - Math.exp(-V / 25);
     const cap = P / 400;
     const est = Math.min(theory * correction, cap);
-    // 导热修正：高导热材料（铝/铜）热量散失快，同线能量熔深更浅
-    // λ = (k_ref/k)^0.5，k_ref = 16 W/m·K（不锈钢基准，λ=1 保持基础公式不变）
-    const kRef = 16;
-    const lambda = Math.sqrt(kRef / mat.k);
+    // 导热修正：以该材料自身导热系数为基准，λ=1 不修正
+    // 跨材料对比时用相对导热比，但单材料计算保持公式自洽
+    const lambda = 1.0;
     const estMat = est * lambda;
-    // 纯理论推演同样应用功率封顶 cap：低速时线能量公式发散，
-    // 物理上熔深受功率上限约束（cap=P/400），避免出现数量级荒谬的理论值
+    // 纯理论推演同样应用功率封顶
     const theoryCapped = Math.min(theory, cap);
     const theoryMat = theoryCapped * lambda;
-    // 离焦-熔深：当前离焦下的熔深（相对焦点）
+    // 离焦-熔深
     const fDef = defocusModel(def);
     const estDef = estMat * fDef;
-    // 当前离焦下的纯理论推演：与预估熔深同条件对比，
-    // 两者差异仅来自低速修正系数 correction（0~6%），不再因离焦/速度发散
     const theoryDef = theoryMat * fDef;
 
     return {
       d, density, heat, keyhole, theory, theoryMat, theoryDef,
       est, estMat, estDef, fDef, def,
-      lambda, matName: mat.name, matGroup: mat.group, matNote: mat.note
+      lambda, matName: mat.name, matGroup: mat.group, matNote: mat.note,
+      Kused: K, threshold: mp.IKH
     };
   }
 
