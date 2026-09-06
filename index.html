@@ -4671,7 +4671,7 @@
     const Pr = Math.max(Number($('wobRingPNum').value) || 1500, 1);
     const sigmaC = coreD / 4;
     const R0 = (ringD + coreD) / 4;
-    const sigmaR = Math.max((ringD - coreD) / 5.5, 3); // 加宽环形使边缘更圆滑
+    const sigmaR = Math.max((ringD - coreD) / 4.2, 4); // 加宽环形使边缘更圆滑
     const Rdisp = ringD * 1.05;
     const Icore = (rn) => (Pc / (Math.PI * sigmaC * sigmaC)) * Math.exp(-Math.pow(rn * Rdisp, 2) / (2 * sigmaC * sigmaC));
     const Iring = (rn) => (Pr / (2 * Math.PI * R0 * sigmaR)) * Math.exp(-Math.pow(rn * Rdisp - R0, 2) / (2 * sigmaR * sigmaR));
@@ -4699,9 +4699,9 @@
     const subEmax = [IcoreMax, IringMax, IglobalMax];
     const subUnits = ['W/µm²', 'W/µm²', 'W/µm²'];
 
-    // ===== 3D 曲面（带坐标轴网格，论文风格）=====
+    // ===== 3D 能量曲面（高分辨率+光照渐变，外环圆润）=====
     const iso = 0.866, iso2 = 0.5;
-    const N = 26; // 网格分辨率，越高曲面越圆滑
+    const N = 40; // 高分辨率，曲面更圆滑
     for (let s = 0; s < 3; s++) {
       const cx = subW * (s + 0.5);
       const cy3d = y3d + row3dH * 0.72;
@@ -4723,20 +4723,17 @@
       const o = proj(-1, -1, 0), xEnd = proj(1, -1, 0), yEnd = proj(-1, 1, 0), zEnd = proj(-1, -1, 1);
       c.strokeStyle = 'rgba(255,255,255,0.35)';
       c.lineWidth = 0.8;
-      // X轴
       c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(xEnd.x, xEnd.y); c.stroke();
-      // Y轴
       c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(yEnd.x, yEnd.y); c.stroke();
-      // Z轴
       c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(zEnd.x, zEnd.y); c.stroke();
-      // 网格线（X方向）
-      c.strokeStyle = 'rgba(255,255,255,0.12)';
+      // 底部网格线
+      c.strokeStyle = 'rgba(255,255,255,0.10)';
       for (let gi = 1; gi < 4; gi++) {
         const t = -1 + 2 * gi / 4;
         c.beginPath(); c.moveTo(proj(t, -1, 0).x, proj(t, -1, 0).y); c.lineTo(proj(t, 1, 0).x, proj(t, 1, 0).y); c.stroke();
         c.beginPath(); c.moveTo(proj(-1, t, 0).x, proj(-1, t, 0).y); c.lineTo(proj(1, t, 0).x, proj(1, t, 0).y); c.stroke();
       }
-      // Z轴刻度
+      // Z轴标签
       c.fillStyle = 'rgba(255,255,255,0.4)';
       c.font = '7px "SF Mono", Consolas, monospace';
       c.textAlign = 'right';
@@ -4752,7 +4749,7 @@
           grid[j][i] = Math.max(0, Efn(rn) / Emax) * grow * pulse;
         }
       }
-      // 曲面填充
+      // 曲面填充（带光照渐变：左上亮右下暗）
       for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {
           const p00 = proj(-1 + 2 * i / N, -1 + 2 * j / N, grid[j][i]);
@@ -4760,15 +4757,29 @@
           const p11 = proj(-1 + 2 * (i + 1) / N, -1 + 2 * (j + 1) / N, grid[j + 1][i + 1]);
           const p01 = proj(-1 + 2 * i / N, -1 + 2 * (j + 1) / N, grid[j + 1][i]);
           const avgZ = (grid[j][i] + grid[j][i + 1] + grid[j + 1][i + 1] + grid[j + 1][i]) / 4;
-          c.fillStyle = jetColor(avgZ);
+          // 光照系数：基于面片中心的X/Y位置模拟左上光源
+          const lightX = (i / N - 0.3) * 0.3 + 0.85;
+          const lightY = (j / N - 0.3) * 0.2 + 0.9;
+          const light = Math.max(0.6, Math.min(1.15, lightX * lightY));
+          const baseColor = jetColor(avgZ);
+          // 解析jetColor的rgb并应用光照
+          const m = baseColor.match(/\d+/g);
+          if (m) {
+            const r = Math.min(255, Math.round(Number(m[0]) * light));
+            const g = Math.min(255, Math.round(Number(m[1]) * light));
+            const b = Math.min(255, Math.round(Number(m[2]) * light));
+            c.fillStyle = `rgb(${r},${g},${b})`;
+          } else {
+            c.fillStyle = baseColor;
+          }
           c.beginPath();
           c.moveTo(p00.x, p00.y); c.lineTo(p10.x, p10.y); c.lineTo(p11.x, p11.y); c.lineTo(p01.x, p01.y);
           c.closePath(); c.fill();
         }
       }
-      // 曲面网格线
-      c.strokeStyle = 'rgba(0,0,0,0.2)';
-      c.lineWidth = 0.4;
+      // 曲面网格线（淡）
+      c.strokeStyle = 'rgba(255,255,255,0.08)';
+      c.lineWidth = 0.3;
       for (let j = 0; j <= N; j += 2) {
         c.beginPath();
         for (let i = 0; i <= N; i++) {
