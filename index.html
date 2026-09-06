@@ -2907,23 +2907,27 @@
   //    匙孔形成后显著升高；铜对红外激光初始吸收率仅2-5%，深熔后约15-20%）
   // k：材料导热率 W/(m·K)，用于导热修正（高导热材料热量散失快，同线能量熔深更浅）
   // 导热修正因子 λ = (k_ref/k)^0.5，k_ref=16 为不锈钢基准（与基础公式一致，λ=1）
-  // 材料热物性参数（依据：工程材料手册 + 焊接学报环形光斑研究文献校准）
-  // eta:激光吸收率(深熔模式), k:导热系数W/m·K, rho:密度kg/m³, c:比热容J/kg·K
-  // Tm:熔点K, Tv:汽化点K, alpha:热扩散率m²/s = k/(rho·c)
+  // 材料热物性参数（v59铜焊接专版校准）
+  // eta:室温吸收率, k:室温导热系数W/m·K, rho:密度kg/m³, c:比热容J/kg·K
+  // Tm:熔点K, Tv:汽化点K, alpha:热扩散率m²/s
+  // etaKH:匙孔深熔模式吸收率(多次反射), kWeld:焊接区有效热导率(熔化后骤降)
+  // IKH:匙孔功率密度阈值W/mm², C1:熔深系数, C3:熔宽系数
+  // 铜文献依据：固态吸收率3-5%→匙孔60-90%；热导率401→熔化后160-200；
+  //   2kW单模焊紫铜熔深2.3mm；4.5kW焊透熔宽2.28mm；阈值~50MW/cm²
   const MATERIALS = {
-    steel:   { name: '碳钢/不锈钢', group: '钢',  eta: 0.40, k: 16,   rho: 7850, c: 500,  Tm: 1811, Tv: 3134, alpha: 4.08e-6, note: '基准材料，匙孔稳定' },
-    al1060:  { name: '1060 纯铝',   group: '铝合金', eta: 0.22, k: 235,  rho: 2700, c: 900,  Tm: 933,  Tv: 2792, alpha: 9.67e-5, note: '工业纯铝，导热极高' },
-    al3003:  { name: '3003',        group: '铝合金', eta: 0.25, k: 190,  rho: 2730, c: 900,  Tm: 925,  Tv: 2700, alpha: 7.73e-5, note: 'Al-Mn系' },
-    al5052:  { name: '5052',        group: '铝合金', eta: 0.28, k: 138,  rho: 2680, c: 900,  Tm: 895,  Tv: 2700, alpha: 5.72e-5, note: 'Al-Mg系' },
-    al5083:  { name: '5083',        group: '铝合金', eta: 0.30, k: 125,  rho: 2660, c: 900,  Tm: 890,  Tv: 2700, alpha: 5.21e-5, note: 'Al-Mg系，船用' },
-    al6061:  { name: '6061',        group: '铝合金', eta: 0.30, k: 167,  rho: 2700, c: 896,  Tm: 893,  Tv: 2700, alpha: 6.90e-5, note: 'Al-Mg-Si系' },
-    al6063:  { name: '6063',        group: '铝合金', eta: 0.30, k: 200,  rho: 2700, c: 900,  Tm: 915,  Tv: 2700, alpha: 8.23e-5, note: 'Al-Mg-Si系' },
-    al7075:  { name: '7075',        group: '铝合金', eta: 0.32, k: 130,  rho: 2810, c: 960,  Tm: 890,  Tv: 2700, alpha: 4.82e-5, note: 'Al-Zn系，高强' },
-    cu_t2:   { name: 'T2 紫铜',     group: '铜',  eta: 0.15, k: 401,  rho: 8960, c: 385,  Tm: 1358, Tv: 2835, alpha: 1.16e-4, note: 'C1100 纯铜，导热极高' },
-    cu_c1020:{ name: 'C1020 无氧铜',group: '铜',  eta: 0.15, k: 398,  rho: 8940, c: 385,  Tm: 1357, Tv: 2835, alpha: 1.16e-4, note: '高导电导热' },
-    cu_h62:  { name: 'H62 黄铜',    group: '铜',  eta: 0.20, k: 116,  rho: 8500, c: 385,  Tm: 1188, Tv: 2500, alpha: 3.54e-5, note: 'Cu-Zn系，含锌提高吸收' },
-    cu_c5191:{ name: 'C5191 磷青铜',group: '铜',  eta: 0.18, k: 62,   rho: 8800, c: 380,  Tm: 1223, Tv: 2600, alpha: 1.85e-5, note: 'Cu-Sn-P系' },
-    cu_qbe2: { name: 'QBe2 铍铜',   group: '铜',  eta: 0.22, k: 105,  rho: 8250, c: 420,  Tm: 1253, Tv: 2600, alpha: 3.03e-5, note: 'Cu-Be系，高强高导' }
+    steel:   { name: '碳钢/不锈钢', group: '钢',  eta: 0.40, k: 16,   rho: 7850, c: 500,  Tm: 1811, Tv: 3134, alpha: 4.08e-6, etaKH: 0.45, kWeld: 22,  IKH: 10,  C1: 0.12, C3: 0.15, note: '基准材料，匙孔稳定' },
+    al1060:  { name: '1060 纯铝',   group: '铝合金', eta: 0.22, k: 235,  rho: 2700, c: 900,  Tm: 933,  Tv: 2792, alpha: 9.67e-5, etaKH: 0.38, kWeld: 130, IKH: 25,  C1: 0.15, C3: 0.18, note: '工业纯铝，导热极高' },
+    al3003:  { name: '3003',        group: '铝合金', eta: 0.25, k: 190,  rho: 2730, c: 900,  Tm: 925,  Tv: 2700, alpha: 7.73e-5, etaKH: 0.38, kWeld: 120, IKH: 25,  C1: 0.15, C3: 0.18, note: 'Al-Mn系' },
+    al5052:  { name: '5052',        group: '铝合金', eta: 0.28, k: 138,  rho: 2680, c: 900,  Tm: 895,  Tv: 2700, alpha: 5.72e-5, etaKH: 0.40, kWeld: 100, IKH: 20,  C1: 0.15, C3: 0.18, note: 'Al-Mg系' },
+    al5083:  { name: '5083',        group: '铝合金', eta: 0.30, k: 125,  rho: 2660, c: 900,  Tm: 890,  Tv: 2700, alpha: 5.21e-5, etaKH: 0.40, kWeld: 95,  IKH: 20,  C1: 0.15, C3: 0.18, note: 'Al-Mg系，船用' },
+    al6061:  { name: '6061',        group: '铝合金', eta: 0.30, k: 167,  rho: 2700, c: 896,  Tm: 893,  Tv: 2700, alpha: 6.90e-5, etaKH: 0.40, kWeld: 110, IKH: 22,  C1: 0.15, C3: 0.18, note: 'Al-Mg-Si系' },
+    al6063:  { name: '6063',        group: '铝合金', eta: 0.30, k: 200,  rho: 2700, c: 900,  Tm: 915,  Tv: 2700, alpha: 8.23e-5, etaKH: 0.38, kWeld: 125, IKH: 25,  C1: 0.15, C3: 0.18, note: 'Al-Mg-Si系' },
+    al7075:  { name: '7075',        group: '铝合金', eta: 0.32, k: 130,  rho: 2810, c: 960,  Tm: 890,  Tv: 2700, alpha: 4.82e-5, etaKH: 0.42, kWeld: 100, IKH: 20,  C1: 0.15, C3: 0.18, note: 'Al-Zn系，高强' },
+    cu_t2:   { name: 'T2 紫铜',     group: '铜',  eta: 0.05, k: 401,  rho: 8960, c: 385,  Tm: 1358, Tv: 2835, alpha: 1.16e-4, etaKH: 0.42, kWeld: 180, IKH: 500, C1: 0.16, C3: 0.20, note: 'C1100纯铜，高反高导，匙孔后吸收率骤升' },
+    cu_c1020:{ name: 'C1020 无氧铜',group: '铜',  eta: 0.05, k: 398,  rho: 8940, c: 385,  Tm: 1357, Tv: 2835, alpha: 1.16e-4, etaKH: 0.42, kWeld: 178, IKH: 500, C1: 0.16, C3: 0.20, note: '高导电导热' },
+    cu_h62:  { name: 'H62 黄铜',    group: '铜',  eta: 0.12, k: 116,  rho: 8500, c: 385,  Tm: 1188, Tv: 2500, alpha: 3.54e-5, etaKH: 0.40, kWeld: 90,  IKH: 100, C1: 0.15, C3: 0.18, note: 'Cu-Zn系，含锌提高吸收' },
+    cu_c5191:{ name: 'C5191 磷青铜',group: '铜',  eta: 0.10, k: 62,   rho: 8800, c: 380,  Tm: 1223, Tv: 2600, alpha: 1.85e-5, etaKH: 0.38, kWeld: 55,  IKH: 80,  C1: 0.14, C3: 0.17, note: 'Cu-Sn-P系' },
+    cu_qbe2: { name: 'QBe2 铍铜',   group: '铜',  eta: 0.12, k: 105,  rho: 8250, c: 420,  Tm: 1253, Tv: 2600, alpha: 3.03e-5, etaKH: 0.40, kWeld: 85,  IKH: 90,  C1: 0.15, C3: 0.18, note: 'Cu-Be系，高强高导' }
   };
 
   // ===== 工具函数 =====
@@ -3736,14 +3740,15 @@
     };
   }
 
-  // 摆动焊接熔深/熔宽半经验模型（v58文献校准版）
+  // 摆动焊接熔深/熔宽半经验模型（v59铜焊接专版校准）
   // 理论依据：
   //  [1] Lankalapalli et al. (1996) 匙孔能量平衡模型：h ∝ (P_abs/v)^0.7 / d^0.3
   //  [2] Rosenthal (1946) 移动热源热传导方程：熔宽 ∝ (E_line·α/v)^0.5
-  //  [3] 焊接学报《动力电池1060铝合金薄板可调环形光斑激光搭接焊工艺优化》：内芯:外环功率比6:4时匙孔最稳定
-  //  [4] 焊接学报《光束摆动对Ti60合金激光焊能量分布及焊缝成形的影响》：摆动幅度↑→熔深↓、熔宽↑
-  //  [5] 焊接《光纤激光工艺参数对Q235钢穿透点焊缝形状和尺寸的影响》：功率密度阈值~10^6 W/cm²
-  // 校准基准：钢 P_core=3kW, v=16.7mm/s(1m/min), d=0.3mm → h≈3.5mm, w≈1.2mm
+  //  [3] 焊接学报《动力电池1060铝合金薄板可调环形光斑激光搭接焊工艺优化》
+  //  [4] 焊接学报《光束摆动对Ti60合金激光焊能量分布及焊缝成形的影响》
+  //  [5] 铜焊接专项：固态吸收率3-5%→匙孔60-90%；热导率401→熔化后160-200；
+  //      2kW单模焊紫铜熔深2.3mm；4.5kW焊透熔宽2.28mm；阈值~50MW/cm²
+  // 材料差异化：etaKH(匙孔吸收率)/kWeld(焊接热导率)/IKH(功率密度阈值)/C1(熔深系数)/C3(熔宽系数)
   function wobCalculate() {
     const p = wobRead();
     const mat = MATERIALS[p.material] || MATERIALS.steel;
@@ -3752,65 +3757,66 @@
     const core = wobSpotDefocus(p.coreDia * M, p.def);
     const ring = wobSpotDefocus(p.ringDia * M, p.def);
     const f = p.V / p.pitch;
-    // 材料吸收率（深熔匙孔模式）
-    const eta = mat.eta;
-    // 热扩散率 α = k/(ρ·c)，单位 mm²/s（mat.alpha为m²/s，×1e6转换）
-    const alpha = mat.alpha * 1e6;
-    const alphaRef = 4.08; // 钢基准热扩散率 mm²/s
     // 有效光斑直径（mm）
     const dCore = core.dUm / 1000;
     const dRing = ring.dUm / 1000;
     const dCore0 = core.d0Um / 1000;
-    // 吸收功率（W）
-    const PcoreAbs = p.coreP * eta;
-    const PringAbs = p.ringP * eta;
-    // 线能量（J/mm）= 吸收功率 / 焊接速度
+    // 室温功率密度（用室温吸收率估算，判断是否达到匙孔阈值）
+    const rCoreMm = dCore / 2;
+    const Icore_rt = rCoreMm > 0 ? p.coreP * mat.eta / (Math.PI * rCoreMm * rCoreMm) : 0;
+    // 匙孔阈值（材料相关，W/mm²）：钢10、铝20-25、铜500
+    const IKH = mat.IKH || 10;
+    // 平滑过渡函数：0=室温态，1=匙孔态（在0.5×IKH到2×IKH之间过渡）
+    const tKH = Math.max(0, Math.min(1, (Icore_rt - 0.5 * IKH) / (1.5 * IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH); // smoothstep
+    // 有效吸收率和有效热导率（室温→匙孔平滑过渡）
+    const eta_eff = mat.eta + (mat.etaKH - mat.eta) * smoothKH;
+    const k_eff = mat.k + (mat.kWeld - mat.k) * smoothKH;
+    // 有效热扩散率 α = k_eff/(ρ·c)，单位 mm²/s
+    const alpha = k_eff / (mat.rho * mat.c) * 1e6;
+    const alphaRef = 4.08; // 钢基准热扩散率 mm²/s
+    // 吸收功率（W）——用有效吸收率
+    const PcoreAbs = p.coreP * eta_eff;
+    const PringAbs = p.ringP * eta_eff;
+    // 线能量（J/mm）
     const E_core = PcoreAbs / p.V;
     const E_ring = PringAbs / p.V;
     const E_total = (PcoreAbs + PringAbs) / p.V;
-    // 内芯功率密度（W/mm²），1 W/mm² = 100 W/cm²
-    const rCoreMm = dCore / 2;
+    // 有效功率密度（用有效吸收率）
     const Icore = rCoreMm > 0 ? PcoreAbs / (Math.PI * rCoreMm * rCoreMm) : 0;
-    // 匙孔模式阈值：10^6 W/cm² = 10 W/mm²（依据[5]）
-    const Ikeyhole = 10;
-    const isKeyhole = Icore >= Ikeyhole;
-    // ===== 熔深计算（依据[1]匙孔能量平衡模型）=====
-    // h_core = C1 · E_core^0.7 / d_core^0.3 · (α_ref/α)^0.4
-    // C1=0.12 由钢基准校准：E=72J/mm, d=0.3mm → h=0.12×72^0.7/0.3^0.3≈3.5mm
-    const C1 = 0.12;
+    const isKeyhole = smoothKH > 0.5;
+    // ===== 熔深计算（依据[1]匙孔能量平衡模型，材料相关C1）=====
+    const C1 = mat.C1 || 0.12;
     let hCore = C1 * Math.pow(Math.max(E_core, 0.001), 0.7) / Math.pow(Math.max(dCore, 0.01), 0.3)
                 * Math.pow(alphaRef / alpha, 0.4);
-    // 外环辅助熔深（预热效应，依据[3]约为内芯的15-25%）
-    const C2 = 0.05;
+    // 外环辅助熔深（预热效应）
+    const C2 = 0.05 * (C1 / 0.12); // 与C1成比例
     const hRing = C2 * Math.pow(Math.max(E_ring, 0.001), 0.5)
                   * Math.pow(alphaRef / alpha, 0.3);
-    // 离焦修正：离焦量↑→功率密度↓→熔深↓（依据[5]）
+    // 离焦修正
     const fDef = Math.pow(dCore0 / Math.max(dCore, 0.01), 1.5);
-    // 摆动加宽修正（依据[4]：摆动幅度1→3mm熔深减小约42%）
+    // 摆动加宽修正
     const fWob = Math.pow(1 / (1 + Math.pow(p.B / Math.max(dCore, 0.01), 0.7)), 0.4);
-    // 摆动频率修正：频率↑→单位长度扫描次数↑→能量更均匀→熔深略减
+    // 摆动频率修正
     const fFreq = Math.pow(100 / Math.max(f, 10), 0.08);
     let depth = (hCore + hRing) * fDef * fWob * fFreq;
-    // 热导模式修正：功率密度低于阈值时熔深显著减小（过渡区平滑）
-    if (!isKeyhole) {
-      depth *= Math.pow(Icore / Ikeyhole, 0.5);
+    // 未达匙孔阈值时，熔深按热导模式进一步衰减
+    if (smoothKH < 0.5) {
+      depth *= Math.pow(smoothKH * 2, 0.5);
     }
     depth = Math.max(depth, 0);
-    // ===== 熔宽计算（依据[2]Rosenthal热传导+摆动叠加）=====
-    // 热传导扩展宽度：w_thermal = C3 · E_total^0.4 · (α/α_ref)^0.3
-    // C3=0.15 由钢基准校准
-    const C3 = 0.15;
+    // ===== 熔宽计算（依据[2]Rosenthal热传导+摆动叠加，材料相关C3）=====
+    const C3 = mat.C3 || 0.15;
     const wThermal = C3 * Math.pow(Math.max(E_total, 0.001), 0.4)
                      * Math.pow(alpha / alphaRef, 0.3);
-    // 外环光斑直接贡献 + 摆动宽度直接贡献 + 热传导扩展
     const width = Math.max(dRing + p.B, wThermal) + p.B * 0.3;
-    // 内芯功率密度 (W/cm²) 用于显示
+    // 功率密度显示（W/cm²）
     const density = Icore * 100;
     const heatTotal = E_total;
-    // 焊接时长与总输入能量（由焊接长度 L 与焊接速度 V 决定）
+    // 焊接时长与总输入能量
     const weldTime = p.len / p.V;
-    const energyTotal = (p.coreP + p.ringP) * eta * weldTime;
-    // Péclet数（无量纲）：Pe = v·d/(2α)，表征对流与导热比
+    const energyTotal = (p.coreP + p.ringP) * eta_eff * weldTime;
+    // Péclet数
     const Pe = p.V * dCore / (2 * Math.max(alpha, 0.01));
     return {
       depth: depth, width: width, f: f, core: core, ring: ring,
@@ -3818,8 +3824,9 @@
       B: p.B, pitch: p.pitch, V: p.V, type: p.type, def: p.def,
       E_core: E_core, E_ring: E_ring, fWob: fWob, fDef: fDef, fFreq: fFreq,
       M: M, weldTime: weldTime, energyTotal: energyTotal, len: p.len,
-      mat: mat, alpha: alpha, eta: eta, Pe: Pe, isKeyhole: isKeyhole,
-      matName: mat.name, matGroup: mat.group, matNote: mat.note
+      mat: mat, alpha: alpha, eta: eta_eff, Pe: Pe, isKeyhole: isKeyhole,
+      matName: mat.name, matGroup: mat.group, matNote: mat.note,
+      eta_eff: eta_eff, k_eff: k_eff, smoothKH: smoothKH
     };
   }
 
