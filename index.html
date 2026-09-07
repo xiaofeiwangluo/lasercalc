@@ -7320,8 +7320,13 @@
     c.fillStyle = 'rgba(255,255,255,0.65)'; c.font = '10px sans-serif'; c.textAlign = 'right';
     c.fillText((pMax / 1000).toFixed(1) + 'kW', padL - 6, padT + 4);
     c.fillText('0', padL - 6, padT + ph + 3);
+    // x轴实际时间刻度（0, T, 2T ms）
     c.textAlign = 'center';
-    c.fillText('时间（' + nCycles + ' 个调制周期）', padL + pw / 2, H - 8);
+    const Tms = r.Tms;
+    c.fillText('0', padL, padT + ph + 14);
+    c.fillText(Tms.toFixed(1) + 'ms', padL + pw / 2, padT + ph + 14);
+    c.fillText((2 * Tms).toFixed(1) + 'ms', padL + pw, padT + ph + 14);
+    c.fillText('时间（2 个调制周期）', padL + pw / 2, H - 6);
     c.fillStyle = '#00e5ff'; c.fillText('P_av=' + (p.pav / 1000).toFixed(2) + 'kW', W - padR - 50, yOf(p.pav) - 5);
     c.fillStyle = '#ff5050'; c.fillText('P_peak=' + (r.Ppeak / 1000).toFixed(2) + 'kW', W - padR - 50, yOf(r.Ppeak) - 5);
     c.fillStyle = '#78ff78'; c.fillText('P_min=' + (r.Pmin / 1000).toFixed(2) + 'kW', W - padR - 50, yOf(r.Pmin) + 12);
@@ -7439,7 +7444,9 @@
   function modRecalc() {
     const p = modRead(); const r = modCalculate(p);
     modUpdateResults(r);
-    if (!modState.running) { const ph = (modState.t * 2) % 1; drawModPower(p, r, ph); drawModSection(p, r, ph); }
+    const ph = (modState.t * 2) % 1;
+    drawModPower(p, r, ph);
+    drawModSection(p, r, ph);
   }
   // 滑块/数字单向联动
   [['modCore','modCoreNum'],['modFc','modFcNum'],['modFf','modFfNum'],['modDefocus','modDefocusNum'],
