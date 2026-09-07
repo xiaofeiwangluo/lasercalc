@@ -7308,10 +7308,20 @@
 
   function resizeFitCanvas() {
     if (!fitCanvas || !fitCtx) return;
-    const rect = fitCanvas.parentElement.getBoundingClientRect();
+    const wrap = fitCanvas.parentElement;
+    const rect = wrap.getBoundingClientRect();
     const d = window.devicePixelRatio || 1;
-    fitCanvas.width = Math.max(2, Math.round((rect.width || 320) * d));
-    fitCanvas.height = Math.max(2, Math.round((rect.height || 180) * d));
+    // 兼容不支持 aspect-ratio 的旧安卓 WebView：显式计算高度兜底
+    let wCss = rect.width || 320;
+    let hCss = rect.height;
+    const wantH = wCss * 4 / 3;
+    if (!hCss || hCss < wCss * 0.3 || hCss > wCss * 1.8) hCss = wantH; // aspect-ratio 失效/异常时兜底
+    hCss = Math.min(hCss, 640);
+    wrap.style.height = hCss + 'px';
+    fitCanvas.style.width = wCss + 'px';
+    fitCanvas.style.height = hCss + 'px';
+    fitCanvas.width = Math.max(2, Math.round(wCss * d));
+    fitCanvas.height = Math.max(2, Math.round(hCss * d));
     fitCtx.setTransform(d, 0, 0, d, 0, 0);
   }
 
