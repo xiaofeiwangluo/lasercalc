@@ -2764,7 +2764,7 @@
               </div>
             </div>
           </div>
-          <div class="tp-canvas-wrap" style="aspect-ratio:16/9;">
+          <div class="tp-canvas-wrap" style="aspect-ratio:3/4;max-height:640px;">
             <canvas id="fitCanvas"></canvas>
           </div>
           <div class="tp-results" id="fitResults"></div>
@@ -7396,8 +7396,11 @@
       return;
     }
     const f = a.f;
-    // 俯视图比例：以开口为基准
-    const pad = { l: w * 0.07, r: w * 0.60, t: h * 0.16, b: h * 0.82 };
+    // 高画布（手机竖屏 3/4）时上下分栏，宽画布（桌面 16/9）时左右分栏
+    const tall = h / w > 0.72;
+    const pad = tall
+      ? { l: w * 0.06, r: w * 0.94, t: h * 0.12, b: h * 0.48 }
+      : { l: w * 0.07, r: w * 0.60, t: h * 0.16, b: h * 0.82 };
     const availW = pad.r - pad.l, availH = pad.b - pad.t;
     const sc = Math.min(availW / (a.openLen * 1.35 + 12), availH / (a.openWid * 1.5 + 12));
     const cx = pad.l + availW / 2, cy = pad.t + availH / 2;
@@ -7468,18 +7471,18 @@
     fitCtx.fillText('台阶 ' + f.capLen.toFixed(1) + ' ' + tolStr(f.capLenUp, f.capLenDown) + 'mm', cx, cy + oy + 26);
     fitCtx.textAlign = 'left';
     fitCtx.fillStyle = 'rgba(160,175,200,0.85)';
-    fitCtx.fillText('俯视图（长×宽配合）', pad.l, h * 0.10);
+    fitCtx.fillText('俯视图（长×宽配合）', pad.l, tall ? h * 0.06 : h * 0.10);
     // 图例
     fitCtx.fillStyle = 'rgba(138,150,173,0.9)';
-    fitCtx.fillText('□ 壳体外形', pad.l, h * 0.88);
+    fitCtx.fillText('□ 壳体外形', pad.l, tall ? h * 0.52 : h * 0.88);
     fitCtx.fillStyle = 'rgba(0,188,212,0.95)';
-    fitCtx.fillText('- - 壳体开口', pad.l + 90, h * 0.88);
+    fitCtx.fillText('- - 壳体开口', pad.l + 90, tall ? h * 0.52 : h * 0.88);
     fitCtx.fillStyle = 'rgba(255,120,60,0.95)';
-    fitCtx.fillText('■ 盖板台阶', pad.l + 190, h * 0.88);
+    fitCtx.fillText('■ 盖板台阶', pad.l + 190, tall ? h * 0.52 : h * 0.88);
 
-    // ===== 右：剖面图（厚度方向配合） =====
-    const px0 = w * 0.68, px1 = w * 0.97;
-    const top = h * 0.30, bot = h * 0.82;
+    // ===== 右（宽）/下（高）：剖面图（厚度方向配合） =====
+    const px0 = tall ? w * 0.06 : w * 0.68, px1 = tall ? w * 0.94 : w * 0.97;
+    const top = tall ? h * 0.58 : h * 0.30, bot = tall ? h * 0.93 : h * 0.82;
     const availH2 = bot - top;
     // 比例：以壁厚为基准
     const hscale = availH2 * 0.8 / Math.max(f.shellThk + 6, 1);
@@ -7532,12 +7535,17 @@
     fitCtx.font = '9px sans-serif';
     fitCtx.textAlign = 'center';
     fitCtx.fillText('盖板台阶', midX, stepTop - 3);
-    fitCtx.textAlign = 'right';
-    fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + ' ' + tolStr(f.shellThkUp, f.shellThkDown) + 'mm', px0 - 8, (top + bot) / 2);
+    if (tall) {
+      fitCtx.textAlign = 'center';
+      fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + ' ' + tolStr(f.shellThkUp, f.shellThkDown) + 'mm', midX, bot - wall / 2 + 3);
+    } else {
+      fitCtx.textAlign = 'right';
+      fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + ' ' + tolStr(f.shellThkUp, f.shellThkDown) + 'mm', px0 - 8, (top + bot) / 2);
+    }
     fitCtx.textAlign = 'left';
     fitCtx.fillStyle = 'rgba(160,175,200,0.85)';
-    fitCtx.fillText('剖面图（厚度方向配合）', px0, h * 0.10);
-    fitCtx.fillText('配合类型：' + a.fitType, px0, h * 0.88);
+    fitCtx.fillText('剖面图（厚度方向配合）', px0, tall ? h * 0.545 : h * 0.10);
+    fitCtx.fillText('配合类型：' + a.fitType, px0, tall ? h * 0.965 : h * 0.88);
   }
 
   // 输入监听
