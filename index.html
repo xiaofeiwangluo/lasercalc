@@ -5427,9 +5427,13 @@
     const estDef = estMat * fDef;
     const theoryDef = theoryMat * fDef;
 
+    // 单光束熔宽估算（mm）：光斑直径贡献 + 深熔热扩展贡献
+    // 深熔焊熔宽 ≈ (1.2~1.5)×光斑 + (15~20%)×熔深
+    const width = Math.max((d / 1000) * 1.3 + estDef * 0.18, 0.1);
+
     return {
       d, density, heat, keyhole, theory, theoryMat, theoryDef,
-      est, estMat, estDef, fDef, def,
+      est, estMat, estDef, fDef, def, width,
       lambda, matName: mat.name, matGroup: mat.group, matNote: mat.note,
       Kused: K, threshold: mp.IKH
     };
@@ -5891,52 +5895,67 @@
     let depthMm = r.estDef;
     if (!isFinite(depthMm) || depthMm < 0) depthMm = 0;
     const thickMm = Math.max(Number(state.weldThickness) || 10, 0.1);
-    const pxPerMm = Math.min(BH * 0.9 / Math.max(depthMm, 0.01), BW * 0.9 / Math.max(r.width || 1, 0.01));
+    const pxPerMm = Math.min(BH * 0.9 / Math.max(depthMm, 0.01), BW * 0.9 / Math.max(r.width || 0.1, 0.01));
     const depthPx = Math.min(depthMm * grow * pxPerMm, BH);
-    const widthPx = Math.min((r.width || 1) * pxPerMm, BW * 0.85);
-    const halfW = widthPx / 2;
+    const widthPx = Math.min((r.width || 0.1) * pxPerMm, BW * 0.6);
+    const halfW = Math.min(widthPx / 2, BW * 0.22);
 
     // 熔池中心随焊接方向移动（顶面 + 前侧面）
     // 光束从板后部沿焊接方向行进到前部，形成焊接轨迹
-    const tOff = Math.min(state.weldTime / 1.5, 1);
+    const tOff = Math.min(state.weldTime / 3.2, 1); // 3.2s 走完全程，轨迹展开更清晰
     const pathFrom = BL * 0.78, pathTo = BL * 0.22;
     const beamPy = pathFrom + (pathTo - pathFrom) * tOff;
     const midP = proj(BW / 2, beamPy, 0);
     const fcx = proj(BW / 2, 0, 0).x;
     const fBottom = proj(BW / 2, 0, depthPx);
 
-    // 4.5) 顶面焊接轨迹线：已焊路径（光束扫过区域，青蓝发光）+ 未焊路径（虚线）
+    // 4.5) 顶面焊接轨迹线：已焊路径（发光）+ 未焊路径（虚线）+ 行进光点
     const pathStart = proj(BW / 2, pathFrom, 0);
     const pathCur = proj(BW / 2, beamPy, 0);
     const pathEnd = proj(BW / 2, pathTo, 0);
-    // 未焊路径（虚线，暗淡）
-    c.strokeStyle = 'rgba(0,188,212,0.18)';
-    c.lineWidth = 1.2;
-    c.setLineDash([3, 4]);
+    // 未焊路径（虚线，暗淡青色）
+    c.strokeStyle = 'rgba(0,188,212,0.35)';
+    c.lineWidth = 1.4;
+    c.setLineDash([4, 5]);
     c.beginPath();
     c.moveTo(pathCur.x, pathCur.y);
     c.lineTo(pathEnd.x, pathEnd.y);
     c.stroke();
     c.setLineDash([]);
-    // 已焊路径（发光实线，宽度渐变模拟焊缝）
+    // 已焊路径：外发光 + 亮青主轨迹线（与测试专区摆动轨迹同风格，醒目）
     if (tOff > 0.01) {
-      const weldGrad = c.createLinearGradient(pathStart.x, pathStart.y, pathCur.x, pathCur.y);
-      weldGrad.addColorStop(0, 'rgba(255,140,80,0.35)');
-      weldGrad.addColorStop(1, 'rgba(0,188,212,0.85)');
-      c.strokeStyle = weldGrad;
-      c.lineWidth = 2.2;
+      // 外发光
+      c.strokeStyle = 'rgba(0,188,212,0.30)';
+      c.lineWidth = 8;
       c.beginPath();
       c.moveTo(pathStart.x, pathStart.y);
       c.lineTo(pathCur.x, pathCur.y);
       c.stroke();
-      // 已焊焊缝内芯亮线
-      c.strokeStyle = 'rgba(255,200,150,0.5)';
-      c.lineWidth = 0.8;
+      // 主轨迹亮青线
+      c.strokeStyle = 'rgba(0,188,212,0.95)';
+      c.lineWidth = 3;
+      c.beginPath();
+      c.moveTo(pathStart.x, pathStart.y);
+      c.lineTo(pathCur.x, pathCur.y);
+      c.stroke();
+      // 中心白亮线（模拟焊缝余高反光）
+      c.strokeStyle = 'rgba(255,255,255,0.6)';
+      c.lineWidth = 1;
       c.beginPath();
       c.moveTo(pathStart.x, pathStart.y);
       c.lineTo(pathCur.x, pathCur.y);
       c.stroke();
     }
+    // 行进光点（光束当前位置，闪烁）
+    const flash = 0.7 + 0.3 * Math.sin(state.weldTime * 10);
+    const dotGrad = c.createRadialGradient(pathCur.x, pathCur.y, 0, pathCur.x, pathCur.y, 7);
+    dotGrad.addColorStop(0, 'rgba(255,255,255,' + (0.9 * flash) + ')');
+    dotGrad.addColorStop(0.4, 'rgba(0,188,212,' + (0.7 * flash) + ')');
+    dotGrad.addColorStop(1, 'rgba(0,188,212,0)');
+    c.fillStyle = dotGrad;
+    c.beginPath();
+    c.arc(pathCur.x, pathCur.y, 7, 0, Math.PI * 2);
+    c.fill();
 
     // 4) 前侧面熔池 U 形（深=depthPx）
     if (depthPx > 1.5) {
@@ -5999,17 +6018,17 @@
     c.arc(midP.x, midP.y, poolRx * 1.6 * beamPulse, 0, Math.PI * 2);
     c.fill();
 
-    // 7) 焊接方向箭头（顶面）
-    const arrowStart = proj(BW / 2, BL * 0.82, 0);
-    const arrowEnd = proj(BW / 2, BL * 0.18, 0);
-    c.strokeStyle = 'rgba(0,188,212,0.7)';
-    c.lineWidth = 1.6;
+    // 7) 焊接方向箭头（板右侧外部，避免与轨迹线重叠）
+    const arrowStart = proj(BW * 1.18, BL * 0.8, 0);
+    const arrowEnd = proj(BW * 1.18, BL * 0.2, 0);
+    c.strokeStyle = 'rgba(0,188,212,0.55)';
+    c.lineWidth = 1.4;
     c.beginPath();
     c.moveTo(arrowStart.x, arrowStart.y);
     c.lineTo(arrowEnd.x, arrowEnd.y);
     c.stroke();
     const ang = Math.atan2(arrowEnd.y - arrowStart.y, arrowEnd.x - arrowStart.x);
-    c.fillStyle = 'rgba(0,188,212,0.85)';
+    c.fillStyle = 'rgba(0,188,212,0.7)';
     c.beginPath();
     c.moveTo(arrowEnd.x, arrowEnd.y);
     c.lineTo(arrowEnd.x - 9 * Math.cos(ang - 0.42), arrowEnd.y - 9 * Math.sin(ang - 0.42));
@@ -6017,7 +6036,8 @@
     c.closePath(); c.fill();
     c.font = '9px monospace';
     c.textAlign = 'left';
-    c.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowStart.x + 4, arrowStart.y + 4);
+    c.fillStyle = 'rgba(0,188,212,0.8)';
+    c.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowStart.x + 6, arrowStart.y - 4);
 
     // 8) 标注：模式 + 熔深 + 材料
     c.textAlign = 'right';
