@@ -1850,7 +1850,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.5</div>
+    <div class="splash-version">v1.4.6</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2789,6 +2789,7 @@
           <option value="accel">加速距离计算 · 焊接运动分析</option>
           <option value="spacing">点间距频率计算 · 脉冲焊接</option>
           <option value="fit">动力电池壳盖配合公差分析</option>
+          <option value="mod">通快功率调制焊接仿真</option>
         </select>
       </div>
 
@@ -2985,6 +2986,154 @@
           <div class="tp-results" id="fitResults"></div>
         </div>
       </div>
+
+      <!-- 工具E：通快功率调制焊接仿真 -->
+      <div class="tool-panel" id="tool-mod">
+        <div class="card">
+          <div class="card-title">通快功率调制焊接仿真 · TRUMPF Power Modulation</div>
+          <div class="hint" style="margin-bottom:12px;">
+            通快（TRUMPF）TruDisk/TruFiber 系列激光器支持<b>时间功率调制（Temporal Power Modulation）</b>：在连续激光基础上叠加周期性功率波动（正弦/方波/三角波）。文献依据：①Wiley《Mechanisms of Increasing Weld Depth during Temporal Power Modulation》——调制频率约 200 Hz、高振幅时，<b>匙孔惯性（keyhole inertia）</b>使匙孔深度维持在更高水平，平均熔深增加；②AIP《Modulation of the laser power to prevent hot cracking》——功率调制可抑制热裂纹并保持平均熔深恒定。本工具输入光学元件与调制参数，自动仿真熔深/熔宽并输出峰值/谷值功率、匙孔惯性增益、调制周期等结果。
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">光学系统</div>
+            <div class="input-group">
+              <div class="input-label"><span>光纤芯径 D_core</span><span class="unit">μm</span></div>
+              <div class="input-row">
+                <input type="range" id="modCore" min="20" max="600" value="200" step="10">
+                <input type="number" id="modCoreNum" value="200" min="10" max="2000">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>准直镜焦距 f_c</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="range" id="modFc" min="50" max="300" value="100" step="5">
+                <input type="number" id="modFcNum" value="100" min="20" max="500">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>聚焦镜焦距 f_f</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="range" id="modFf" min="100" max="600" value="200" step="5">
+                <input type="number" id="modFfNum" value="200" min="50" max="1000">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>离焦量 Δf</span><span class="unit">mm（负=焦点深入工件）</span></div>
+              <div class="input-row">
+                <input type="range" id="modDefocus" min="-5" max="5" value="0" step="0.5">
+                <input type="number" id="modDefocusNum" value="0" min="-10" max="10" step="0.5">
+              </div>
+            </div>
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">焊接参数</div>
+            <div class="input-group">
+              <div class="input-label"><span>平均功率 P_av</span><span class="unit">W</span></div>
+              <div class="input-row">
+                <input type="range" id="modPav" min="200" max="8000" value="2000" step="50">
+                <input type="number" id="modPavNum" value="2000" min="50" max="20000">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>焊接速度 V</span><span class="unit">mm/s</span></div>
+              <div class="input-row">
+                <input type="range" id="modV" min="5" max="300" value="60" step="5">
+                <input type="number" id="modVNum" value="60" min="1" max="2000">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>工件材料</span><span class="unit" id="modMatSpec">钢/不锈钢 · k=16 W/m·K</span></div>
+              <select class="weld-material-select" id="modMaterial">
+                <optgroup label="—— 钢/不锈钢 ——">
+                  <option value="steel" selected>碳钢 / 不锈钢</option>
+                </optgroup>
+                <optgroup label="—— 铝合金 ——">
+                  <option value="al1060">铝合金 1060</option>
+                  <option value="al5052">铝合金 5052</option>
+                  <option value="al6061">铝合金 6061</option>
+                  <option value="al7075">铝合金 7075</option>
+                </optgroup>
+                <optgroup label="—— 铜及铜合金 ——">
+                  <option value="cu_t2">T2 紫铜 / C1100</option>
+                  <option value="cu_h62">H62 黄铜</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>母材厚度</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="range" id="modThickness" min="0.1" max="10" value="2.0" step="0.1">
+                <input type="number" id="modThicknessNum" value="2.0" min="0.05" max="30" step="0.05">
+              </div>
+            </div>
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">功率调制参数（TRUMPF）</div>
+            <div class="input-group">
+              <div class="input-label"><span>调制波形</span><span class="unit">正弦/方波/三角</span></div>
+              <select class="weld-material-select" id="modWave">
+                <option value="sin" selected>正弦波 Sine</option>
+                <option value="square">方波 Square</option>
+                <option value="triangle">三角波 Triangle</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>调制频率 f_mod</span><span class="unit">Hz（文献最优≈200Hz）</span></div>
+              <div class="input-row">
+                <input type="range" id="modFreq" min="10" max="1000" value="200" step="10">
+                <input type="number" id="modFreqNum" value="200" min="1" max="5000">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>调制振幅 A</span><span class="unit">%（峰峰值比例，0=连续CW）</span></div>
+              <div class="input-row">
+                <input type="range" id="modAmp" min="0" max="80" value="40" step="5">
+                <input type="number" id="modAmpNum" value="40" min="0" max="95">
+              </div>
+            </div>
+          </div>
+          <!-- 功率-时间曲线 -->
+          <div class="tp-canvas-wrap" style="aspect-ratio:16/7;max-height:280px;margin-top:12px;">
+            <canvas id="modPowerCanvas"></canvas>
+          </div>
+          <!-- 熔深动态演化截面 -->
+          <div class="tp-canvas-wrap" style="aspect-ratio:4/3;max-height:480px;margin-top:12px;">
+            <canvas id="modSectionCanvas"></canvas>
+          </div>
+          <!-- 动画控制 -->
+          <div class="weld-controls" style="margin-top:12px;">
+            <button class="weld-btn" id="modPlay">暂停</button>
+            <button class="weld-btn secondary" id="modReset">重置</button>
+            <button class="weld-btn secondary" id="modSave">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
+            </button>
+            <div class="weld-speed-select">
+              <span>速度</span>
+              <select id="modSpeed">
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="2">2×</option>
+                <option value="4">4×</option>
+              </select>
+            </div>
+          </div>
+          <!-- 计算结果 -->
+          <div class="weld-defocus-grid" style="margin-top:14px;">
+            <div class="wd-item2"><span class="wd2-label">预估熔深（调制）</span><span class="wd2-value" id="modDepth">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">预估熔宽</span><span class="wd2-value" id="modWidth">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">CW基准熔深</span><span class="wd2-value" id="modDepthCW">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">峰值功率 P_peak</span><span class="wd2-value" id="modPpeak">0 W</span></div>
+            <div class="wd-item2"><span class="wd2-label">谷值功率 P_min</span><span class="wd2-value" id="modPmin">0 W</span></div>
+            <div class="wd-item2"><span class="wd2-label">调制周期 T</span><span class="wd2-value" id="modPeriod">0 ms</span></div>
+            <div class="wd-item2"><span class="wd2-label">匙孔惯性增益 K</span><span class="wd2-value" id="modGain">—</span></div>
+            <div class="wd-item2"><span class="wd2-label">焦点光斑 d₀</span><span class="wd2-value" id="modSpot">0 μm</span></div>
+            <div class="wd-item2"><span class="wd2-label">峰值功率密度</span><span class="wd2-value" id="modDensity">0</span></div>
+            <div class="wd-item2"><span class="wd2-label">线能量</span><span class="wd2-value" id="modHeat">0 J/mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">深宽比 h/W</span><span class="wd2-value" id="modRatio">—</span></div>
+            <div class="wd-item2"><span class="wd2-label">熔深增量</span><span class="wd2-value" id="modDelta">0%</span></div>
+          </div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -3064,7 +3213,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.5</span>
+        <span class="ar-value">v1.4.6</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3077,22 +3226,22 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.5 更新说明 -->
+  <!-- 首次登录：v1.4.6 更新说明 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.5</span></h3>
-      <div class="up-sub">测试专区新增 QCW 脉冲焊接模拟</div>
+      <h3>版本更新 <span class="vtag">v1.4.6</span></h3>
+      <div class="up-sub">工具箱新增通快功率调制焊接仿真</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">测试专区新增下拉菜单</b>：可在「环形光斑摆动焊接仿真」「QCW 脉冲焊接模拟」之间一键切换。</span>
+        <span><b style="color:var(--text)">工具箱新增「通快功率调制焊接仿真」</b>：基于通快（TRUMPF）TruDisk/TruFiber 激光器时间功率调制（Temporal Power Modulation）技术，输入光学元件（光纤芯径/准直镜/聚焦镜/离焦量）、焊接参数（平均功率/焊接速度/材料/母材厚度）与调制参数（波形/频率/振幅），自动仿真熔深与熔宽。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">新增 QCW 脉冲焊接模拟</b>：输入光学元件（光纤芯径、准直镜、聚焦镜、离焦量）与脉冲参数（峰值功率、脉宽、重复频率、焊接速度、焊接长度、材料、母材厚度），自动仿真脉冲熔深/熔宽，并输出平均功率、单脉冲能量、峰值功率密度、焊斑间距、重叠率、每毫米脉冲数、线能量、深宽比等 12 项结果。</span>
+        <span><b style="color:var(--text)">文献校准模型</b>：匙孔惯性增益（Wiley 2024，调制频率~200Hz 高振幅时熔深增加）+ 功率调制防热裂纹（AIP 2017），输出峰值/谷值功率、调制周期、匙孔惯性增益、峰值功率密度、线能量、深宽比、熔深增量等 12 项结果。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">新增 QCW 动态演化动画</b>：脉冲光束 ON/OFF 熔深截面动态演化 + 焊斑重叠分布俯视图（重叠率可视化），均支持保存图片。</span>
+        <span><b style="color:var(--text)">双动态演化动画</b>：功率-时间调制波形（正弦/方波/三角，P_av/P_peak/P_min 标注）+ 熔深截面动态演化（瞬时功率/瞬时熔深随调制波动，CW 基准对比），支持播放/暂停/速度调节/保存图片。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3112,6 +3261,14 @@
         <ul class="cl-list">
           <li>激光填丝焊接熔深计算及熔深动态演化<span style="font-size:10px;color:var(--text-3);margin-left:4px">（技术支持：张飞）</span></li>
           <li>环形光斑光纤激光器焊接熔深计算及熔深动态演化</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.6</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>工具箱新增「通快功率调制焊接仿真」：基于 TRUMPF 时间功率调制技术，输入光学元件/焊接参数/调制参数（波形·频率·振幅）自动仿真熔深熔宽。</li>
+          <li>文献校准：匙孔惯性增益（Wiley 2024，~200Hz 高振幅增熔深）+ 功率调制防热裂纹（AIP 2017），输出峰值/谷值功率、调制周期、匙孔惯性增益、峰值功率密度、线能量、深宽比、熔深增量等 12 项结果。</li>
+          <li>双动态演化动画：功率-时间调制波形（正弦/方波/三角）+ 熔深截面动态演化（瞬时功率/熔深波动，CW 基准对比），支持播放/暂停/速度/保存图片。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -7040,10 +7197,278 @@
   const tpClearBtn = $('tpClear');
   if (tpClearBtn) tpClearBtn.addEventListener('click', clearTp);
 
+  // ===== 工具E：通快功率调制焊接仿真 =====
+  const modPowerCanvas = $('modPowerCanvas');
+  const modPowerCtx = modPowerCanvas ? modPowerCanvas.getContext('2d') : null;
+  const modSectionCanvas = $('modSectionCanvas');
+  const modSectionCtx = modSectionCanvas ? modSectionCanvas.getContext('2d') : null;
+  const modState = { t: 0, running: true, speed: 1, _lt: 0, animId: null };
+
+  function modRead() {
+    const g = id => parseFloat($(id).value) || 0;
+    return {
+      core: g('modCore'), fc: g('modFc'), ff: g('modFf'), def: g('modDefocus'),
+      pav: g('modPav'), v: g('modV'), material: $('modMaterial').value,
+      thickness: g('modThickness'), wave: $('modWave').value,
+      freq: g('modFreq'), amp: g('modAmp')
+    };
+  }
+  function modWaveVal(wave, phase) {
+    const p = phase - Math.floor(phase);
+    if (wave === 'square') return p < 0.5 ? 1 : -1;
+    if (wave === 'triangle') return p < 0.25 ? p * 4 : p < 0.75 ? 2 - p * 4 : p * 4 - 6;
+    return Math.sin(2 * Math.PI * p);
+  }
+  function modCalculate(p) {
+    const mat = MATERIALS[p.material] || MATERIALS.steel;
+    const M = p.ff / p.fc;
+    const d0Um = p.core * M;
+    const zR = Math.PI * (d0Um / 1000) ** 2 / (4 * 1080e-6);
+    const dUm = d0Um * Math.sqrt(1 + (p.def / zR) ** 2);
+    const d = dUm / 1000;
+    const A = Math.min(p.amp / 100, 0.95);
+    const Ppeak = p.pav * (1 + A);
+    const Pmin = p.pav * (1 - A);
+    const Tms = 1000 / p.freq;
+    // 匙孔惯性增益（Wiley 2024：调制频率~200Hz、高振幅时匙孔深度维持更高水平）
+    const K = 1 + 0.25 * A * Math.exp(-Math.pow((p.freq - 200) / 180, 2));
+    const Ipeak = d > 0 ? 4 * Ppeak * mat.eta / (Math.PI * d * d) : 0;
+    const IKH = mat.IKH || 10;
+    const tKH = Math.max(0, Math.min(1, (Ipeak - 0.5 * IKH) / (1.5 * IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH);
+    const etaEff = mat.eta + (mat.etaKH - mat.eta) * smoothKH;
+    const kEff = mat.k + (mat.kWeld - mat.k) * smoothKH;
+    const alphaE = kEff / (mat.rho * mat.c) * 1e6;
+    const alphaRef = 4.08;
+    const C1 = mat.C1 || 0.12, C3 = mat.C3 || 0.5;
+    const hCW = C1 * Math.pow(Math.max(p.pav * etaEff / p.v, 0.001), 0.7) / Math.pow(Math.max(d, 0.01), 0.3) * Math.pow(alphaRef / alphaE, 0.4);
+    const hMod = hCW * K;
+    const wTh = C3 * Math.sqrt(p.pav * etaEff * alphaE / (p.v * p.v)) * 1.2;
+    const wMod = Math.max(d * 1.15, wTh) * (1 + 0.05 * A);
+    const heat = p.pav * etaEff / p.v;
+    return { mat, M, d0Um, zR, dUm, d, A, Ppeak, Pmin, Tms, K, Ipeak, smoothKH, etaEff, kEff, alphaE, hCW, hMod, wMod, heat };
+  }
+  function modUpdateResults(r) {
+    $('modDepth').textContent = r.hMod.toFixed(3) + ' mm';
+    $('modWidth').textContent = r.wMod.toFixed(3) + ' mm';
+    $('modDepthCW').textContent = r.hCW.toFixed(3) + ' mm';
+    $('modPpeak').textContent = r.Ppeak.toFixed(0) + ' W';
+    $('modPmin').textContent = r.Pmin.toFixed(0) + ' W';
+    $('modPeriod').textContent = r.Tms.toFixed(2) + ' ms';
+    $('modGain').textContent = r.K.toFixed(3) + '×';
+    $('modSpot').textContent = r.dUm.toFixed(1) + ' μm';
+    $('modDensity').textContent = (r.Ipeak / 1e10).toFixed(2) + ' MW/cm²';
+    $('modHeat').textContent = r.heat.toFixed(2) + ' J/mm';
+    $('modRatio').textContent = (r.hMod / Math.max(r.wMod, 0.001)).toFixed(2);
+    $('modDelta').textContent = ((r.K - 1) * 100).toFixed(1) + '%';
+    const m = r.mat;
+    $('modMatSpec').textContent = m.name + ' · k=' + m.k + ' W/m·K';
+  }
+  function resizeModCanvas() {
+    [modPowerCanvas, modSectionCanvas].forEach(c => {
+      if (!c) return;
+      const wrap = c.parentElement;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = wrap.clientWidth, h = wrap.clientHeight;
+      c.style.width = w + 'px';
+      c.style.height = h + 'px';
+      c.style.display = 'block';
+      c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+      c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    });
+  }
+  function drawModPower(p, r, phase) {
+    if (!modPowerCtx) return;
+    const c = modPowerCtx, W = modPowerCanvas.clientWidth, H = modPowerCanvas.clientHeight;
+    c.clearRect(0, 0, W, H);
+    c.fillStyle = '#0a0e1a'; c.fillRect(0, 0, W, H);
+    const padL = 52, padR = 14, padT = 18, padB = 28;
+    const pw = W - padL - padR, ph = H - padT - padB;
+    const pMax = r.Ppeak * 1.1, pMin = 0;
+    const yOf = pv => padT + ph * (1 - (pv - pMin) / (pMax - pMin));
+    const nCycles = 2;
+    // 网格
+    c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) { const y = padT + ph * i / 4; c.beginPath(); c.moveTo(padL, y); c.lineTo(W - padR, y); c.stroke(); }
+    // Pav/Ppeak/Pmin 参考线
+    c.setLineDash([4, 4]);
+    c.strokeStyle = 'rgba(0,229,255,0.5)'; c.beginPath(); c.moveTo(padL, yOf(p.pav)); c.lineTo(W - padR, yOf(p.pav)); c.stroke();
+    c.strokeStyle = 'rgba(255,80,80,0.5)'; c.beginPath(); c.moveTo(padL, yOf(r.Ppeak)); c.lineTo(W - padR, yOf(r.Ppeak)); c.stroke();
+    c.strokeStyle = 'rgba(120,255,120,0.5)'; c.beginPath(); c.moveTo(padL, yOf(r.Pmin)); c.lineTo(W - padR, yOf(r.Pmin)); c.stroke();
+    c.setLineDash([]);
+    // 波形
+    c.strokeStyle = '#ff7a1a'; c.lineWidth = 2.2; c.beginPath();
+    const steps = 240;
+    for (let i = 0; i <= steps; i++) {
+      const ph2 = (i / steps) * nCycles;
+      const pv = p.pav * (1 + r.A * modWaveVal(p.wave, ph2));
+      const x = padL + pw * i / steps, y = yOf(pv);
+      if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.stroke();
+    // 当前时刻
+    const curPhase = (phase * nCycles) % 1;
+    const curX = padL + pw * ((phase * nCycles) % nCycles) / nCycles;
+    const curP = p.pav * (1 + r.A * modWaveVal(p.wave, phase));
+    c.strokeStyle = 'rgba(255,255,255,0.35)'; c.setLineDash([3, 3]);
+    c.beginPath(); c.moveTo(curX, padT); c.lineTo(curX, padT + ph); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(curX, yOf(curP), 4.5, 0, Math.PI * 2); c.fill();
+    // 轴标签
+    c.fillStyle = 'rgba(255,255,255,0.65)'; c.font = '10px sans-serif'; c.textAlign = 'right';
+    c.fillText((pMax / 1000).toFixed(1) + 'kW', padL - 6, padT + 4);
+    c.fillText('0', padL - 6, padT + ph + 3);
+    c.textAlign = 'center';
+    c.fillText('时间（' + nCycles + ' 个调制周期）', padL + pw / 2, H - 8);
+    c.fillStyle = '#00e5ff'; c.fillText('P_av=' + (p.pav / 1000).toFixed(2) + 'kW', W - padR - 50, yOf(p.pav) - 5);
+    c.fillStyle = '#ff5050'; c.fillText('P_peak=' + (r.Ppeak / 1000).toFixed(2) + 'kW', W - padR - 50, yOf(r.Ppeak) - 5);
+    c.fillStyle = '#78ff78'; c.fillText('P_min=' + (r.Pmin / 1000).toFixed(2) + 'kW', W - padR - 50, yOf(r.Pmin) + 12);
+    c.fillStyle = '#ff7a1a'; c.font = 'bold 11px sans-serif'; c.textAlign = 'left';
+    c.fillText('功率调制波形 · ' + (p.wave === 'sin' ? '正弦' : p.wave === 'square' ? '方波' : '三角') + ' · f=' + p.freq + 'Hz · A=' + p.amp + '%', padL, 12);
+  }
+  function drawModSection(p, r, phase) {
+    if (!modSectionCtx) return;
+    const c = modSectionCtx, W = modSectionCanvas.clientWidth, H = modSectionCanvas.clientHeight;
+    c.clearRect(0, 0, W, H);
+    c.fillStyle = '#0a0e1a'; c.fillRect(0, 0, W, H);
+    const padL = 40, padR = 20, padT = 46, padB = 30;
+    const pw = W - padL - padR, ph = H - padT - padB;
+    const thk = Math.max(p.thickness, 0.1);
+    const maxDepth = Math.max(r.hMod * 1.15, thk * 1.05, 0.5);
+    const yScale = ph / maxDepth;
+    const topY = padT;
+    const poolCX = padL + pw * 0.42;
+    // 母材
+    const matColor = r.mat.color || '#4a5568';
+    c.fillStyle = matColor; c.fillRect(padL, topY, pw, thk * yScale);
+    c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 1; c.strokeRect(padL, topY, pw, thk * yScale);
+    // 母材厚度标注
+    c.fillStyle = 'rgba(255,255,255,0.7)'; c.font = '10px sans-serif'; c.textAlign = 'center';
+    c.fillText('母材 ' + thk.toFixed(2) + 'mm', padL + pw / 2, topY - 6);
+    // 瞬时功率与瞬时熔深（匙孔惯性滤波：波动幅度减半）
+    const instWave = modWaveVal(p.wave, phase);
+    const instDepth = Math.max(0.02, r.hMod * (1 + r.A * 0.5 * instWave));
+    const instP = p.pav * (1 + r.A * instWave);
+    const depthY = topY + instDepth * yScale;
+    const mw = r.wMod;
+    const mwPx = Math.max(mw * yScale * 1.4, 14);
+    // 光束（功率高时更亮更宽）
+    const beamW = 6 + (instP / r.Ppeak) * 10;
+    const beamGrad = c.createLinearGradient(poolCX - beamW, 0, poolCX + beamW, 0);
+    beamGrad.addColorStop(0, 'rgba(255,180,60,0)');
+    beamGrad.addColorStop(0.5, 'rgba(255,220,120,' + (0.5 + 0.4 * instP / r.Ppeak) + ')');
+    beamGrad.addColorStop(1, 'rgba(255,180,60,0)');
+    c.fillStyle = beamGrad; c.fillRect(poolCX - beamW, 14, beamW * 2, depthY - 14);
+    // 熔池（碗形贝塞尔）
+    const poolTop = topY + 1;
+    const poolBot = Math.min(depthY, topY + thk * yScale - 1);
+    const halfW = mwPx / 2;
+    c.beginPath();
+    c.moveTo(poolCX - halfW, poolTop);
+    c.bezierCurveTo(poolCX - halfW * 0.9, poolTop + (poolBot - poolTop) * 0.35, poolCX - halfW * 0.55, poolBot - 4, poolCX, poolBot);
+    c.bezierCurveTo(poolCX + halfW * 0.55, poolBot - 4, poolCX + halfW * 0.9, poolTop + (poolBot - poolTop) * 0.35, poolCX + halfW, poolTop);
+    c.closePath();
+    const pg = c.createLinearGradient(0, poolTop, 0, poolBot);
+    pg.addColorStop(0, 'rgba(255,140,40,0.85)');
+    pg.addColorStop(0.5, 'rgba(255,80,30,0.75)');
+    pg.addColorStop(1, 'rgba(200,40,20,0.6)');
+    c.fillStyle = pg; c.fill();
+    c.strokeStyle = 'rgba(255,200,100,0.7)'; c.lineWidth = 1.2; c.stroke();
+    // 匙孔
+    c.fillStyle = 'rgba(20,10,5,0.85)';
+    c.beginPath();
+    c.moveTo(poolCX - 3, poolTop + 2);
+    c.lineTo(poolCX + 3, poolTop + 2);
+    c.lineTo(poolCX + 1.5, poolBot - 3);
+    c.lineTo(poolCX - 1.5, poolBot - 3);
+    c.closePath(); c.fill();
+    // CW基准熔深虚线对比
+    c.strokeStyle = 'rgba(0,229,255,0.55)'; c.setLineDash([5, 4]); c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(padL + 6, topY + r.hCW * yScale); c.lineTo(padL + pw - 6, topY + r.hCW * yScale); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#00e5ff'; c.font = '9px sans-serif'; c.textAlign = 'left';
+    c.fillText('CW基准 ' + r.hCW.toFixed(2) + 'mm', padL + 8, topY + r.hCW * yScale - 3);
+    // 预估熔深标注
+    const avgDepthY = topY + r.hMod * yScale;
+    c.strokeStyle = '#ff7a1a'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(poolCX + halfW + 8, topY); c.lineTo(poolCX + halfW + 8, avgDepthY); c.stroke();
+    c.beginPath(); c.moveTo(poolCX + halfW + 5, topY + 4); c.lineTo(poolCX + halfW + 8, topY); c.lineTo(poolCX + halfW + 11, topY + 4); c.stroke();
+    c.beginPath(); c.moveTo(poolCX + halfW + 5, avgDepthY - 4); c.lineTo(poolCX + halfW + 8, avgDepthY); c.lineTo(poolCX + halfW + 11, avgDepthY - 4); c.stroke();
+    c.fillStyle = '#ff7a1a'; c.font = 'bold 10px sans-serif'; c.textAlign = 'left';
+    c.fillText('预估熔深 ' + r.hMod.toFixed(2) + 'mm', poolCX + halfW + 12, (topY + avgDepthY) / 2 + 3);
+    // 熔宽标注（底部）
+    const wY = Math.min(poolBot + 14, topY + thk * yScale + 14);
+    c.strokeStyle = '#00e5ff'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(poolCX - halfW, wY); c.lineTo(poolCX + halfW, wY); c.stroke();
+    c.beginPath(); c.moveTo(poolCX - halfW, wY - 4); c.lineTo(poolCX - halfW, wY + 4); c.stroke();
+    c.beginPath(); c.moveTo(poolCX + halfW, wY - 4); c.lineTo(poolCX + halfW, wY + 4); c.stroke();
+    c.fillStyle = '#00e5ff'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center';
+    c.fillText('熔宽 W=' + r.wMod.toFixed(2) + 'mm', poolCX, wY + 14);
+    // 标题与瞬时功率
+    c.fillStyle = '#ff7a1a'; c.font = 'bold 11px sans-serif'; c.textAlign = 'left';
+    c.fillText('TRUMPF POWER MODULATION · 熔深动态演化', padL, 14);
+    c.fillStyle = 'rgba(255,255,255,0.75)'; c.font = '10px sans-serif';
+    c.fillText('瞬时功率 ' + (instP / 1000).toFixed(2) + 'kW · 瞬时熔深 ' + instDepth.toFixed(2) + 'mm · 匙孔惯性增益 ' + r.K.toFixed(2) + '×', padL, 30);
+  }
+  function modLoop(ts) {
+    if (!modState.running) { modState.animId = null; return; }
+    if (!modState._lt) modState._lt = ts;
+    const dt = Math.min((ts - modState._lt) / 1000, 0.05);
+    modState._lt = ts;
+    modState.t += dt * modState.speed;
+    const p = modRead();
+    const r = modCalculate(p);
+    // 动画以固定舒适速度播放：每秒 2 个调制周期（与实际频率解耦，避免高频时肉眼无法分辨）
+    const phase = (modState.t * 2) % 1;
+    drawModPower(p, r, phase);
+    drawModSection(p, r, phase);
+    modState.animId = requestAnimationFrame(modLoop);
+  }
+  function startModSim() {
+    if (modState.animId) cancelAnimationFrame(modState.animId);
+    modState.running = true; modState._lt = 0;
+    const p = modRead(); const r = modCalculate(p);
+    modUpdateResults(r);
+    drawModPower(p, r, 0); drawModSection(p, r, 0);
+    modState.animId = requestAnimationFrame(modLoop);
+  }
+  function stopModSim() { if (modState.animId) cancelAnimationFrame(modState.animId); modState.animId = null; modState.running = false; }
+  function modRecalc() {
+    const p = modRead(); const r = modCalculate(p);
+    modUpdateResults(r);
+    if (!modState.running) { const ph = (modState.t * 2) % 1; drawModPower(p, r, ph); drawModSection(p, r, ph); }
+  }
+  // 滑块/数字单向联动
+  [['modCore','modCoreNum'],['modFc','modFcNum'],['modFf','modFfNum'],['modDefocus','modDefocusNum'],
+   ['modPav','modPavNum'],['modV','modVNum'],['modThickness','modThicknessNum'],
+   ['modFreq','modFreqNum'],['modAmp','modAmpNum']].forEach(([rId, nId]) => {
+    const rEl = $(rId), nEl = $(nId);
+    if (!rEl || !nEl) return;
+    rEl.addEventListener('input', () => { nEl.value = rEl.value; modRecalc(); });
+    nEl.addEventListener('input', () => {
+      let v = parseFloat(nEl.value); if (isNaN(v)) return;
+      const mn = parseFloat(rEl.min), mx = parseFloat(rEl.max);
+      if (!isNaN(mn) && v < mn) v = mn;
+      if (!isNaN(mx) && v > mx) v = mx;
+      rEl.value = v; modRecalc();
+    });
+  });
+  $('modMaterial').addEventListener('change', modRecalc);
+  $('modWave').addEventListener('change', modRecalc);
+  $('modSpeed').addEventListener('change', () => { modState.speed = parseFloat($('modSpeed').value) || 1; });
+  $('modPlay').addEventListener('click', () => {
+    if (modState.running) { stopModSim(); $('modPlay').textContent = '播放'; }
+    else { modState.running = true; modState._lt = 0; $('modPlay').textContent = '暂停'; modState.animId = requestAnimationFrame(modLoop); }
+  });
+  $('modReset').addEventListener('click', () => { modState.t = 0; modRecalc(); });
+  $('modSave').addEventListener('click', () => {
+    const c = modSectionCanvas;
+    const a = document.createElement('a'); a.download = 'trumpf_power_modulation.png';
+    a.href = c.toDataURL('image/png'); a.click();
+  });
+
   // ===== 工具箱 · 工具下拉切换 =====
   const toolSelect = $('toolSelect');
   function switchTool(name) {
-    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit'].forEach(id => {
+    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod'].forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('active', id === 'tool-' + name);
     });
@@ -7051,6 +7476,8 @@
     if (name === 'accel') { resizeAccCanvas(); calcAccel(); }
     if (name === 'spacing') { resizeSpCanvas(); calcSpacing(); }
     if (name === 'fit') { resizeFitCanvas(); calcFit(); }
+    if (name === 'mod') { resizeModCanvas(); startModSim(); }
+    else { stopModSim(); }
   }
   if (toolSelect) toolSelect.addEventListener('change', () => switchTool(toolSelect.value));
 
