@@ -8176,26 +8176,17 @@
    'qcwThickness', 'qcwThicknessNum'].forEach(id => {
     const el = $(id);
     if (!el) return;
-    const sync = () => {
+    el.addEventListener('input', () => {
       const numId = id.endsWith('Num') ? id : id + 'Num';
       const rangeId = id.endsWith('Num') ? id.slice(0, -3) : id;
       const rEl = $(rangeId), nEl = $(numId);
-      if (nEl && rEl && rEl.type === 'range') rEl.value = nEl.value;
-      if (nEl && rEl && nEl.type === 'range') nEl.value = rEl.value;
+      // 单向同步：range输入→同步到数字框；数字框输入→同步到滑块（滑块自动clamp到min/max）
+      if (el.type === 'range' && nEl) nEl.value = el.value;
+      else if (el.type !== 'range' && rEl && rEl.type === 'range') rEl.value = nEl.value;
       const p = qcwRead();
       const r = qcwCalculate(p);
       qcwUpdateResults(r);
-    };
-    el.addEventListener('input', sync);
-    if (el.type === 'range') {
-      el.addEventListener('input', () => {
-        const numId = id + 'Num';
-        const nEl = $(numId);
-        if (nEl) nEl.value = el.value;
-        const p = qcwRead(); const r = qcwCalculate(p);
-        qcwUpdateResults(r);
-      });
-    }
+    });
   });
   const qcwMatSel = $('qcwMaterial');
   if (qcwMatSel) qcwMatSel.addEventListener('change', () => {
