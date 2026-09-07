@@ -7934,21 +7934,23 @@
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('母材 ' + thk.toFixed(2) + 'mm', boardX + boardW / 2, topY - 8);
-    // 熔池（U形，深度随脉冲累积）
+    // 熔池（U形，深度随脉冲累积；圆弧半径受深度约束，避免越出母材）
     const depth = Math.min(r.h, thk) * scale * (1 - Math.exp(-5 * prog));
     const mw = Math.min(r.w * scale, boardW * 0.9);
     const poolCX = boardX + boardW / 2;
     const poolTop = topY;
     const poolBot = Math.min(poolTop + depth, baseY - 2);
     if (depth > 0.5) {
+      const rBot = Math.min(mw / 2, Math.max(depth / 2, 0.5));
+      const arcCY = poolBot - rBot;
       const grad = ctx.createLinearGradient(poolCX, poolTop, poolCX, poolBot);
       grad.addColorStop(0, 'rgba(255,120,60,0.95)');
       grad.addColorStop(1, 'rgba(255,40,20,0.8)');
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.moveTo(poolCX - mw / 2, poolTop);
-      ctx.lineTo(poolCX - mw / 2, poolBot - mw / 2);
-      ctx.arc(poolCX, poolBot - mw / 2, mw / 2, Math.PI, 0);
+      ctx.lineTo(poolCX - mw / 2, arcCY);
+      ctx.arc(poolCX, arcCY, rBot, Math.PI, 0);
       ctx.lineTo(poolCX + mw / 2, poolTop);
       ctx.closePath();
       ctx.fill();
@@ -7997,13 +7999,30 @@
       ctx.beginPath(); ctx.moveTo(beamCX, beamTop); ctx.lineTo(beamCX, poolTop); ctx.stroke();
       ctx.setLineDash([]);
     }
-    // 标注：熔深 / 熔宽
+    // 标注：熔深 / 熔宽（熔宽带双箭头尺寸线，置于母材底部下方）
     ctx.fillStyle = 'rgba(200,210,225,0.9)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
     const dimDepth = Math.min(r.h, thk);
-    ctx.fillText('预估熔深 ' + dimDepth.toFixed(2) + 'mm', boardX + boardW / 2 + 6, topY + Math.min(depth, thkPx) / 2 + 4);
-    ctx.fillText('熔宽 ' + r.w.toFixed(2) + 'mm', boardX + boardW / 2 - mw / 2 - 8, topY + thkPx + 14);
+    ctx.fillText('预估熔深 ' + dimDepth.toFixed(2) + 'mm', poolCX + 6, poolTop + Math.min(depth, thkPx) / 2 + 4);
+    const dimY = baseY + 18;
+    const dimL = poolCX - mw / 2, dimR = poolCX + mw / 2;
+    ctx.strokeStyle = 'rgba(0,229,255,0.95)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(dimL, dimY); ctx.lineTo(dimR, dimY); ctx.stroke();
+    // 端部箭头
+    ctx.fillStyle = 'rgba(0,229,255,0.95)';
+    ctx.beginPath(); ctx.moveTo(dimL - 4, dimY); ctx.lineTo(dimL + 5, dimY - 4); ctx.lineTo(dimL + 5, dimY + 4); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(dimR + 4, dimY); ctx.lineTo(dimR - 5, dimY - 4); ctx.lineTo(dimR - 5, dimY + 4); ctx.closePath(); ctx.fill();
+    // 端部引线
+    ctx.strokeStyle = 'rgba(0,229,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(dimL, dimY - 6); ctx.lineTo(dimL, dimY + 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dimR, dimY - 6); ctx.lineTo(dimR, dimY + 6); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,229,255,0.95)';
+    ctx.textAlign = 'center';
+    ctx.fillText('熔宽 ' + r.w.toFixed(2) + 'mm', poolCX, dimY - 7);
+    ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(0,229,255,0.9)';
     ctx.fillText('脉冲 ' + (pulseOn ? 'ON' : 'OFF'), beamCX + spotR + 4, beamTop + 10);
   }
@@ -8090,7 +8109,8 @@
     qcwState.t += dt * qcwState.speed;
     const p = qcwRead();
     const r = qcwCalculate(p);
-    const prog = (qcwState.t / r.tWeld) % 1;
+    const animT = Math.max(r.tWeld, 5); // 动画周期：真实焊接时间，但至少5秒避免过快
+    const prog = (qcwState.t / animT) % 1;
     drawQcwSection(r, prog);
     drawQcwOverlap(r, prog);
     qcwAnimId = requestAnimationFrame(qcwLoop);
