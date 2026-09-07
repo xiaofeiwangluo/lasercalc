@@ -3226,18 +3226,22 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.7 更新说明 -->
+  <!-- 首次登录：v1.4.7 今日更新汇总 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
       <h3>版本更新 <span class="vtag">v1.4.7</span></h3>
-      <div class="up-sub">修复通快功率调制动画显示异常</div>
+      <div class="up-sub">今日更新汇总 · QCW 脉冲焊接 + 通快功率调制 + 动画修复</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">修复功率调制周期图</b>：当前时刻圆点与波形、竖线严格同步（修正相位计算不一致导致圆点偏离曲线的问题），2 个调制周期完整显示。</span>
+        <span><b style="color:var(--text)">测试专区新增 QCW 脉冲焊接模拟</b>：输入光学元件与脉冲参数，自动仿真脉冲熔深/熔宽，输出平均功率、单脉冲能量、重叠率、焊斑间距等 12 项结果；含脉冲光束截面动态演化 + 焊斑重叠分布俯视图，支持标注位置拖动与保存图片。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">修复熔深动态演化图形</b>：母材厚度标注移至母材内部左上角（避免与瞬时参数重叠）；熔池改为碗形圆底（更贴近真实熔池形态）；光束仅在工件表面上方（不再贯穿熔池）；匙孔居中显示。</span>
+        <span><b style="color:var(--text)">工具箱新增通快功率调制焊接仿真</b>：基于 TRUMPF 时间功率调制技术，支持正弦/方波/三角波形，文献校准匙孔惯性增益模型，输出峰值/谷值功率、调制周期、匙孔惯性增益、熔深增量等 12 项结果；含功率-时间波形 + 熔深截面动态演化双动画。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">3</span>
+        <span><b style="color:var(--text)">动画与显示优化</b>：功率曲线同步修正、三角波公式修正、频率修改后 x 轴时间刻度立即更新、熔池碗形圆底、配合公差剖面图间隙双箭头尺寸线标注具体数值。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3260,10 +3264,11 @@
         </ul>
       </div>
       <div class="cl-item">
-        <div class="cl-head"><span class="cl-ver">v1.4.7</span><span class="cl-date">2026-09</span></div>
+        <div class="cl-head"><span class="cl-ver">v1.4.7</span><span class="cl-date">2026-09-07 · 今日更新汇总</span></div>
         <ul class="cl-list">
-          <li>修复通快功率调制周期图：当前时刻圆点与波形/竖线严格同步，2 个调制周期完整显示。</li>
-          <li>修复熔深动态演化图形：母材标注移至内部左上角、熔池改为碗形圆底、光束仅在表面上方、匙孔居中。</li>
+          <li><b>测试专区 · QCW 脉冲焊接模拟</b>：输入光学元件（光纤芯径/准直镜/聚焦镜/离焦量）与脉冲参数（峰值功率/脉宽/重复频率/焊接速度/焊接长度/材料/母材厚度），自动仿真脉冲熔深熔宽，输出平均功率、单脉冲能量、峰值功率密度、焊斑间距、重叠率、每毫米脉冲数、线能量、深宽比等 12 项结果；含脉冲光束 ON/OFF 截面动态演化 + 焊斑重叠分布俯视图，支持标注位置拖动与保存图片。</li>
+          <li><b>工具箱 · 通快功率调制焊接仿真</b>：基于 TRUMPF 时间功率调制技术（Temporal Power Modulation），输入光学元件/焊接参数/调制参数（正弦·方波·三角波形、频率、振幅），文献校准匙孔惯性增益模型（Wiley 2024 ~200Hz 高振幅增熔深 + AIP 2017 防热裂纹），输出峰值/谷值功率、调制周期、匙孔惯性增益、峰值功率密度、线能量、深宽比、熔深增量等 12 项结果；含功率-时间调制波形 + 熔深截面动态演化双动画。</li>
+          <li><b>动画与显示修复</b>：功率曲线当前时刻与波形同步、三角波公式修正、频率修改后 x 轴时间刻度（0/T/2T ms）立即更新、熔池改为碗形圆底、光束仅在表面上方、母材标注移至内部左上角、配合公差剖面图间隙双箭头尺寸线标注具体数值。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -8191,31 +8196,53 @@
     fitCtx.strokeRect(midX - halfOut, top, wall, bot - top);
     fitCtx.strokeRect(midX + halfIn, top, wall, bot - top);
     fitCtx.strokeRect(midX - halfOut, bot - wall, halfOut * 2, wall);
-    // 盖板台阶（嵌入）
+    // 盖板台阶（嵌入）—— 按名义间隙真实绘制；名义间隙≤0时台阶填满内腔（零间隙/过盈）
     const stepTop = top + boardH;
-    fitCtx.fillStyle = 'rgba(255,120,60,0.9)';
-    fitCtx.fillRect(midX - halfIn, stepTop, halfIn * 2, Math.min(stepH, bot - wall - stepTop));
-    fitCtx.strokeStyle = 'rgba(255,110,60,1)';
-    fitCtx.strokeRect(midX - halfIn, stepTop, halfIn * 2, Math.min(stepH, bot - wall - stepTop));
-    // 间隙标注（单边）
-    if (gapLPx > 1.5 || true) {
-      const gx = midX + halfIn - wall / 2;
-      fitCtx.strokeStyle = 'rgba(0,200,220,0.9)';
-      fitCtx.lineWidth = 1;
-      fitCtx.beginPath();
-      fitCtx.moveTo(gx, stepTop + 2);
-      fitCtx.lineTo(gx, stepTop + 2 + Math.min(stepH, 24));
-      fitCtx.stroke();
-      fitCtx.fillStyle = 'rgba(0,200,220,1)';
-      fitCtx.font = '9px sans-serif';
+    const nominalGap = (a.openLen - f.capLen) / 2;
+    const isInterference = a.L.gapMin <= 0;  // 最小间隙≤0 → 可能过盈
+    const gapEdgePx = nominalGap > 0 ? Math.max(nominalGap * hscale, 1.5) : 0;
+    const stepHalf = nominalGap > 0 ? Math.max(halfIn - gapEdgePx, 2) : halfIn;
+    const stepDrawH = Math.min(stepH, bot - wall - stepTop);
+    const stepColor = isInterference ? 'rgba(255,80,80,0.9)' : 'rgba(255,120,60,0.9)';
+    const stepBorder = isInterference ? 'rgba(255,50,50,1)' : 'rgba(255,110,60,1)';
+    fitCtx.fillStyle = stepColor;
+    fitCtx.fillRect(midX - stepHalf, stepTop, stepHalf * 2, stepDrawH);
+    fitCtx.strokeStyle = stepBorder;
+    fitCtx.lineWidth = isInterference ? 1.5 : 1;
+    fitCtx.strokeRect(midX - stepHalf, stepTop, stepHalf * 2, stepDrawH);
+    // 间隙标注（仅名义间隙>0时画尺寸线；过盈时显示红色提示）
+    const gapLabel = a.L.gapMinEdge.toFixed(2) + '~' + a.L.gapMaxEdge.toFixed(2) + 'mm';
+    if (nominalGap > 0) {
+      [-1, 1].forEach(side => {
+        const gx0 = midX + side * stepHalf;
+        const gx1 = midX + side * halfIn;
+        const gy = stepTop + stepDrawH / 2;
+        fitCtx.strokeStyle = 'rgba(0,220,255,0.95)';
+        fitCtx.lineWidth = 1.2;
+        fitCtx.beginPath(); fitCtx.moveTo(gx0, gy); fitCtx.lineTo(gx1, gy); fitCtx.stroke();
+        fitCtx.fillStyle = 'rgba(0,220,255,0.95)';
+        fitCtx.beginPath(); fitCtx.moveTo(gx0, gy); fitCtx.lineTo(gx0 + side * 4, gy - 3); fitCtx.lineTo(gx0 + side * 4, gy + 3); fitCtx.closePath(); fitCtx.fill();
+        fitCtx.beginPath(); fitCtx.moveTo(gx1, gy); fitCtx.lineTo(gx1 - side * 4, gy - 3); fitCtx.lineTo(gx1 - side * 4, gy + 3); fitCtx.closePath(); fitCtx.fill();
+        const lx = side > 0 ? px1 - 4 : gx0 - 8;
+        fitCtx.strokeStyle = 'rgba(0,220,255,0.6)';
+        fitCtx.beginPath(); fitCtx.moveTo((gx0+gx1)/2, gy); fitCtx.lineTo((gx0+gx1)/2, gy - 12); fitCtx.stroke();
+        fitCtx.fillStyle = 'rgba(0,220,255,1)';
+        fitCtx.font = 'bold 9px sans-serif';
+        fitCtx.textAlign = 'right';
+        fitCtx.fillText('单边间隙 ' + gapLabel, lx, gy - 14);
+      });
+    } else {
+      // 过盈/零间隙提示（移到盖板主体上方，避免与台阶文字重叠）
+      fitCtx.fillStyle = 'rgba(255,80,80,1)';
+      fitCtx.font = 'bold 10px sans-serif';
       fitCtx.textAlign = 'center';
-      fitCtx.fillText('间隙', gx, stepTop + 2 + Math.min(stepH, 24) + 10);
+      fitCtx.fillText('⚠ 零间隙/过盈 · 单边 ' + gapLabel, midX, boardT - 6);
     }
     // 厚度标注
-    fitCtx.fillStyle = 'rgba(200,210,225,0.9)';
+    fitCtx.fillStyle = isInterference ? 'rgba(255,150,150,0.9)' : 'rgba(200,210,225,0.9)';
     fitCtx.font = '9px sans-serif';
     fitCtx.textAlign = 'center';
-    fitCtx.fillText('盖板台阶', midX, stepTop - 3);
+    if (!isInterference) fitCtx.fillText('盖板台阶', midX, stepTop - 3);
     if (tall) {
       fitCtx.textAlign = 'center';
       fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + ' ' + tolStr(f.shellThkUp, f.shellThkDown) + 'mm', midX, bot - wall / 2 + 3);
