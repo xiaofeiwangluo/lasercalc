@@ -2711,16 +2711,6 @@
           <div class="fit-section">
             <div class="fit-section-title">盖板 · 内台阶</div>
             <div class="input-group">
-              <div class="input-label"><span>台阶厚度 t₁</span><span class="unit">mm</span></div>
-              <div class="input-row">
-                <input type="number" id="fitCapThk" value="3.0" min="0.1" step="0.05" style="flex:1;">
-                <span class="tol-sym">+</span>
-                <input type="number" id="fitCapThkUp" value="0.10" min="0" step="0.01" style="flex:0.45;">
-                <span class="tol-sym">-</span>
-                <input type="number" id="fitCapThkDown" value="0.10" min="0" step="0.01" style="flex:0.45;">
-              </div>
-            </div>
-            <div class="input-group">
               <div class="input-label"><span>台阶长度 L₁</span><span class="unit">mm</span></div>
               <div class="input-row">
                 <input type="number" id="fitCapLen" value="148.0" min="0.1" step="0.1" style="flex:1;">
@@ -7328,7 +7318,6 @@
   function readFit() {
     const p = id => { const el = $(id); const v = parseFloat(el ? el.value : 0); return isNaN(v) ? 0 : v; };
     return {
-      capThk: p('fitCapThk'), capThkUp: p('fitCapThkUp'), capThkDown: p('fitCapThkDown'),
       capLen: p('fitCapLen'), capLenUp: p('fitCapLenUp'), capLenDown: p('fitCapLenDown'),
       capWid: p('fitCapWid'), capWidUp: p('fitCapWidUp'), capWidDown: p('fitCapWidDown'),
       shellThk: p('fitShellThk'), shellThkUp: p('fitShellThkUp'), shellThkDown: p('fitShellThkDown'),
@@ -7339,7 +7328,7 @@
 
   // 极值法公差分析：壳体开口 = 外形 − 2×壁厚（上/下偏差分开合成）
   function fitAnalysis(f) {
-    if (!(f.capLen > 0 && f.capWid > 0 && f.capThk > 0 && f.shellLen > 0 && f.shellWid > 0 && f.shellThk > 0)) return null;
+    if (!(f.capLen > 0 && f.capWid > 0 && f.shellLen > 0 && f.shellWid > 0 && f.shellThk > 0)) return null;
     // 开口偏差合成：开口最大 = 外形最大 − 2×壁厚最小；开口最小 = 外形最小 − 2×壁厚最大
     const openUp = (len, lenUp, lenDown, thk, thkUp, thkDown) =>
       (len + lenUp) - 2 * (thk - thkDown) - ((len) - 2 * (thk));
@@ -7492,9 +7481,10 @@
     const px0 = w * 0.68, px1 = w * 0.97;
     const top = h * 0.30, bot = h * 0.82;
     const availH2 = bot - top;
-    // 比例：以台阶厚度+壁厚为基准
-    const hscale = availH2 * 0.8 / Math.max(f.capThk + f.shellThk + 6, 1);
-    const wall = f.shellThk * hscale, stepH = f.capThk * hscale;
+    // 比例：以壁厚为基准
+    const hscale = availH2 * 0.8 / Math.max(f.shellThk + 6, 1);
+    const wall = f.shellThk * hscale;
+    const stepH = (bot - wall - (top + Math.max(hscale * 1.2, 4))) * 0.28;
     const gapH = availH2 * 0.75;
     const midX = (px0 + px1) / 2;
     const halfIn = gapH / 2, halfOut = halfIn + wall;
@@ -7541,7 +7531,7 @@
     fitCtx.fillStyle = 'rgba(200,210,225,0.9)';
     fitCtx.font = '9px sans-serif';
     fitCtx.textAlign = 'center';
-    fitCtx.fillText('t₁=' + f.capThk.toFixed(2) + ' ' + tolStr(f.capThkUp, f.capThkDown), midX, stepTop - 3);
+    fitCtx.fillText('盖板台阶', midX, stepTop - 3);
     fitCtx.textAlign = 'right';
     fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + ' ' + tolStr(f.shellThkUp, f.shellThkDown) + 'mm', px0 - 8, (top + bot) / 2);
     fitCtx.textAlign = 'left';
@@ -7551,7 +7541,7 @@
   }
 
   // 输入监听
-  ['fitCapThk', 'fitCapThkUp', 'fitCapThkDown', 'fitCapLen', 'fitCapLenUp', 'fitCapLenDown', 'fitCapWid', 'fitCapWidUp', 'fitCapWidDown',
+  ['fitCapLen', 'fitCapLenUp', 'fitCapLenDown', 'fitCapWid', 'fitCapWidUp', 'fitCapWidDown',
    'fitShellThk', 'fitShellThkUp', 'fitShellThkDown', 'fitShellLen', 'fitShellLenUp', 'fitShellLenDown', 'fitShellWid', 'fitShellWidUp', 'fitShellWidDown'].forEach(id => {
     const el = $(id);
     if (el) el.addEventListener('input', calcFit);
