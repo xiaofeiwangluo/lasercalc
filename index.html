@@ -1206,6 +1206,10 @@
   .wob-edit-active #wobCanvas3DEnergy {
     touch-action: none;
   }
+  .qcw-edit-active #qcwCanvas,
+  .qcw-edit-active #qcwOverlapCanvas {
+    touch-action: none;
+  }
   .wc-save-btn {
     position: absolute;
     top: 6px;
@@ -2504,6 +2508,9 @@
         <div class="weld-controls">
           <button class="weld-btn" id="qcwPlay">暂停</button>
           <button class="weld-btn secondary" id="qcwReset">重置</button>
+          <button class="weld-btn secondary" id="qcwEdit" title="拖动文字/标示到任意位置，自动保存">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>标注位置
+          </button>
           <button class="weld-btn secondary" id="qcwSave" title="将当前仿真画面保存为图片">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
           </button>
@@ -7795,8 +7802,107 @@
   const qcwCtx = qcwCanvas ? qcwCanvas.getContext('2d') : null;
   const qcwOCanvas = $('qcwOverlapCanvas');
   const qcwOCtx = qcwOCanvas ? qcwOCanvas.getContext('2d') : null;
-  const qcwState = { t: 0, running: true, speed: 1, _lt: 0 };
+  const qcwState = { t: 0, running: true, speed: 1, _lt: 0, editMode: false, _prevRunning: true };
   let qcwAnimId = null;
+
+  // ===== QCW 标注位置（可拖动，自动保存） =====
+  let qcwLabelPos = {};
+  try { qcwLabelPos = JSON.parse(localStorage.getItem('fslc_qcw_labels') || '{}') || {}; } catch (e) {}
+  function saveQcwLabels() { try { localStorage.setItem('fslc_qcw_labels', JSON.stringify(qcwLabelPos)); } catch (e) {} }
+  function qcwOff(id) {
+    const o = qcwLabelPos[id] || { dx: 0, dy: 0 };
+    return { dx: o.dx || 0, dy: o.dy || 0 };
+  }
+  const qcwLabelRects = {};
+  const qcwLabelRectsO = {};
+  function qcwMark(id, x, y, txtW, ctx, which) {
+    if (!qcwState.editMode) return;
+    const c = ctx || (which === 'ov' ? qcwOCtx : qcwCtx);
+    const rects = which === 'ov' ? qcwLabelRectsO : qcwLabelRects;
+    rects[id] = { x: x, y: y };
+    const bw = Math.max(txtW || 12, 34);
+    c.strokeStyle = 'rgba(255,152,0,0.6)';
+    c.setLineDash([4, 3]);
+    c.lineWidth = 1.2;
+    c.strokeRect(x - bw / 2, y - 11, bw, 16);
+    c.setLineDash([]);
+  }
+  function qcwPointerXY(e) {
+    const rect = qcwCanvas.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  function qcwPointerXYO(e) {
+    const rect = qcwOCanvas.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  let qcwDragLabel = null, qcwDragStartX = 0, qcwDragStartY = 0, qcwDragOffX = 0, qcwDragOffY = 0;
+  function bindQcwDrag(canvas, rects, xyFn) {
+    if (!canvas) return;
+    const redraw = () => {
+      const p = qcwRead(); const r = qcwCalculate(p);
+      const animT = Math.max(r.tWeld, 5);
+      const prog = (qcwState.t / animT) % 1;
+      drawQcwSection(r, prog);
+      drawQcwOverlap(r, prog);
+    };
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!qcwState.editMode) return;
+      const p = xyFn(e);
+      let best = null, bestD = 1e9;
+      for (const id in rects) {
+        const r2 = rects[id];
+        const d = Math.hypot(p.x - r2.x, p.y - r2.y);
+        if (d < bestD) { bestD = d; best = id; }
+      }
+      if (best && bestD < 46) {
+        qcwDragLabel = best;
+        const o = qcwLabelPos[best] || { dx: 0, dy: 0 };
+        qcwDragOffX = o.dx || 0; qcwDragOffY = o.dy || 0;
+        qcwDragStartX = p.x; qcwDragStartY = p.y;
+        e.preventDefault();
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!qcwDragLabel) return;
+      const p = xyFn(e);
+      const o = qcwLabelPos[qcwDragLabel] || { dx: 0, dy: 0 };
+      o.dx = qcwDragOffX + (p.x - qcwDragStartX);
+      o.dy = qcwDragOffY + (p.y - qcwDragStartY);
+      qcwLabelPos[qcwDragLabel] = o;
+      saveQcwLabels();
+      redraw();
+    });
+    const endDrag = () => { qcwDragLabel = null; };
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+  }
+  bindQcwDrag(qcwCanvas, qcwLabelRects, qcwPointerXY);
+  bindQcwDrag(qcwOCanvas, qcwLabelRectsO, qcwPointerXYO);
+  // 标注位置编辑模式：进入后暂停动画，可拖动文字/标示；再次点击恢复动画
+  const qcwEditBtn = $('qcwEdit');
+  if (qcwEditBtn) qcwEditBtn.addEventListener('click', () => {
+    qcwState.editMode = !qcwState.editMode;
+    qcwEditBtn.classList.toggle('edit-on', qcwState.editMode);
+    const libView = $('view-lib');
+    if (libView) libView.classList.toggle('qcw-edit-active', qcwState.editMode);
+    if (qcwState.editMode) {
+      qcwState._prevRunning = qcwState.running;
+      qcwState.running = false;
+      $('qcwPlay').textContent = '播放';
+    } else {
+      qcwState.running = qcwState._prevRunning !== false;
+      $('qcwPlay').textContent = qcwState.running ? '暂停' : '播放';
+      if (qcwState.running && !qcwAnimId) { qcwState._lt = 0; qcwLoop(); }
+    }
+    // 清空拾取框坐标（保持对象引用，避免断链）
+    for (const k in qcwLabelRects) delete qcwLabelRects[k];
+    for (const k in qcwLabelRectsO) delete qcwLabelRectsO[k];
+    const p = qcwRead(); const r = qcwCalculate(p);
+    const animT = Math.max(r.tWeld, 5);
+    const prog = (qcwState.t / animT) % 1;
+    drawQcwSection(r, prog);
+    drawQcwOverlap(r, prog);
+  });
 
   function qcwRead() {
     const num = (id, def) => { const el = $(id); const v = parseFloat(el ? el.value : NaN); return isNaN(v) ? def : v; };
@@ -7933,7 +8039,8 @@
     ctx.fillStyle = 'rgba(160,175,200,0.55)';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('母材 ' + thk.toFixed(2) + 'mm', boardX + boardW / 2, topY - 8);
+    const offMat = qcwOff('s_mat');
+    ctx.fillText('母材 ' + thk.toFixed(2) + 'mm', boardX + boardW / 2 + offMat.dx, topY - 8 + offMat.dy);
     // 熔池（U形，深度随脉冲累积；圆弧半径受深度约束，避免越出母材）
     const depth = Math.min(r.h, thk) * scale * (1 - Math.exp(-5 * prog));
     const mw = Math.min(r.w * scale, boardW * 0.9);
@@ -8003,9 +8110,12 @@
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
     const dimDepth = Math.min(r.h, thk);
-    ctx.fillText('预估熔深 ' + dimDepth.toFixed(2) + 'mm', poolCX + 6, poolTop + Math.min(depth, thkPx) / 2 + 4);
-    const dimY = baseY + 18;
-    const dimL = poolCX - mw / 2, dimR = poolCX + mw / 2;
+    const offDep = qcwOff('s_depth');
+    ctx.fillText('预估熔深 ' + dimDepth.toFixed(2) + 'mm', poolCX + 6 + offDep.dx, poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy);
+    qcwMark('s_depth', poolCX + 6 + offDep.dx, poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy, 118, null, 'sec');
+    const offWid = qcwOff('s_width');
+    const dimY = baseY + 18 + offWid.dy;
+    const dimL = poolCX - mw / 2 + offWid.dx, dimR = poolCX + mw / 2 + offWid.dx;
     ctx.strokeStyle = 'rgba(0,229,255,0.95)';
     ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(dimL, dimY); ctx.lineTo(dimR, dimY); ctx.stroke();
@@ -8020,10 +8130,13 @@
     ctx.beginPath(); ctx.moveTo(dimR, dimY - 6); ctx.lineTo(dimR, dimY + 6); ctx.stroke();
     ctx.fillStyle = 'rgba(0,229,255,0.95)';
     ctx.textAlign = 'center';
-    ctx.fillText('熔宽 ' + r.w.toFixed(2) + 'mm', poolCX, dimY - 7);
+    ctx.fillText('熔宽 ' + r.w.toFixed(2) + 'mm', (dimL + dimR) / 2, dimY - 7);
+    qcwMark('s_width', (dimL + dimR) / 2, dimY - 7, Math.max(mw, 50), null, 'sec');
     ctx.textAlign = 'left';
+    const offPul = qcwOff('s_pulse');
     ctx.fillStyle = 'rgba(0,229,255,0.9)';
-    ctx.fillText('脉冲 ' + (pulseOn ? 'ON' : 'OFF'), beamCX + spotR + 4, beamTop + 10);
+    ctx.fillText('脉冲 ' + (pulseOn ? 'ON' : 'OFF'), beamCX + spotR + 4 + offPul.dx, beamTop + 10 + offPul.dy);
+    qcwMark('s_pulse', beamCX + spotR + 4 + offPul.dx, beamTop + 10 + offPul.dy, 60, null, 'sec');
   }
 
   // 焊斑重叠俯视图
@@ -8090,9 +8203,10 @@
     ctx.lineTo(startX + (nShow - 1) * gapPx + 21, cy + 4);
     ctx.stroke();
     // 相邻焊斑间距尺寸标注（第2~3个焊斑之间）
+    const offDx = qcwOff('o_dx');
     if (nShow >= 3) {
-      const xa = startX + 1 * gapPx, xb = startX + 2 * gapPx;
-      const dimY = cy + spotPx + 18;
+      const xa = startX + 1 * gapPx + offDx.dx, xb = startX + 2 * gapPx + offDx.dx;
+      const dimY = cy + spotPx + 18 + offDx.dy;
       ctx.strokeStyle = 'rgba(0,229,255,0.95)';
       ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(xa, dimY); ctx.lineTo(xb, dimY); ctx.stroke();
@@ -8107,17 +8221,24 @@
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('间距 Δx=' + r.dx.toFixed(3) + 'mm', (xa + xb) / 2, dimY - 6);
+      qcwMark('o_dx', (xa + xb) / 2, dimY - 6, 130, null, 'ov');
       ctx.textAlign = 'left';
     }
     // 标注
+    const offTop = qcwOff('o_top');
     ctx.fillStyle = 'rgba(200,210,225,0.9)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('焊斑直径 d=' + (r.d * 1000).toFixed(0) + 'μm  焊斑间距 Δx=' + r.dx.toFixed(3) + 'mm', padL, padT - 8);
+    ctx.fillText('焊斑直径 d=' + (r.d * 1000).toFixed(0) + 'μm  焊斑间距 Δx=' + r.dx.toFixed(3) + 'mm', padL + offTop.dx, padT - 8 + offTop.dy);
+    qcwMark('o_top', padL + offTop.dx, padT - 8 + offTop.dy, 260, null, 'ov');
+    const offEta = qcwOff('o_eta');
     ctx.fillStyle = 'rgba(0,229,255,0.95)';
-    ctx.fillText('重叠率 η=' + (r.overlap * 100).toFixed(1) + '%', padL, padB + 20);
+    ctx.fillText('重叠率 η=' + (r.overlap * 100).toFixed(1) + '%', padL + offEta.dx, padB + 20 + offEta.dy);
+    qcwMark('o_eta', padL + offEta.dx, padB + 20 + offEta.dy, 130, null, 'ov');
+    const offDir = qcwOff('o_dir');
     ctx.fillStyle = 'rgba(200,210,225,0.8)';
-    ctx.fillText('焊接方向 →', startX + (nShow - 1) * gapPx + 34, cy + 4);
+    ctx.fillText('焊接方向 →', startX + (nShow - 1) * gapPx + 34 + offDir.dx, cy + 4 + offDir.dy);
+    qcwMark('o_dir', startX + (nShow - 1) * gapPx + 34 + offDir.dx, cy + 4 + offDir.dy, 70, null, 'ov');
   }
 
   function qcwLoop() {
