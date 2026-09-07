@@ -5637,9 +5637,9 @@
     const dirShift = -w * 0.045 * Math.min(t / 1.5, 1); // 熔池向左偏移
     const weldX = w / 2 + dirShift;
 
-    // 熔池（Molten pool）
+    // 熔池（Molten pool）——宽度跟随真实熔宽（光斑+深熔扩展），保证标示与图形一致
     const meltDepth = Math.min(depthMm * pxPerMm * grow, workH);
-    const meltWidth = w * 0.10;
+    const meltWidth = Math.max(Math.min(r.width * pxPerMm, w * 0.18), 6);
     // 熔穿判定：实际熔深（含生长因子）达到或超过母材厚度
     const isBurnThrough = (depthMm * grow >= thickMm) && meltDepth >= workH * 0.95;
     const poolGrad = wctx.createLinearGradient(weldX, workTop, weldX, workTop + meltDepth);
@@ -5660,6 +5660,30 @@
     wctx.quadraticCurveTo(weldX + halfW * 0.7, workTop + meltDepth * 0.55, weldX + halfW, workTop);
     wctx.closePath();
     wctx.fill();
+
+    // 熔宽标示（尺寸线 + 文字，位于熔池顶部上方）
+    if (meltDepth > 3) {
+      const dimY = workTop - 12;
+      wctx.strokeStyle = 'rgba(0,188,212,0.85)';
+      wctx.lineWidth = 1;
+      wctx.beginPath();
+      wctx.moveTo(weldX - halfW, workTop);
+      wctx.lineTo(weldX - halfW, dimY);
+      wctx.moveTo(weldX + halfW, workTop);
+      wctx.lineTo(weldX + halfW, dimY);
+      wctx.moveTo(weldX - halfW, dimY);
+      wctx.lineTo(weldX + halfW, dimY);
+      wctx.stroke();
+      // 端部短斜线
+      wctx.beginPath();
+      wctx.moveTo(weldX - halfW - 3, dimY - 3); wctx.lineTo(weldX - halfW + 3, dimY + 3);
+      wctx.moveTo(weldX + halfW - 3, dimY + 3); wctx.lineTo(weldX + halfW + 3, dimY - 3);
+      wctx.stroke();
+      wctx.fillStyle = 'rgba(0,188,212,1)';
+      wctx.font = '10px "SF Mono", Consolas, monospace';
+      wctx.textAlign = 'center';
+      wctx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', weldX, dimY - 4);
+    }
 
     // 熔穿时：母材底部背面熔池（熔融金属从背面流出）
     if (isBurnThrough) {
