@@ -1749,6 +1749,24 @@
   .tr-item .tr-value.small { font-size: 13px; color: var(--cyan); }
 
   /* ===== 工具箱 · 下拉菜单 & 工具面板 ===== */
+  .fit-section {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .fit-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cyan);
+    margin-bottom: 6px;
+  }
+  .tol-sym {
+    padding: 0 2px;
+    color: var(--text-2);
+    font-size: 13px;
+  }
   .tool-menu {
     display: flex;
     align-items: center;
@@ -2555,6 +2573,7 @@
           <option value="focus">打焦点记录 · 0 离焦坐标推断</option>
           <option value="accel">加速距离计算 · 焊接运动分析</option>
           <option value="spacing">点间距频率计算 · 脉冲焊接</option>
+          <option value="fit">动力电池壳盖配合公差分析</option>
         </select>
       </div>
 
@@ -2679,6 +2698,74 @@
             <canvas id="spCanvas"></canvas>
           </div>
           <div class="tp-results" id="spResults"></div>
+        </div>
+      </div>
+
+      <!-- 工具D：动力电池壳盖配合公差分析 -->
+      <div class="tool-panel" id="tool-fit">
+        <div class="card">
+          <div class="card-title">动力电池壳盖配合公差分析</div>
+          <div class="hint" style="margin-bottom:12px;">
+            盖板内台阶（凸台）嵌入壳体开口内腔。壳体开口 = 壳体外形尺寸 − 2×壁厚。采用极值法（最差情况）计算配合间隙：<b>最大装配间隙</b> = 开口最大 − 台阶最小；<b>最小装配间隙</b> = 开口最小 − 台阶最大。正值=间隙配合，零/负值=过盈。长度、宽度两方向分别计算，并给出综合保守结论。
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">盖板 · 内台阶</div>
+            <div class="input-group">
+              <div class="input-label"><span>台阶厚度 t₁</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="number" id="fitCapThk" value="3.0" min="0.1" step="0.05" style="flex:1;">
+                <span class="tol-sym">±</span>
+                <input type="number" id="fitCapThkTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>台阶长度 L₁</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="number" id="fitCapLen" value="148.0" min="0.1" step="0.1" style="flex:1;">
+                <span class="tol-sym">±</span>
+                <input type="number" id="fitCapLenTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>台阶宽度 W₁</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="number" id="fitCapWid" value="97.0" min="0.1" step="0.1" style="flex:1;">
+                <span class="tol-sym">±</span>
+                <input type="number" id="fitCapWidTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+              </div>
+            </div>
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">壳体 · 壁厚与外形尺寸</div>
+            <div class="input-group">
+              <div class="input-label"><span>壁厚 t₂</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="number" id="fitShellThk" value="1.0" min="0.1" step="0.05" style="flex:1;">
+                <span class="tol-sym">±</span>
+                <input type="number" id="fitShellThkTol" value="0.05" min="0" step="0.01" style="flex:0.55;">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>外形长度 L₂</span><span class="unit">mm（开口 = L₂ − 2t₂）</span></div>
+              <div class="input-row">
+                <input type="number" id="fitShellLen" value="150.5" min="0.1" step="0.1" style="flex:1;">
+                <span class="tol-sym">±</span>
+                <input type="number" id="fitShellLenTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>外形宽度 W₂</span><span class="unit">mm（开口 = W₂ − 2t₂）</span></div>
+              <div class="input-row">
+                <input type="number" id="fitShellWid" value="99.5" min="0.1" step="0.1" style="flex:1;">
+                <span class="tol-sym">±</span>
+                <input type="number" id="fitShellWidTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+              </div>
+            </div>
+          </div>
+          <div class="tp-canvas-wrap" style="aspect-ratio:16/9;">
+            <canvas id="fitCanvas"></canvas>
+          </div>
+          <div class="tp-results" id="fitResults"></div>
         </div>
       </div>
     </section>
@@ -6722,13 +6809,14 @@
   // ===== 工具箱 · 工具下拉切换 =====
   const toolSelect = $('toolSelect');
   function switchTool(name) {
-    ['tool-focus', 'tool-accel', 'tool-spacing'].forEach(id => {
+    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit'].forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('active', id === 'tool-' + name);
     });
     if (name === 'focus') { resizeTpCanvas(); drawTpFit(); }
     if (name === 'accel') { resizeAccCanvas(); calcAccel(); }
     if (name === 'spacing') { resizeSpCanvas(); calcSpacing(); }
+    if (name === 'fit') { resizeFitCanvas(); calcFit(); }
   }
   if (toolSelect) toolSelect.addEventListener('change', () => switchTool(toolSelect.value));
 
@@ -7211,6 +7299,234 @@
 
   // 初始
   if (spCtx) { resizeSpCanvas(); calcSpacing(); startSpacingSim(); }
+
+  // ===== 工具D：动力电池壳盖配合公差分析 =====
+  const fitCanvas = $('fitCanvas');
+  const fitCtx = fitCanvas ? fitCanvas.getContext('2d') : null;
+
+  function resizeFitCanvas() {
+    if (!fitCanvas || !fitCtx) return;
+    const rect = fitCanvas.parentElement.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    fitCanvas.width = Math.max(2, Math.round((rect.width || 320) * d));
+    fitCanvas.height = Math.max(2, Math.round((rect.height || 180) * d));
+    fitCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  function readFit() {
+    const p = id => { const el = $(id); const v = parseFloat(el ? el.value : 0); return isNaN(v) ? 0 : v; };
+    return {
+      capThk: p('fitCapThk'), capThkTol: p('fitCapThkTol'),
+      capLen: p('fitCapLen'), capLenTol: p('fitCapLenTol'),
+      capWid: p('fitCapWid'), capWidTol: p('fitCapWidTol'),
+      shellThk: p('fitShellThk'), shellThkTol: p('fitShellThkTol'),
+      shellLen: p('fitShellLen'), shellLenTol: p('fitShellLenTol'),
+      shellWid: p('fitShellWid'), shellWidTol: p('fitShellWidTol')
+    };
+  }
+
+  // 极值法公差分析：壳体开口 = 外形 − 2×壁厚
+  function fitAnalysis(f) {
+    if (!(f.capLen > 0 && f.capWid > 0 && f.capThk > 0 && f.shellLen > 0 && f.shellWid > 0 && f.shellThk > 0)) return null;
+    const dim = (open, openTol, cap, capTol) => {
+      const gapMax = (open + openTol) - (cap - capTol); // 开口最大 − 台阶最小
+      const gapMin = (open - openTol) - (cap + capTol); // 开口最小 − 台阶最大
+      return { open, openTol, gapMax, gapMin, gapMaxEdge: gapMax / 2, gapMinEdge: gapMin / 2 };
+    };
+    const openLen = f.shellLen - 2 * f.shellThk;
+    const openLenTol = f.shellLenTol + 2 * f.shellThkTol;
+    const openWid = f.shellWid - 2 * f.shellThk;
+    const openWidTol = f.shellWidTol + 2 * f.shellThkTol;
+    const L = dim(openLen, openLenTol, f.capLen, f.capLenTol);
+    const Wd = dim(openWid, openWidTol, f.capWid, f.capWidTol);
+    // 综合（保守）：两方向中最紧值
+    const fitMin = Math.min(L.gapMin, Wd.gapMin);
+    const fitMax = Math.min(L.gapMax, Wd.gapMax);
+    let fitType;
+    if (fitMin > 0) fitType = '间隙配合';
+    else if (fitMax < 0) fitType = '过盈配合';
+    else fitType = '过渡配合';
+    return { L, Wd, fitMin, fitMax, fitType, openLen, openLenTol, openWid, openWidTol, f };
+  }
+
+  function calcFit() {
+    const resBox = $('fitResults');
+    const a = fitAnalysis(readFit());
+    if (!a) {
+      resBox.style.display = 'block';
+      resBox.innerHTML = '<div class="tr-item"><span class="tr-label">提示</span><span class="tr-value small">请输入有效的台阶与壳体尺寸（均需大于 0）</span></div>';
+      drawFit(a);
+      return;
+    }
+    const L = a.L, Wd = a.Wd;
+    const color = v => v > 0 ? 'var(--good,#26c281)' : (v < 0 ? 'var(--bad,#ff5b5b)' : 'var(--warn,#ffa726)');
+    resBox.style.display = 'block';
+    resBox.innerHTML =
+      '<div class="tr-item"><span class="tr-label">壳体开口（长×宽）</span><span class="tr-value">' + a.openLen.toFixed(2) + ' × ' + a.openWid.toFixed(2) + ' mm（±' + a.openLenTol.toFixed(2) + ' / ±' + a.openWidTol.toFixed(2) + '）</span></div>' +
+      '<div class="tr-item"><span class="tr-label">长度方向 · 总间隙</span><span class="tr-value">最大 ' + L.gapMax.toFixed(3) + ' mm / 最小 ' + L.gapMin.toFixed(3) + ' mm</span></div>' +
+      '<div class="tr-item"><span class="tr-label">长度方向 · 单边间隙</span><span class="tr-value">最大 ' + L.gapMaxEdge.toFixed(3) + ' mm / 最小 ' + L.gapMinEdge.toFixed(3) + ' mm</span></div>' +
+      '<div class="tr-item"><span class="tr-label">宽度方向 · 总间隙</span><span class="tr-value">最大 ' + Wd.gapMax.toFixed(3) + ' mm / 最小 ' + Wd.gapMin.toFixed(3) + ' mm</span></div>' +
+      '<div class="tr-item"><span class="tr-label">宽度方向 · 单边间隙</span><span class="tr-value">最大 ' + Wd.gapMaxEdge.toFixed(3) + ' mm / 最小 ' + Wd.gapMinEdge.toFixed(3) + ' mm</span></div>' +
+      '<div class="tr-item" style="background:var(--bg-2);"><span class="tr-label">最大装配间隙（总）</span><span class="tr-value" style="color:' + color(a.fitMax) + ';font-weight:700;">' + a.fitMax.toFixed(3) + ' mm</span></div>' +
+      '<div class="tr-item" style="background:var(--bg-2);"><span class="tr-label">最小装配间隙（总）</span><span class="tr-value" style="color:' + color(a.fitMin) + ';font-weight:700;">' + a.fitMin.toFixed(3) + ' mm</span></div>' +
+      '<div class="tr-item" style="background:var(--bg-2);"><span class="tr-label">配合类型</span><span class="tr-value" style="color:' + color(a.fitMin) + ';font-weight:700;">' + a.fitType + '</span></div>' +
+      '<div class="tr-item" style="border-color:transparent;background:transparent;padding:4px 12px;"><span class="tr-label" style="font-size:10px;color:var(--text-3);line-height:1.6;">极值法（最差情况）：正值=可装配且有间隙；接近 0 或负值=装配困难/过盈。实际批量可用统计公差（RSS）评估合格率。</span></div>';
+    drawFit(a);
+  }
+
+  function drawFit(a) {
+    if (!fitCtx) return;
+    const w = fitCanvas.width / (window.devicePixelRatio || 1);
+    const h = fitCanvas.height / (window.devicePixelRatio || 1);
+    fitCtx.clearRect(0, 0, w, h);
+    if (!a) {
+      fitCtx.fillStyle = 'rgba(160,175,200,0.6)';
+      fitCtx.font = '12px sans-serif';
+      fitCtx.textAlign = 'center';
+      fitCtx.fillText('请输入有效的台阶与壳体尺寸', w / 2, h / 2);
+      return;
+    }
+    const f = a.f;
+    // 俯视图比例：以开口为基准
+    const pad = { l: w * 0.07, r: w * 0.60, t: h * 0.16, b: h * 0.82 };
+    const availW = pad.r - pad.l, availH = pad.b - pad.t;
+    const sc = Math.min(availW / (a.openLen * 1.35 + 12), availH / (a.openWid * 1.5 + 12));
+    const cx = pad.l + availW / 2, cy = pad.t + availH / 2;
+    const ox = a.openLen * sc / 2, oy = a.openWid * sc / 2;
+    // 壳体外形
+    const shellW = (f.shellLen * sc) / 2, shellH = (f.shellWid * sc) / 2;
+    fitCtx.fillStyle = 'rgba(120,135,160,0.12)';
+    fitCtx.strokeStyle = 'rgba(138,150,173,0.8)';
+    fitCtx.lineWidth = 1.4;
+    fitCtx.fillRect(cx - shellW, cy - shellH, shellW * 2, shellH * 2);
+    fitCtx.strokeRect(cx - shellW, cy - shellH, shellW * 2, shellH * 2);
+    // 壳体开口（虚线）
+    fitCtx.setLineDash([5, 4]);
+    fitCtx.strokeStyle = 'rgba(0,188,212,0.9)';
+    fitCtx.lineWidth = 1.4;
+    fitCtx.strokeRect(cx - ox, cy - oy, ox * 2, oy * 2);
+    fitCtx.setLineDash([]);
+    // 盖板台阶（居中，尺寸=名义值，用当前值）
+    const capW = (f.capLen * sc) / 2, capH = (f.capWid * sc) / 2;
+    const capGrad = fitCtx.createLinearGradient(cx - capW, cy - capH, cx + capW, cy + capH);
+    capGrad.addColorStop(0, 'rgba(255,152,80,0.85)');
+    capGrad.addColorStop(1, 'rgba(255,87,34,0.75)');
+    fitCtx.fillStyle = capGrad;
+    fitCtx.fillRect(cx - capW, cy - capH, capW * 2, capH * 2);
+    fitCtx.strokeStyle = 'rgba(255,110,60,1)';
+    fitCtx.lineWidth = 1.4;
+    fitCtx.strokeRect(cx - capW, cy - capH, capW * 2, capH * 2);
+    // 间隙标示（长度方向单边：开口边到台阶边）
+    const gapLPx = (a.openLen - f.capLen) * sc / 2;
+    const gapWPx = (a.openWid - f.capWid) * sc / 2;
+    const drawGap = (x1, y1, x2, y2, label, offX, offY) => {
+      fitCtx.strokeStyle = 'rgba(0,200,220,0.9)';
+      fitCtx.lineWidth = 1;
+      fitCtx.beginPath(); fitCtx.moveTo(x1, y1); fitCtx.lineTo(x2, y2); fitCtx.stroke();
+      fitCtx.beginPath();
+      fitCtx.moveTo(x1 - 3, y1 - 3); fitCtx.lineTo(x1 + 3, y1 + 3);
+      fitCtx.moveTo(x2 - 3, y2 - 3); fitCtx.lineTo(x2 + 3, y2 + 3);
+      fitCtx.stroke();
+      fitCtx.fillStyle = 'rgba(0,200,220,1)';
+      fitCtx.font = '9px sans-serif';
+      fitCtx.textAlign = 'center';
+      fitCtx.fillText(label, (x1 + x2) / 2 + offX, (y1 + y2) / 2 + offY);
+    };
+    if (gapLPx > 1.5) {
+      drawGap(cx + capW, cy - oy - 10, cx + ox, cy - oy - 10, '长向单边\n' + (a.L.gapMinEdge).toFixed(2) + '~' + a.L.gapMaxEdge.toFixed(2) + 'mm', 0, -6);
+      drawGap(cx - capW, cy + oy + 12, cx - ox, cy + oy + 12, '', 0, 10);
+    }
+    if (gapWPx > 1.5) {
+      drawGap(cx + ox + 10, cy - capH, cx + ox + 10, cy - oy, '宽向单边\n' + (a.Wd.gapMinEdge).toFixed(2) + '~' + a.Wd.gapMaxEdge.toFixed(2) + 'mm', 0, 0);
+    }
+    // 尺寸标注：开口长、台阶长
+    fitCtx.fillStyle = 'rgba(200,210,225,0.9)';
+    fitCtx.font = '9px sans-serif';
+    fitCtx.textAlign = 'center';
+    fitCtx.fillText('开口 ' + a.openLen.toFixed(1) + '±' + a.openLenTol.toFixed(2) + 'mm', cx, cy - oy - 26);
+    fitCtx.fillText('台阶 ' + f.capLen.toFixed(1) + '±' + f.capLenTol.toFixed(2) + 'mm', cx, cy + oy + 26);
+    fitCtx.textAlign = 'left';
+    fitCtx.fillStyle = 'rgba(160,175,200,0.85)';
+    fitCtx.fillText('俯视图（长×宽配合）', pad.l, h * 0.10);
+    // 图例
+    fitCtx.fillStyle = 'rgba(138,150,173,0.9)';
+    fitCtx.fillText('□ 壳体外形', pad.l, h * 0.88);
+    fitCtx.fillStyle = 'rgba(0,188,212,0.95)';
+    fitCtx.fillText('- - 壳体开口', pad.l + 90, h * 0.88);
+    fitCtx.fillStyle = 'rgba(255,120,60,0.95)';
+    fitCtx.fillText('■ 盖板台阶', pad.l + 190, h * 0.88);
+
+    // ===== 右：剖面图（厚度方向配合） =====
+    const px0 = w * 0.68, px1 = w * 0.97;
+    const top = h * 0.30, bot = h * 0.82;
+    const availH2 = bot - top;
+    // 比例：以台阶厚度+壁厚为基准
+    const hscale = availH2 * 0.8 / Math.max(f.capThk + f.shellThk + 6, 1);
+    const wall = f.shellThk * hscale, stepH = f.capThk * hscale;
+    const gapH = availH2 * 0.75;
+    const midX = (px0 + px1) / 2;
+    const halfIn = gapH / 2, halfOut = halfIn + wall;
+    // 盖板主体（顶板）
+    const boardT = top - 2, boardH = Math.max(hscale * 1.2, 4);
+    fitCtx.fillStyle = 'rgba(255,152,80,0.85)';
+    fitCtx.fillRect(midX - halfOut, boardT, halfOut * 2, boardH);
+    fitCtx.strokeStyle = 'rgba(255,110,60,1)';
+    fitCtx.lineWidth = 1;
+    fitCtx.strokeRect(midX - halfOut, boardT, halfOut * 2, boardH);
+    // 壳体（U形壁）
+    fitCtx.fillStyle = 'rgba(120,135,160,0.30)';
+    fitCtx.strokeStyle = 'rgba(138,150,173,0.8)';
+    // 左壁
+    fitCtx.fillRect(midX - halfOut, top, wall, bot - top);
+    // 右壁
+    fitCtx.fillRect(midX + halfIn, top, wall, bot - top);
+    // 底
+    fitCtx.fillRect(midX - halfOut, bot - wall, halfOut * 2, wall);
+    fitCtx.strokeRect(midX - halfOut, top, wall, bot - top);
+    fitCtx.strokeRect(midX + halfIn, top, wall, bot - top);
+    fitCtx.strokeRect(midX - halfOut, bot - wall, halfOut * 2, wall);
+    // 盖板台阶（嵌入）
+    const stepTop = top + boardH;
+    fitCtx.fillStyle = 'rgba(255,120,60,0.9)';
+    fitCtx.fillRect(midX - halfIn, stepTop, halfIn * 2, Math.min(stepH, bot - wall - stepTop));
+    fitCtx.strokeStyle = 'rgba(255,110,60,1)';
+    fitCtx.strokeRect(midX - halfIn, stepTop, halfIn * 2, Math.min(stepH, bot - wall - stepTop));
+    // 间隙标注（单边）
+    if (gapLPx > 1.5 || true) {
+      const gx = midX + halfIn - wall / 2;
+      fitCtx.strokeStyle = 'rgba(0,200,220,0.9)';
+      fitCtx.lineWidth = 1;
+      fitCtx.beginPath();
+      fitCtx.moveTo(gx, stepTop + 2);
+      fitCtx.lineTo(gx, stepTop + 2 + Math.min(stepH, 24));
+      fitCtx.stroke();
+      fitCtx.fillStyle = 'rgba(0,200,220,1)';
+      fitCtx.font = '9px sans-serif';
+      fitCtx.textAlign = 'center';
+      fitCtx.fillText('间隙', gx, stepTop + 2 + Math.min(stepH, 24) + 10);
+    }
+    // 厚度标注
+    fitCtx.fillStyle = 'rgba(200,210,225,0.9)';
+    fitCtx.font = '9px sans-serif';
+    fitCtx.textAlign = 'center';
+    fitCtx.fillText('t₁=' + f.capThk.toFixed(2) + '±' + f.capThkTol.toFixed(2), midX, stepTop - 3);
+    fitCtx.textAlign = 'right';
+    fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + '±' + f.shellThkTol.toFixed(2) + 'mm', px0 - 8, (top + bot) / 2);
+    fitCtx.textAlign = 'left';
+    fitCtx.fillStyle = 'rgba(160,175,200,0.85)';
+    fitCtx.fillText('剖面图（厚度方向配合）', px0, h * 0.10);
+    fitCtx.fillText('配合类型：' + a.fitType, px0, h * 0.88);
+  }
+
+  // 输入监听
+  ['fitCapThk', 'fitCapThkTol', 'fitCapLen', 'fitCapLenTol', 'fitCapWid', 'fitCapWidTol',
+   'fitShellThk', 'fitShellThkTol', 'fitShellLen', 'fitShellLenTol', 'fitShellWid', 'fitShellWidTol'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', calcFit);
+  });
+
+  // 初始
+  if (fitCtx) { resizeFitCanvas(); calcFit(); }
 
 })();
 </script>
