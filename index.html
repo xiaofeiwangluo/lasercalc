@@ -7426,16 +7426,27 @@
     fitCtx.lineWidth = 1.4;
     fitCtx.strokeRect(cx - ox, cy - oy, ox * 2, oy * 2);
     fitCtx.setLineDash([]);
-    // 盖板台阶（居中，尺寸=名义值，用当前值）
-    const capW = (f.capLen * sc) / 2, capH = (f.capWid * sc) / 2;
+    // 盖板台阶（居中）：间隙过小时强制最小示意间隙（≥10px），保证盖板完整可见
+    const gapPxRealL = (a.openLen - f.capLen) * sc / 2;
+    const gapPxRealW = (a.openWid - f.capWid) * sc / 2;
+    const gapShowL = Math.max(gapPxRealL, 10);
+    const gapShowW = Math.max(gapPxRealW, 10);
+    const capW = Math.max((a.openLen * sc) / 2 - gapShowL, 2);
+    const capH = Math.max((a.openWid * sc) / 2 - gapShowW, 2);
     const capGrad = fitCtx.createLinearGradient(cx - capW, cy - capH, cx + capW, cy + capH);
-    capGrad.addColorStop(0, 'rgba(255,152,80,0.85)');
-    capGrad.addColorStop(1, 'rgba(255,87,34,0.75)');
+    capGrad.addColorStop(0, 'rgba(255,152,80,0.9)');
+    capGrad.addColorStop(1, 'rgba(255,87,34,0.8)');
     fitCtx.fillStyle = capGrad;
     fitCtx.fillRect(cx - capW, cy - capH, capW * 2, capH * 2);
-    fitCtx.strokeStyle = 'rgba(255,110,60,1)';
-    fitCtx.lineWidth = 1.4;
+    // 白色内描边：与开口虚线区分，盖板更醒目
+    fitCtx.strokeStyle = 'rgba(255,255,255,0.85)';
+    fitCtx.lineWidth = 1;
     fitCtx.strokeRect(cx - capW, cy - capH, capW * 2, capH * 2);
+    // 盖板中央文字标注
+    fitCtx.fillStyle = 'rgba(255,255,255,0.92)';
+    fitCtx.font = '10px sans-serif';
+    fitCtx.textAlign = 'center';
+    fitCtx.fillText('盖板台阶', cx, cy + 4);
     // 间隙标示（长度方向单边：开口边到台阶边）
     const gapLPx = (a.openLen - f.capLen) * sc / 2;
     const gapWPx = (a.openWid - f.capWid) * sc / 2;
@@ -7452,11 +7463,11 @@
       fitCtx.textAlign = 'center';
       fitCtx.fillText(label, (x1 + x2) / 2 + offX, (y1 + y2) / 2 + offY);
     };
-    if (gapLPx > 1.5) {
+    if (gapShowL > 1.5) {
       drawGap(cx + capW, cy - oy - 10, cx + ox, cy - oy - 10, '长向单边\n' + (a.L.gapMinEdge).toFixed(2) + '~' + a.L.gapMaxEdge.toFixed(2) + 'mm', 0, -6);
       drawGap(cx - capW, cy + oy + 12, cx - ox, cy + oy + 12, '', 0, 10);
     }
-    if (gapWPx > 1.5) {
+    if (gapShowW > 1.5) {
       drawGap(cx + ox + 10, cy - capH, cx + ox + 10, cy - oy, '宽向单边\n' + (a.Wd.gapMinEdge).toFixed(2) + '~' + a.Wd.gapMaxEdge.toFixed(2) + 'mm', 0, 0);
     }
     // 尺寸标注：开口长、台阶长
