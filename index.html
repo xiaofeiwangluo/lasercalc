@@ -2706,7 +2706,7 @@
         <div class="card">
           <div class="card-title">动力电池壳盖配合公差分析</div>
           <div class="hint" style="margin-bottom:12px;">
-            盖板内台阶（凸台）嵌入壳体开口内腔。壳体开口 = 壳体外形尺寸 − 2×壁厚。采用极值法（最差情况）计算配合间隙：<b>最大装配间隙</b> = 开口最大 − 台阶最小；<b>最小装配间隙</b> = 开口最小 − 台阶最大。正值=间隙配合，零/负值=过盈。长度、宽度两方向分别计算，并给出综合保守结论。
+            盖板内台阶（凸台）嵌入壳体开口内腔。壳体开口 = 壳体外形尺寸 − 2×壁厚。采用极值法（最差情况）计算配合间隙：<b>最大装配间隙</b> = 开口最大 − 台阶最小；<b>最小装配间隙</b> = 开口最小 − 台阶最大。每个尺寸的上偏差(+)与下偏差(−)可分别输入（不对称公差）；正值=间隙配合，零/负值=过盈。长度、宽度两方向分别计算，并给出综合保守结论。
           </div>
           <div class="fit-section">
             <div class="fit-section-title">盖板 · 内台阶</div>
@@ -2714,24 +2714,30 @@
               <div class="input-label"><span>台阶厚度 t₁</span><span class="unit">mm</span></div>
               <div class="input-row">
                 <input type="number" id="fitCapThk" value="3.0" min="0.1" step="0.05" style="flex:1;">
-                <span class="tol-sym">±</span>
-                <input type="number" id="fitCapThkTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+                <span class="tol-sym">+</span>
+                <input type="number" id="fitCapThkUp" value="0.10" min="0" step="0.01" style="flex:0.45;">
+                <span class="tol-sym">-</span>
+                <input type="number" id="fitCapThkDown" value="0.10" min="0" step="0.01" style="flex:0.45;">
               </div>
             </div>
             <div class="input-group">
               <div class="input-label"><span>台阶长度 L₁</span><span class="unit">mm</span></div>
               <div class="input-row">
                 <input type="number" id="fitCapLen" value="148.0" min="0.1" step="0.1" style="flex:1;">
-                <span class="tol-sym">±</span>
-                <input type="number" id="fitCapLenTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+                <span class="tol-sym">+</span>
+                <input type="number" id="fitCapLenUp" value="0.10" min="0" step="0.01" style="flex:0.45;">
+                <span class="tol-sym">-</span>
+                <input type="number" id="fitCapLenDown" value="0.10" min="0" step="0.01" style="flex:0.45;">
               </div>
             </div>
             <div class="input-group">
               <div class="input-label"><span>台阶宽度 W₁</span><span class="unit">mm</span></div>
               <div class="input-row">
                 <input type="number" id="fitCapWid" value="97.0" min="0.1" step="0.1" style="flex:1;">
-                <span class="tol-sym">±</span>
-                <input type="number" id="fitCapWidTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+                <span class="tol-sym">+</span>
+                <input type="number" id="fitCapWidUp" value="0.10" min="0" step="0.01" style="flex:0.45;">
+                <span class="tol-sym">-</span>
+                <input type="number" id="fitCapWidDown" value="0.10" min="0" step="0.01" style="flex:0.45;">
               </div>
             </div>
           </div>
@@ -2741,24 +2747,30 @@
               <div class="input-label"><span>壁厚 t₂</span><span class="unit">mm</span></div>
               <div class="input-row">
                 <input type="number" id="fitShellThk" value="1.0" min="0.1" step="0.05" style="flex:1;">
-                <span class="tol-sym">±</span>
-                <input type="number" id="fitShellThkTol" value="0.05" min="0" step="0.01" style="flex:0.55;">
+                <span class="tol-sym">+</span>
+                <input type="number" id="fitShellThkUp" value="0.05" min="0" step="0.01" style="flex:0.45;">
+                <span class="tol-sym">-</span>
+                <input type="number" id="fitShellThkDown" value="0.05" min="0" step="0.01" style="flex:0.45;">
               </div>
             </div>
             <div class="input-group">
               <div class="input-label"><span>外形长度 L₂</span><span class="unit">mm（开口 = L₂ − 2t₂）</span></div>
               <div class="input-row">
                 <input type="number" id="fitShellLen" value="150.5" min="0.1" step="0.1" style="flex:1;">
-                <span class="tol-sym">±</span>
-                <input type="number" id="fitShellLenTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+                <span class="tol-sym">+</span>
+                <input type="number" id="fitShellLenUp" value="0.10" min="0" step="0.01" style="flex:0.45;">
+                <span class="tol-sym">-</span>
+                <input type="number" id="fitShellLenDown" value="0.10" min="0" step="0.01" style="flex:0.45;">
               </div>
             </div>
             <div class="input-group">
               <div class="input-label"><span>外形宽度 W₂</span><span class="unit">mm（开口 = W₂ − 2t₂）</span></div>
               <div class="input-row">
                 <input type="number" id="fitShellWid" value="99.5" min="0.1" step="0.1" style="flex:1;">
-                <span class="tol-sym">±</span>
-                <input type="number" id="fitShellWidTol" value="0.10" min="0" step="0.01" style="flex:0.55;">
+                <span class="tol-sym">+</span>
+                <input type="number" id="fitShellWidUp" value="0.10" min="0" step="0.01" style="flex:0.45;">
+                <span class="tol-sym">-</span>
+                <input type="number" id="fitShellWidDown" value="0.10" min="0" step="0.01" style="flex:0.45;">
               </div>
             </div>
           </div>
@@ -7316,29 +7328,36 @@
   function readFit() {
     const p = id => { const el = $(id); const v = parseFloat(el ? el.value : 0); return isNaN(v) ? 0 : v; };
     return {
-      capThk: p('fitCapThk'), capThkTol: p('fitCapThkTol'),
-      capLen: p('fitCapLen'), capLenTol: p('fitCapLenTol'),
-      capWid: p('fitCapWid'), capWidTol: p('fitCapWidTol'),
-      shellThk: p('fitShellThk'), shellThkTol: p('fitShellThkTol'),
-      shellLen: p('fitShellLen'), shellLenTol: p('fitShellLenTol'),
-      shellWid: p('fitShellWid'), shellWidTol: p('fitShellWidTol')
+      capThk: p('fitCapThk'), capThkUp: p('fitCapThkUp'), capThkDown: p('fitCapThkDown'),
+      capLen: p('fitCapLen'), capLenUp: p('fitCapLenUp'), capLenDown: p('fitCapLenDown'),
+      capWid: p('fitCapWid'), capWidUp: p('fitCapWidUp'), capWidDown: p('fitCapWidDown'),
+      shellThk: p('fitShellThk'), shellThkUp: p('fitShellThkUp'), shellThkDown: p('fitShellThkDown'),
+      shellLen: p('fitShellLen'), shellLenUp: p('fitShellLenUp'), shellLenDown: p('fitShellLenDown'),
+      shellWid: p('fitShellWid'), shellWidUp: p('fitShellWidUp'), shellWidDown: p('fitShellWidDown')
     };
   }
 
-  // 极值法公差分析：壳体开口 = 外形 − 2×壁厚
+  // 极值法公差分析：壳体开口 = 外形 − 2×壁厚（上/下偏差分开合成）
   function fitAnalysis(f) {
     if (!(f.capLen > 0 && f.capWid > 0 && f.capThk > 0 && f.shellLen > 0 && f.shellWid > 0 && f.shellThk > 0)) return null;
-    const dim = (open, openTol, cap, capTol) => {
-      const gapMax = (open + openTol) - (cap - capTol); // 开口最大 − 台阶最小
-      const gapMin = (open - openTol) - (cap + capTol); // 开口最小 − 台阶最大
-      return { open, openTol, gapMax, gapMin, gapMaxEdge: gapMax / 2, gapMinEdge: gapMin / 2 };
+    // 开口偏差合成：开口最大 = 外形最大 − 2×壁厚最小；开口最小 = 外形最小 − 2×壁厚最大
+    const openUp = (len, lenUp, lenDown, thk, thkUp, thkDown) =>
+      (len + lenUp) - 2 * (thk - thkDown) - ((len) - 2 * (thk));
+    const openDown = (len, lenUp, lenDown, thk, thkUp, thkDown) =>
+      ((len) - 2 * (thk)) - ((len - lenDown) - 2 * (thk + thkUp));
+    const dim = (open, openUpV, openDownV, cap, capUp, capDown) => {
+      const gapMax = (open + openUpV) - (cap - capDown); // 开口最大 − 台阶最小
+      const gapMin = (open - openDownV) - (cap + capUp); // 开口最小 − 台阶最大
+      return { open, openUpV, openDownV, gapMax, gapMin, gapMaxEdge: gapMax / 2, gapMinEdge: gapMin / 2 };
     };
     const openLen = f.shellLen - 2 * f.shellThk;
-    const openLenTol = f.shellLenTol + 2 * f.shellThkTol;
+    const openLenUp = openUp(f.shellLen, f.shellLenUp, f.shellLenDown, f.shellThk, f.shellThkUp, f.shellThkDown);
+    const openLenDown = openDown(f.shellLen, f.shellLenUp, f.shellLenDown, f.shellThk, f.shellThkUp, f.shellThkDown);
     const openWid = f.shellWid - 2 * f.shellThk;
-    const openWidTol = f.shellWidTol + 2 * f.shellThkTol;
-    const L = dim(openLen, openLenTol, f.capLen, f.capLenTol);
-    const Wd = dim(openWid, openWidTol, f.capWid, f.capWidTol);
+    const openWidUp = openUp(f.shellWid, f.shellWidUp, f.shellWidDown, f.shellThk, f.shellThkUp, f.shellThkDown);
+    const openWidDown = openDown(f.shellWid, f.shellWidUp, f.shellWidDown, f.shellThk, f.shellThkUp, f.shellThkDown);
+    const L = dim(openLen, openLenUp, openLenDown, f.capLen, f.capLenUp, f.capLenDown);
+    const Wd = dim(openWid, openWidUp, openWidDown, f.capWid, f.capWidUp, f.capWidDown);
     // 综合（保守）：两方向中最紧值
     const fitMin = Math.min(L.gapMin, Wd.gapMin);
     const fitMax = Math.min(L.gapMax, Wd.gapMax);
@@ -7346,7 +7365,7 @@
     if (fitMin > 0) fitType = '间隙配合';
     else if (fitMax < 0) fitType = '过盈配合';
     else fitType = '过渡配合';
-    return { L, Wd, fitMin, fitMax, fitType, openLen, openLenTol, openWid, openWidTol, f };
+    return { L, Wd, fitMin, fitMax, fitType, openLen, openLenUp, openLenDown, openWid, openWidUp, openWidDown, f };
   }
 
   function calcFit() {
@@ -7360,9 +7379,10 @@
     }
     const L = a.L, Wd = a.Wd;
     const color = v => v > 0 ? 'var(--good,#26c281)' : (v < 0 ? 'var(--bad,#ff5b5b)' : 'var(--warn,#ffa726)');
+    const tolStr = (up, down) => '+' + up.toFixed(2) + '/' + '-' + down.toFixed(2);
     resBox.style.display = 'block';
     resBox.innerHTML =
-      '<div class="tr-item"><span class="tr-label">壳体开口（长×宽）</span><span class="tr-value">' + a.openLen.toFixed(2) + ' × ' + a.openWid.toFixed(2) + ' mm（±' + a.openLenTol.toFixed(2) + ' / ±' + a.openWidTol.toFixed(2) + '）</span></div>' +
+      '<div class="tr-item"><span class="tr-label">壳体开口（长×宽）</span><span class="tr-value">' + a.openLen.toFixed(2) + ' × ' + a.openWid.toFixed(2) + ' mm（' + tolStr(a.openLenUp, a.openLenDown) + ' / ' + tolStr(a.openWidUp, a.openWidDown) + '）</span></div>' +
       '<div class="tr-item"><span class="tr-label">长度方向 · 总间隙</span><span class="tr-value">最大 ' + L.gapMax.toFixed(3) + ' mm / 最小 ' + L.gapMin.toFixed(3) + ' mm</span></div>' +
       '<div class="tr-item"><span class="tr-label">长度方向 · 单边间隙</span><span class="tr-value">最大 ' + L.gapMaxEdge.toFixed(3) + ' mm / 最小 ' + L.gapMinEdge.toFixed(3) + ' mm</span></div>' +
       '<div class="tr-item"><span class="tr-label">宽度方向 · 总间隙</span><span class="tr-value">最大 ' + Wd.gapMax.toFixed(3) + ' mm / 最小 ' + Wd.gapMin.toFixed(3) + ' mm</span></div>' +
@@ -7443,8 +7463,9 @@
     fitCtx.fillStyle = 'rgba(200,210,225,0.9)';
     fitCtx.font = '9px sans-serif';
     fitCtx.textAlign = 'center';
-    fitCtx.fillText('开口 ' + a.openLen.toFixed(1) + '±' + a.openLenTol.toFixed(2) + 'mm', cx, cy - oy - 26);
-    fitCtx.fillText('台阶 ' + f.capLen.toFixed(1) + '±' + f.capLenTol.toFixed(2) + 'mm', cx, cy + oy + 26);
+    const tolStr = (up, down) => '+' + up.toFixed(2) + '/' + '-' + down.toFixed(2);
+    fitCtx.fillText('开口 ' + a.openLen.toFixed(1) + ' ' + tolStr(a.openLenUp, a.openLenDown) + 'mm', cx, cy - oy - 26);
+    fitCtx.fillText('台阶 ' + f.capLen.toFixed(1) + ' ' + tolStr(f.capLenUp, f.capLenDown) + 'mm', cx, cy + oy + 26);
     fitCtx.textAlign = 'left';
     fitCtx.fillStyle = 'rgba(160,175,200,0.85)';
     fitCtx.fillText('俯视图（长×宽配合）', pad.l, h * 0.10);
@@ -7509,9 +7530,9 @@
     fitCtx.fillStyle = 'rgba(200,210,225,0.9)';
     fitCtx.font = '9px sans-serif';
     fitCtx.textAlign = 'center';
-    fitCtx.fillText('t₁=' + f.capThk.toFixed(2) + '±' + f.capThkTol.toFixed(2), midX, stepTop - 3);
+    fitCtx.fillText('t₁=' + f.capThk.toFixed(2) + ' ' + tolStr(f.capThkUp, f.capThkDown), midX, stepTop - 3);
     fitCtx.textAlign = 'right';
-    fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + '±' + f.shellThkTol.toFixed(2) + 'mm', px0 - 8, (top + bot) / 2);
+    fitCtx.fillText('t₂=' + f.shellThk.toFixed(2) + ' ' + tolStr(f.shellThkUp, f.shellThkDown) + 'mm', px0 - 8, (top + bot) / 2);
     fitCtx.textAlign = 'left';
     fitCtx.fillStyle = 'rgba(160,175,200,0.85)';
     fitCtx.fillText('剖面图（厚度方向配合）', px0, h * 0.10);
@@ -7519,8 +7540,8 @@
   }
 
   // 输入监听
-  ['fitCapThk', 'fitCapThkTol', 'fitCapLen', 'fitCapLenTol', 'fitCapWid', 'fitCapWidTol',
-   'fitShellThk', 'fitShellThkTol', 'fitShellLen', 'fitShellLenTol', 'fitShellWid', 'fitShellWidTol'].forEach(id => {
+  ['fitCapThk', 'fitCapThkUp', 'fitCapThkDown', 'fitCapLen', 'fitCapLenUp', 'fitCapLenDown', 'fitCapWid', 'fitCapWidUp', 'fitCapWidDown',
+   'fitShellThk', 'fitShellThkUp', 'fitShellThkDown', 'fitShellLen', 'fitShellLenUp', 'fitShellLenDown', 'fitShellWid', 'fitShellWidUp', 'fitShellWidDown'].forEach(id => {
     const el = $(id);
     if (el) el.addEventListener('input', calcFit);
   });
