@@ -1042,6 +1042,33 @@
   }
 
   /* ===== 焊接仿真 ===== */
+  /* 焊接仿真类型下拉菜单 */
+  .weld-sim-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .wss-label {
+    font-size: 12px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .wss-select {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-1);
+    font-size: 13px;
+    padding: 8px 10px;
+    appearance: auto;
+    -webkit-appearance: auto;
+  }
   .weld-mode-badge {
     display: inline-flex;
     align-items: center;
@@ -1160,6 +1187,12 @@
     width: 100%;
     height: 100%;
     display: block;
+  }
+  #weldCanvas3D {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: auto;
   }
   #wobCanvas, #wobCanvas3D, #wobCanvas3DEnergy {
     width: 100%;
@@ -2285,6 +2318,16 @@
 
     <!-- ===== 视图4：高能激光焊接仿真 ===== -->
     <section class="view" id="view-weld">
+      <!-- 焊接仿真类型下拉菜单 -->
+      <div class="weld-sim-selector">
+        <span class="wss-label">焊接仿真</span>
+        <select id="weldSimSelect" class="wss-select">
+          <option value="single">单光斑焊接仿真</option>
+        </select>
+      </div>
+
+      <!-- 单光斑焊接仿真 -->
+      <div id="weldSimSingle">
       <!-- 焊接模式 + 熔深结果 -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <span class="weld-mode-badge keyhole" id="weldModeBadge">深熔匙孔模式</span>
@@ -2310,6 +2353,17 @@
           <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
           <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
           <span class="lg"><span class="dot" style="background:#1a2340;"></span>母材</span>
+        </div>
+      </div>
+
+      <!-- 焊接仿真 3D 熔池演化图 -->
+      <div class="weld-canvas-wrap" style="margin-top:12px;">
+        <span class="wc-tag">LASER WELDING SIMULATION · 3D熔池演化</span>
+        <canvas id="weldCanvas3D"></canvas>
+        <div class="wc-legend">
+          <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+          <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
+          <span class="lg"><span class="dot" style="background:#00bcd4;"></span>激光束</span>
         </div>
       </div>
 
@@ -2489,6 +2543,7 @@
       <div class="hint">
         深熔模式：功率密度突破 10⁶ W/cm²，成功激发高能匙孔效应。仿真模型基于热动力学与匙孔机理推演，仅供工程参考。
       </div>
+      </div><!-- /weldSimSingle -->
     </section>
 
     <!-- ===== 视图5：工具箱 ===== -->
@@ -3260,6 +3315,7 @@
     }
     if (view === 'weld') {
       resizeWeldCanvas();
+      resizeWeld3D();
       if (!weldAnimId) startWeldSim();
     }
     if (view === 'lib') {
@@ -3315,7 +3371,7 @@
   window.addEventListener('resize', () => {
     if ($('view-sim').classList.contains('active')) resizeCanvas();
     if ($('view-calc').classList.contains('active')) updateResults();
-    if ($('view-weld').classList.contains('active')) resizeWeldCanvas();
+    if ($('view-weld').classList.contains('active')) { resizeWeldCanvas(); resizeWeld3D(); }
   });
 
   // 光路布局（归一化坐标 0-1）
@@ -5479,12 +5535,24 @@
   const wctx = weldCanvas.getContext('2d');
   let weldAnimId = null;
 
+  // 焊接仿真 3D 熔池演化 Canvas
+  const weldCanvas3D = $('weldCanvas3D');
+  const wctx3D = weldCanvas3D.getContext('2d');
+
   function resizeWeldCanvas() {
     const rect = weldCanvas.parentElement.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     weldCanvas.width = rect.width * dpr;
     weldCanvas.height = rect.height * dpr;
     wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function resizeWeld3D() {
+    const rect = weldCanvas3D.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    weldCanvas3D.width = rect.width * dpr;
+    weldCanvas3D.height = rect.height * dpr;
+    wctx3D.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   // 母材颜色：按工件材料类型返回渐变色（更贴近真实材料观感）
@@ -5755,6 +5823,177 @@
     wctx.fillText(r.keyhole ? 'KEYHOLE MODE' : 'CONDUCTION MODE', w - 12, h - 24);
   }
 
+  // ===== 单光斑焊接仿真 3D 熔池演化图（等距投影工件板）=====
+  function drawWeld3D() {
+    const rect = weldCanvas3D.parentElement.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    const r = weldCalculate();
+    const c = wctx3D;
+    c.clearRect(0, 0, w, h);
+    const grow = Math.min(state.weldTime / 2.5, 1);
+
+    // 等距投影常量：px=沿板宽、py=沿板长（焊接方向）、pz=向上
+    const K = 0.866, K2 = 0.5;
+    const BW = Math.min(w * 0.42, 205);  // 板宽（px）
+    const BL = Math.min(w * 0.5, 245);   // 板长（焊接方向 px）
+    const BH = Math.min(h * 0.26, 66);   // 板厚（px）
+    const proj0 = (px, py, pz) => ({ x: (px - py * K2) * K, y: (px * K2 + py) * K2 - pz });
+    const rawPts = [
+      proj0(0, 0, 0), proj0(BW, 0, 0), proj0(BW, BL, 0), proj0(0, BL, 0),
+      proj0(0, 0, BH), proj0(BW, 0, BH), proj0(BW, BL, BH),
+      proj0(BW / 2, 0, 0), proj0(BW / 2, BL * 0.5, 0), proj0(0, 0, BH * 1.5), proj0(BW, 0, BH * 1.5)
+    ];
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const p of rawPts) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+    }
+    const pad = 30;
+    const sc = Math.min((w - pad * 2) / (maxX - minX || 1), (h - pad * 2) / (maxY - minY || 1), 1.4);
+    const cx = w / 2 - (minX + maxX) / 2 * sc;
+    const baseY = h / 2 - (minY + maxY) / 2 * sc;
+    const proj = (px, py, pz) => {
+      const q = proj0(px, py, pz);
+      return { x: cx + q.x * sc, y: baseY + q.y * sc };
+    };
+
+    // 顶面四角（pz=0）与前/右侧面下沿
+    const A = proj(0, 0, 0), B = proj(BW, 0, 0), C = proj(BW, BL, 0), D = proj(0, BL, 0);
+    const A2 = proj(0, 0, BH), B2 = proj(BW, 0, BH), C2 = proj(BW, BL, BH);
+    const matCols = baseColor(r.matGroup);
+
+    // 1) 前侧面
+    c.fillStyle = matCols[1];
+    c.beginPath();
+    c.moveTo(A2.x, A2.y); c.lineTo(A.x, A.y); c.lineTo(B.x, B.y); c.lineTo(B2.x, B2.y);
+    c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(138,150,173,0.45)'; c.lineWidth = 1; c.stroke();
+    // 2) 右侧面
+    c.fillStyle = 'rgba(13,18,32,0.85)';
+    c.beginPath();
+    c.moveTo(B2.x, B2.y); c.lineTo(B.x, B.y); c.lineTo(C.x, C.y); c.lineTo(C2.x, C2.y);
+    c.closePath(); c.fill();
+    c.stroke();
+    // 3) 顶面
+    c.fillStyle = matCols[0];
+    c.beginPath();
+    c.moveTo(A.x, A.y); c.lineTo(B.x, B.y); c.lineTo(C.x, C.y); c.lineTo(D.x, D.y);
+    c.closePath(); c.fill();
+    c.stroke();
+    // 顶面网格
+    c.strokeStyle = 'rgba(255,255,255,0.06)';
+    for (let gx = 0.25; gx < 0.95; gx += 0.25) {
+      const p1 = proj(BW * gx, 0, 0), p2 = proj(BW * gx, BL, 0);
+      c.beginPath(); c.moveTo(p1.x, p1.y); c.lineTo(p2.x, p2.y); c.stroke();
+    }
+
+    // 比例尺：以熔深/熔宽自适应（与 2D 动画同比例）
+    let depthMm = r.estDef;
+    if (!isFinite(depthMm) || depthMm < 0) depthMm = 0;
+    const thickMm = Math.max(Number(state.weldThickness) || 10, 0.1);
+    const pxPerMm = Math.min(BH * 0.9 / Math.max(depthMm, 0.01), BW * 0.9 / Math.max(r.width || 1, 0.01));
+    const depthPx = Math.min(depthMm * grow * pxPerMm, BH);
+    const widthPx = Math.min((r.width || 1) * pxPerMm, BW * 0.85);
+    const halfW = widthPx / 2;
+
+    // 熔池中心随焊接方向移动（顶面 + 前侧面）
+    const tOff = Math.min(state.weldTime / 1.5, 1);
+    const midP = proj(BW / 2, BL * (0.5 - 0.22 * tOff), 0);
+    const fcx = proj(BW / 2, 0, 0).x;
+    const fBottom = proj(BW / 2, 0, depthPx);
+
+    // 4) 前侧面熔池 U 形（深=depthPx）
+    if (depthPx > 1.5) {
+      const poolGrad = c.createLinearGradient(0, A.y, 0, Math.max(fBottom.y, A.y + 1));
+      poolGrad.addColorStop(0, 'rgba(255,120,60,0.95)');
+      poolGrad.addColorStop(1, 'rgba(200,50,20,0.7)');
+      c.fillStyle = poolGrad;
+      c.beginPath();
+      c.moveTo(fcx - halfW, A.y);
+      c.quadraticCurveTo(fcx - halfW * 0.7, A.y + depthPx * 0.45, fcx, fBottom.y + depthPx * 0.06);
+      c.quadraticCurveTo(fcx + halfW * 0.7, A.y + depthPx * 0.45, fcx + halfW, A.y);
+      c.closePath(); c.fill();
+      // 匙孔（前侧面窄条）
+      const keyW = Math.max(widthPx * 0.07, 2);
+      c.fillStyle = 'rgba(255,205,120,0.9)';
+      c.fillRect(fcx - keyW / 2, A.y, keyW, Math.max(depthPx * 0.75, 2));
+    }
+
+    // 5) 顶面熔池椭圆 + 匙孔
+    const poolRx = Math.max(halfW, 2), poolRy = Math.max(halfW * 0.38, 2);
+    const poolGrad2 = c.createRadialGradient(midP.x, midP.y, 0, midP.x, midP.y, poolRx);
+    poolGrad2.addColorStop(0, 'rgba(255,130,70,0.95)');
+    poolGrad2.addColorStop(1, 'rgba(255,87,34,0.55)');
+    c.fillStyle = poolGrad2;
+    c.beginPath();
+    c.ellipse(midP.x, midP.y, poolRx, poolRy, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = 'rgba(255,205,120,0.9)';
+    c.beginPath();
+    c.ellipse(midP.x, midP.y, Math.max(poolRx * 0.12, 1.5), Math.max(poolRy * 0.12, 1), 0, 0, Math.PI * 2);
+    c.fill();
+
+    // 6) 激光束（单光束锥形，从上方射向熔池中心，带动态脉动）
+    const beamTop = proj(BW / 2, BL * (0.5 - 0.22 * tOff), BH * 1.45);
+    const beamW = Math.max(poolRx * 0.9, 4);
+    const beamPulse = 1 + 0.08 * Math.sin(state.weldTime * 8);
+    const beamGrad = c.createLinearGradient(beamTop.x, beamTop.y, midP.x, midP.y);
+    beamGrad.addColorStop(0, 'rgba(0,188,212,0.0)');
+    beamGrad.addColorStop(0.6, 'rgba(0,188,212,0.35)');
+    beamGrad.addColorStop(1, 'rgba(255,255,255,0.65)');
+    c.fillStyle = beamGrad;
+    c.beginPath();
+    c.moveTo(beamTop.x - beamW * beamPulse, beamTop.y);
+    c.lineTo(beamTop.x + beamW * beamPulse, beamTop.y);
+    c.lineTo(midP.x, midP.y);
+    c.closePath(); c.fill();
+    // 光束亮线
+    c.strokeStyle = 'rgba(255,255,255,0.5)';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(beamTop.x, beamTop.y);
+    c.lineTo(midP.x, midP.y);
+    c.stroke();
+    // 表面光斑光晕
+    const haloGrad = c.createRadialGradient(midP.x, midP.y, 0, midP.x, midP.y, poolRx * 1.6 * beamPulse);
+    haloGrad.addColorStop(0, 'rgba(0,188,212,0.30)');
+    haloGrad.addColorStop(1, 'rgba(0,188,212,0)');
+    c.fillStyle = haloGrad;
+    c.beginPath();
+    c.arc(midP.x, midP.y, poolRx * 1.6 * beamPulse, 0, Math.PI * 2);
+    c.fill();
+
+    // 7) 焊接方向箭头（顶面）
+    const arrowStart = proj(BW / 2, BL * 0.82, 0);
+    const arrowEnd = proj(BW / 2, BL * 0.18, 0);
+    c.strokeStyle = 'rgba(0,188,212,0.7)';
+    c.lineWidth = 1.6;
+    c.beginPath();
+    c.moveTo(arrowStart.x, arrowStart.y);
+    c.lineTo(arrowEnd.x, arrowEnd.y);
+    c.stroke();
+    const ang = Math.atan2(arrowEnd.y - arrowStart.y, arrowEnd.x - arrowStart.x);
+    c.fillStyle = 'rgba(0,188,212,0.85)';
+    c.beginPath();
+    c.moveTo(arrowEnd.x, arrowEnd.y);
+    c.lineTo(arrowEnd.x - 9 * Math.cos(ang - 0.42), arrowEnd.y - 9 * Math.sin(ang - 0.42));
+    c.lineTo(arrowEnd.x - 9 * Math.cos(ang + 0.42), arrowEnd.y - 9 * Math.sin(ang + 0.42));
+    c.closePath(); c.fill();
+    c.font = '9px monospace';
+    c.textAlign = 'left';
+    c.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowStart.x + 4, arrowStart.y + 4);
+
+    // 8) 标注：模式 + 熔深 + 材料
+    c.textAlign = 'right';
+    c.fillStyle = r.keyhole ? '#ff9800' : '#00bcd4';
+    c.font = '10px monospace';
+    c.fillText(r.keyhole ? 'KEYHOLE MODE' : 'CONDUCTION MODE', w - 12, h - 10);
+    c.fillStyle = 'rgba(255,255,255,0.75)';
+    c.fillText('熔深 ' + fmt(depthMm, 2) + ' mm', w - 12, h - 24);
+    c.fillStyle = 'rgba(138,150,173,0.8)';
+    c.fillText(r.matGroup + ' · ' + r.matName, w - 12, h - 38);
+  }
+
   let weldSparks = null;
 
   function weldLoop(timestamp) {
@@ -5766,6 +6005,7 @@
     lastWeldTime = timestamp;
     state.weldTime += dt * 0.016 * state.weldSpeed;
     drawWeld();
+    drawWeld3D();
     weldAnimId = requestAnimationFrame(weldLoop);
   }
   let lastWeldTime = 0;
@@ -5773,11 +6013,27 @@
   function startWeldSim() {
     if (weldAnimId) return;
     resizeWeldCanvas();
+    resizeWeld3D();
     lastWeldTime = performance.now();
     weldAnimId = requestAnimationFrame(weldLoop);
   }
 
   // 焊接控制
+  // 焊接仿真类型下拉切换（单光斑焊接仿真 / 预留扩展）
+  $('weldSimSelect').addEventListener('change', (e) => {
+    const v = e.target.value;
+    const sims = { single: 'weldSimSingle' };
+    Object.keys(sims).forEach(k => {
+      const el = $(sims[k]);
+      if (el) el.style.display = (k === v) ? '' : 'none';
+    });
+    resizeWeldCanvas();
+    resizeWeld3D();
+    if (weldAnimId) { cancelAnimationFrame(weldAnimId); weldAnimId = null; }
+    state.weldTime = 0;
+    startWeldSim();
+  });
+
   $('weldPlay').addEventListener('click', () => {
     state.weldPlaying = !state.weldPlaying;
     $('weldPlay').textContent = state.weldPlaying ? '暂停' : '播放';
