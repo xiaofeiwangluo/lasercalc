@@ -7941,17 +7941,16 @@
     const poolTop = topY;
     const poolBot = Math.min(poolTop + depth, baseY - 2);
     if (depth > 0.5) {
+      // 碗形熔池：上宽下圆（贝塞尔轮廓，贴近真实脉冲焊熔池形态）
       const rBot = Math.min(mw / 2, Math.max(depth / 2, 0.5));
-      const arcCY = poolBot - rBot;
       const grad = ctx.createLinearGradient(poolCX, poolTop, poolCX, poolBot);
       grad.addColorStop(0, 'rgba(255,120,60,0.95)');
       grad.addColorStop(1, 'rgba(255,40,20,0.8)');
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.moveTo(poolCX - mw / 2, poolTop);
-      ctx.lineTo(poolCX - mw / 2, arcCY);
-      ctx.arc(poolCX, arcCY, rBot, Math.PI, 0);
-      ctx.lineTo(poolCX + mw / 2, poolTop);
+      ctx.bezierCurveTo(poolCX - mw / 2, poolBot - rBot * 0.5, poolCX - rBot, poolBot - rBot * 0.5, poolCX, poolBot);
+      ctx.bezierCurveTo(poolCX + rBot, poolBot - rBot * 0.5, poolCX + mw / 2, poolBot - rBot * 0.5, poolCX + mw / 2, poolTop);
       ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = 'rgba(255,110,60,1)';
@@ -8090,6 +8089,26 @@
     ctx.moveTo(startX + (nShow - 1) * gapPx + 26, cy);
     ctx.lineTo(startX + (nShow - 1) * gapPx + 21, cy + 4);
     ctx.stroke();
+    // 相邻焊斑间距尺寸标注（第2~3个焊斑之间）
+    if (nShow >= 3) {
+      const xa = startX + 1 * gapPx, xb = startX + 2 * gapPx;
+      const dimY = cy + spotPx + 18;
+      ctx.strokeStyle = 'rgba(0,229,255,0.95)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(xa, dimY); ctx.lineTo(xb, dimY); ctx.stroke();
+      ctx.fillStyle = 'rgba(0,229,255,0.95)';
+      ctx.beginPath(); ctx.moveTo(xa - 4, dimY); ctx.lineTo(xa + 5, dimY - 4); ctx.lineTo(xa + 5, dimY + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(xb + 4, dimY); ctx.lineTo(xb - 5, dimY - 4); ctx.lineTo(xb - 5, dimY + 4); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,229,255,0.6)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xa, dimY - 5); ctx.lineTo(xa, dimY + 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(xb, dimY - 5); ctx.lineTo(xb, dimY + 5); ctx.stroke();
+      ctx.fillStyle = 'rgba(0,229,255,0.95)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('间距 Δx=' + r.dx.toFixed(3) + 'mm', (xa + xb) / 2, dimY - 6);
+      ctx.textAlign = 'left';
+    }
     // 标注
     ctx.fillStyle = 'rgba(200,210,225,0.9)';
     ctx.font = '11px sans-serif';
