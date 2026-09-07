@@ -1850,7 +1850,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.6</div>
+    <div class="splash-version">v1.4.7</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -3213,7 +3213,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.6</span>
+        <span class="ar-value">v1.4.7</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3226,22 +3226,18 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.6 更新说明 -->
+  <!-- 首次登录：v1.4.7 更新说明 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.6</span></h3>
-      <div class="up-sub">工具箱新增通快功率调制焊接仿真</div>
+      <h3>版本更新 <span class="vtag">v1.4.7</span></h3>
+      <div class="up-sub">修复通快功率调制动画显示异常</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">工具箱新增「通快功率调制焊接仿真」</b>：基于通快（TRUMPF）TruDisk/TruFiber 激光器时间功率调制（Temporal Power Modulation）技术，输入光学元件（光纤芯径/准直镜/聚焦镜/离焦量）、焊接参数（平均功率/焊接速度/材料/母材厚度）与调制参数（波形/频率/振幅），自动仿真熔深与熔宽。</span>
+        <span><b style="color:var(--text)">修复功率调制周期图</b>：当前时刻圆点与波形、竖线严格同步（修正相位计算不一致导致圆点偏离曲线的问题），2 个调制周期完整显示。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">文献校准模型</b>：匙孔惯性增益（Wiley 2024，调制频率~200Hz 高振幅时熔深增加）+ 功率调制防热裂纹（AIP 2017），输出峰值/谷值功率、调制周期、匙孔惯性增益、峰值功率密度、线能量、深宽比、熔深增量等 12 项结果。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">3</span>
-        <span><b style="color:var(--text)">双动态演化动画</b>：功率-时间调制波形（正弦/方波/三角，P_av/P_peak/P_min 标注）+ 熔深截面动态演化（瞬时功率/瞬时熔深随调制波动，CW 基准对比），支持播放/暂停/速度调节/保存图片。</span>
+        <span><b style="color:var(--text)">修复熔深动态演化图形</b>：母材厚度标注移至母材内部左上角（避免与瞬时参数重叠）；熔池改为碗形圆底（更贴近真实熔池形态）；光束仅在工件表面上方（不再贯穿熔池）；匙孔居中显示。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3261,6 +3257,13 @@
         <ul class="cl-list">
           <li>激光填丝焊接熔深计算及熔深动态演化<span style="font-size:10px;color:var(--text-3);margin-left:4px">（技术支持：张飞）</span></li>
           <li>环形光斑光纤激光器焊接熔深计算及熔深动态演化</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.7</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>修复通快功率调制周期图：当前时刻圆点与波形/竖线严格同步，2 个调制周期完整显示。</li>
+          <li>修复熔深动态演化图形：母材标注移至内部左上角、熔池改为碗形圆底、光束仅在表面上方、匙孔居中。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -7216,7 +7219,7 @@
   function modWaveVal(wave, phase) {
     const p = phase - Math.floor(phase);
     if (wave === 'square') return p < 0.5 ? 1 : -1;
-    if (wave === 'triangle') return p < 0.25 ? p * 4 : p < 0.75 ? 2 - p * 4 : p * 4 - 6;
+    if (wave === 'triangle') return p < 0.25 ? p * 4 : p < 0.75 ? 2 - p * 4 : p * 4 - 4;
     return Math.sin(2 * Math.PI * p);
   }
   function modCalculate(p) {
@@ -7306,10 +7309,10 @@
       if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
     }
     c.stroke();
-    // 当前时刻
-    const curPhase = (phase * nCycles) % 1;
-    const curX = padL + pw * ((phase * nCycles) % nCycles) / nCycles;
-    const curP = p.pav * (1 + r.A * modWaveVal(p.wave, phase));
+    // 当前时刻（在 nCycles 个周期内循环，与波形横坐标严格同步）
+    const curPhase = (phase * nCycles) % nCycles;
+    const curX = padL + pw * curPhase / nCycles;
+    const curP = p.pav * (1 + r.A * modWaveVal(p.wave, curPhase));
     c.strokeStyle = 'rgba(255,255,255,0.35)'; c.setLineDash([3, 3]);
     c.beginPath(); c.moveTo(curX, padT); c.lineTo(curX, padT + ph); c.stroke(); c.setLineDash([]);
     c.fillStyle = '#fff'; c.beginPath(); c.arc(curX, yOf(curP), 4.5, 0, Math.PI * 2); c.fill();
@@ -7341,9 +7344,9 @@
     const matColor = r.mat.color || '#4a5568';
     c.fillStyle = matColor; c.fillRect(padL, topY, pw, thk * yScale);
     c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 1; c.strokeRect(padL, topY, pw, thk * yScale);
-    // 母材厚度标注
-    c.fillStyle = 'rgba(255,255,255,0.7)'; c.font = '10px sans-serif'; c.textAlign = 'center';
-    c.fillText('母材 ' + thk.toFixed(2) + 'mm', padL + pw / 2, topY - 6);
+    // 母材厚度标注（移到母材内部左上角，避免与顶部参数重叠）
+    c.fillStyle = 'rgba(255,255,255,0.55)'; c.font = '10px sans-serif'; c.textAlign = 'left';
+    c.fillText('母材 ' + thk.toFixed(2) + 'mm', padL + 8, topY + 16);
     // 瞬时功率与瞬时熔深（匙孔惯性滤波：波动幅度减半）
     const instWave = modWaveVal(p.wave, phase);
     const instDepth = Math.max(0.02, r.hMod * (1 + r.A * 0.5 * instWave));
@@ -7351,21 +7354,23 @@
     const depthY = topY + instDepth * yScale;
     const mw = r.wMod;
     const mwPx = Math.max(mw * yScale * 1.4, 14);
-    // 光束（功率高时更亮更宽）
+    // 光束（仅在工件表面上方，不进入熔池）
     const beamW = 6 + (instP / r.Ppeak) * 10;
     const beamGrad = c.createLinearGradient(poolCX - beamW, 0, poolCX + beamW, 0);
     beamGrad.addColorStop(0, 'rgba(255,180,60,0)');
     beamGrad.addColorStop(0.5, 'rgba(255,220,120,' + (0.5 + 0.4 * instP / r.Ppeak) + ')');
     beamGrad.addColorStop(1, 'rgba(255,180,60,0)');
-    c.fillStyle = beamGrad; c.fillRect(poolCX - beamW, 14, beamW * 2, depthY - 14);
-    // 熔池（碗形贝塞尔）
+    c.fillStyle = beamGrad; c.fillRect(poolCX - beamW, 14, beamW * 2, topY - 14);
+    // 熔池（碗形：上宽下圆底）
     const poolTop = topY + 1;
     const poolBot = Math.min(depthY, topY + thk * yScale - 1);
     const halfW = mwPx / 2;
+    const botHalfW = Math.max(halfW * 0.22, 3);  // 圆底半宽
     c.beginPath();
     c.moveTo(poolCX - halfW, poolTop);
-    c.bezierCurveTo(poolCX - halfW * 0.9, poolTop + (poolBot - poolTop) * 0.35, poolCX - halfW * 0.55, poolBot - 4, poolCX, poolBot);
-    c.bezierCurveTo(poolCX + halfW * 0.55, poolBot - 4, poolCX + halfW * 0.9, poolTop + (poolBot - poolTop) * 0.35, poolCX + halfW, poolTop);
+    c.bezierCurveTo(poolCX - halfW * 0.92, poolTop + (poolBot - poolTop) * 0.35, poolCX - botHalfW * 1.6, poolBot - 6, poolCX - botHalfW, poolBot);
+    c.quadraticCurveTo(poolCX, poolBot + 5, poolCX + botHalfW, poolBot);
+    c.bezierCurveTo(poolCX + botHalfW * 1.6, poolBot - 6, poolCX + halfW * 0.92, poolTop + (poolBot - poolTop) * 0.35, poolCX + halfW, poolTop);
     c.closePath();
     const pg = c.createLinearGradient(0, poolTop, 0, poolBot);
     pg.addColorStop(0, 'rgba(255,140,40,0.85)');
@@ -7373,13 +7378,13 @@
     pg.addColorStop(1, 'rgba(200,40,20,0.6)');
     c.fillStyle = pg; c.fill();
     c.strokeStyle = 'rgba(255,200,100,0.7)'; c.lineWidth = 1.2; c.stroke();
-    // 匙孔
-    c.fillStyle = 'rgba(20,10,5,0.85)';
+    // 匙孔（熔池中心深色窄缝，从表面到接近底部）
+    c.fillStyle = 'rgba(15,8,4,0.88)';
     c.beginPath();
-    c.moveTo(poolCX - 3, poolTop + 2);
-    c.lineTo(poolCX + 3, poolTop + 2);
-    c.lineTo(poolCX + 1.5, poolBot - 3);
-    c.lineTo(poolCX - 1.5, poolBot - 3);
+    c.moveTo(poolCX - 2.5, poolTop + 1);
+    c.lineTo(poolCX + 2.5, poolTop + 1);
+    c.lineTo(poolCX + 1.2, poolBot - 5);
+    c.lineTo(poolCX - 1.2, poolBot - 5);
     c.closePath(); c.fill();
     // CW基准熔深虚线对比
     c.strokeStyle = 'rgba(0,229,255,0.55)'; c.setLineDash([5, 4]); c.lineWidth = 1.2;
