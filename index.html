@@ -5661,15 +5661,16 @@
     wctx.closePath();
     wctx.fill();
 
-    // 熔宽标示（尺寸线 + 文字，位于熔池顶部上方）
+    // 熔宽标示（尺寸线 + 文字，位于熔池下方）
     if (meltDepth > 3) {
-      const dimY = workTop - 12;
+      const dimY = Math.min(poolBottom + 14, workBottom - 18);
+      const tickTop = Math.min(poolBottom + 4, dimY);
       wctx.strokeStyle = 'rgba(0,188,212,0.85)';
       wctx.lineWidth = 1;
       wctx.beginPath();
-      wctx.moveTo(weldX - halfW, workTop);
+      wctx.moveTo(weldX - halfW, tickTop);
       wctx.lineTo(weldX - halfW, dimY);
-      wctx.moveTo(weldX + halfW, workTop);
+      wctx.moveTo(weldX + halfW, tickTop);
       wctx.lineTo(weldX + halfW, dimY);
       wctx.moveTo(weldX - halfW, dimY);
       wctx.lineTo(weldX + halfW, dimY);
@@ -5682,7 +5683,7 @@
       wctx.fillStyle = 'rgba(0,188,212,1)';
       wctx.font = '10px "SF Mono", Consolas, monospace';
       wctx.textAlign = 'center';
-      wctx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', weldX, dimY - 4);
+      wctx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', weldX, dimY + 12);
     }
 
     // 熔穿时：母材底部背面熔池（熔融金属从背面流出）
