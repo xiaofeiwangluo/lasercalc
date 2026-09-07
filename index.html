@@ -1846,7 +1846,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.4</div>
+    <div class="splash-version">v1.4.5</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2090,8 +2090,19 @@
       </div>
     </section>
 
-    <!-- ===== 视图3：测试专区（环形光斑摆动焊接仿真） ===== -->
+    <!-- ===== 视图3：测试专区（环形光斑摆动焊接仿真 / QCW脉冲焊接模拟） ===== -->
     <section class="view" id="view-lib">
+      <!-- 测试专区仿真类型下拉菜单 -->
+      <div class="weld-sim-selector">
+        <span class="wss-label">测试专区</span>
+        <select id="libSimSelect" class="wss-select">
+          <option value="ring">环形光斑摆动焊接仿真</option>
+          <option value="qcw">QCW 脉冲焊接模拟</option>
+        </select>
+      </div>
+
+      <!-- 环形光斑摆动焊接仿真 -->
+      <div id="libSimRing">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <span class="weld-mode-badge keyhole">环形光斑 · 摆动焊接</span>
         <span style="font-size:11px; color:var(--text-3);">摆动熔深 · 熔宽仿真</span>
@@ -2342,6 +2353,193 @@
           模型依据（半经验工程模型，经文献校准）：环形光斑（ARM）双光束激光摆动焊接——内芯高能量密度决定熔深，外环与摆动宽度主导熔宽。校准依据：①摆动加宽修正（摆动宽度B↑→熔深↓、熔宽↑）：焊接学报《圆形摆动激光对5A06铝合金激光焊接熔池流动行为的影响分析》——摆动幅度1→3mm焊缝深度减小约42%，本模型按此标定摆动修正指数；②摆动能量分布（两端高中间低双峰、峰值约为常规激光焊1/5）：焊接学报《摆动激光焊接参数对5A06厚板铝合金能量分布及接头成形的影响》——摆动频率↑→单位长度轨迹能量↓→熔宽熔深减小（对熔深影响更大），本模型加入频率弱修正；③光学链路：放大倍率 M=f_f/f_c 由准直镜/聚焦镜焦距动态计算，焦点光斑 d₀=纤芯×M，瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。材料吸收率取自材料库：钢 η≈0.40、铝合金 η≈0.22-0.32、铜 η≈0.15-0.22，并按导热率作修正。结果供工艺预研参考，请以实测为准。
         </div>
       </div>
+      </div><!-- /libSimRing -->
+
+      <!-- ===== QCW 脉冲焊接模拟 ===== -->
+      <div id="libSimQcw" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span class="weld-mode-badge keyhole">QCW · 准连续脉冲焊接</span>
+          <span style="font-size:11px; color:var(--text-3);">脉冲熔深 · 熔宽 · 重叠率仿真</span>
+        </div>
+
+        <div class="weld-hero">
+          <div class="wh-left">
+            <div class="wh-label">预估熔深</div>
+            <div class="wh-value"><span id="qcwDepth">0</span><span class="unit"> mm</span></div>
+          </div>
+          <div class="wh-right">
+            <div class="wh-sub-label">预估熔宽</div>
+            <div class="wh-sub"><span id="qcwWidthOut">0</span><span class="unit"> mm</span></div>
+          </div>
+        </div>
+
+        <!-- 光学系统参数 -->
+        <div class="card">
+          <div class="card-title">光学系统</div>
+          <div class="input-group">
+            <div class="input-label"><span>光纤芯径 D_core</span><span class="unit">μm</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwCore" min="20" max="600" value="200" step="10">
+              <input type="number" id="qcwCoreNum" value="200" min="10" max="2000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>准直镜焦距 f_c</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwFc" min="50" max="300" value="100" step="5">
+              <input type="number" id="qcwFcNum" value="100" min="20" max="500">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>聚焦镜焦距 f_f</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwFf" min="100" max="600" value="200" step="5">
+              <input type="number" id="qcwFfNum" value="200" min="50" max="1000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>离焦量 Δf</span><span class="unit">mm（负=焦点深入工件）</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwDefocus" min="-5" max="5" value="0" step="0.5">
+              <input type="number" id="qcwDefocusNum" value="0" min="-10" max="10" step="0.5">
+            </div>
+          </div>
+        </div>
+
+        <!-- 脉冲焊接参数 -->
+        <div class="card">
+          <div class="card-title">QCW 脉冲参数</div>
+          <div class="input-group">
+            <div class="input-label"><span>峰值功率 P_peak</span><span class="unit">W</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwPp" min="100" max="6000" value="1500" step="50">
+              <input type="number" id="qcwPpNum" value="1500" min="10" max="20000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>脉冲宽度 τ</span><span class="unit">ms</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwTau" min="0.2" max="20" value="1.0" step="0.1">
+              <input type="number" id="qcwTauNum" value="1.0" min="0.05" max="50" step="0.05">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>重复频率 f</span><span class="unit">Hz</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwFreq" min="10" max="2000" value="300" step="10">
+              <input type="number" id="qcwFreqNum" value="300" min="1" max="10000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接速度 V</span><span class="unit">mm/s</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwV" min="1" max="300" value="80" step="5">
+              <input type="number" id="qcwVNum" value="80" min="0.5" max="2000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接长度 L</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwLen" min="5" max="500" value="100" step="5">
+              <input type="number" id="qcwLenNum" value="100" min="1" max="5000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>工件材料</span><span class="unit" id="qcwMatSpec">钢/不锈钢 · k=16 W/m·K</span></div>
+            <select class="weld-material-select" id="qcwMaterial">
+              <optgroup label="—— 钢/不锈钢 ——">
+                <option value="steel" selected>碳钢 / 不锈钢</option>
+              </optgroup>
+              <optgroup label="—— 铝合金 ——">
+                <option value="al1060">铝合金 1060（工业纯铝）</option>
+                <option value="al3003">铝合金 3003（Al-Mn）</option>
+                <option value="al5052">铝合金 5052（Al-Mg）</option>
+                <option value="al5083">铝合金 5083（Al-Mg）</option>
+                <option value="al6061">铝合金 6061（Al-Mg-Si）</option>
+                <option value="al6063">铝合金 6063（Al-Mg-Si）</option>
+                <option value="al7075">铝合金 7075（Al-Zn）</option>
+              </optgroup>
+              <optgroup label="—— 铜及铜合金 ——">
+                <option value="cu_t2">T2 紫铜 / C1100（纯铜）</option>
+                <option value="cu_c1020">C1020 无氧铜</option>
+                <option value="cu_h62">H62 黄铜（Cu-Zn）</option>
+                <option value="cu_c5191">C5191 磷青铜</option>
+                <option value="cu_qbe2">QBe2 铍铜</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>母材厚度</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="qcwThickness" min="0.1" max="10" value="1.5" step="0.1">
+              <input type="number" id="qcwThicknessNum" value="1.5" min="0.05" max="30" step="0.05">
+            </div>
+          </div>
+        </div>
+
+        <!-- QCW 截面动态演化 + 焊斑重叠俯视图 -->
+        <div class="weld-canvas-wrap">
+          <span class="wc-tag">QCW PULSE WELDING · 熔深动态演化</span>
+          <canvas id="qcwCanvas"></canvas>
+          <button class="wc-save-btn" data-save="qcwCanvas">保存</button>
+          <div class="wc-legend">
+            <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+            <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
+            <span class="lg"><span class="dot" style="background:#1a2340;"></span>母材</span>
+            <span class="lg"><span class="dot" style="background:#00e5ff;"></span>脉冲光束</span>
+          </div>
+        </div>
+        <div class="weld-canvas-wrap" style="margin-top:12px;">
+          <span class="wc-tag">QCW · 焊斑重叠分布（重叠率 η）</span>
+          <canvas id="qcwOverlapCanvas"></canvas>
+          <button class="wc-save-btn" data-save="qcwOverlapCanvas">保存</button>
+          <div class="wc-legend">
+            <span class="lg"><span class="dot" style="background:#00e5ff;"></span>脉冲焊斑</span>
+            <span class="lg"><span class="dot" style="background:#ffd54f;"></span>重叠区</span>
+            <span class="lg"><span class="dot" style="background:#26c281;"></span>已焊轨迹</span>
+          </div>
+        </div>
+
+        <!-- 动画控制 -->
+        <div class="weld-controls">
+          <button class="weld-btn" id="qcwPlay">暂停</button>
+          <button class="weld-btn secondary" id="qcwReset">重置</button>
+          <button class="weld-btn secondary" id="qcwSave" title="将当前仿真画面保存为图片">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
+          </button>
+          <div class="weld-speed-select">
+            <span>速度</span>
+            <select id="qcwSpeed">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- QCW 计算结果 -->
+        <div class="card">
+          <div class="card-title">计算结果</div>
+          <div class="weld-defocus-grid">
+            <div class="wd-item2"><span class="wd2-label">平均功率 P_avg</span><span class="wd2-value" id="qcwPavg">0 W</span></div>
+            <div class="wd-item2"><span class="wd2-label">单脉冲能量 E_p</span><span class="wd2-value" id="qcwEp">0 J</span></div>
+            <div class="wd-item2"><span class="wd2-label">焦点光斑 d₀</span><span class="wd2-value" id="qcwSpot">0 μm</span></div>
+            <div class="wd-item2"><span class="wd2-label">峰值功率密度 I_peak</span><span class="wd2-value" id="qcwDensity">0</span></div>
+            <div class="wd-item2"><span class="wd2-label">占空比 duty</span><span class="wd2-value" id="qcwDuty">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">焊斑间距 Δx</span><span class="wd2-value" id="qcwDx">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">重叠率 η</span><span class="wd2-value" id="qcwOverlap">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">每毫米脉冲数</span><span class="wd2-value" id="qcwPps">0</span></div>
+            <div class="wd-item2"><span class="wd2-label">热输入（线能量）</span><span class="wd2-value" id="qcwHeat">0 J/mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">深宽比 h/W</span><span class="wd2-value" id="qcwRatio">—</span></div>
+            <div class="wd-item2"><span class="wd2-label">焊接时长 t</span><span class="wd2-value" id="qcwTime">0 s</span></div>
+            <div class="wd-item2"><span class="wd2-label">脉冲总数</span><span class="wd2-value" id="qcwCount">0</span></div>
+          </div>
+          <div class="hint" style="margin-top:8px;">
+            模型依据（半经验工程模型，经文献校准）：QCW（准连续）脉冲激光焊接——①重叠率 η = 1 − v/(f·d)（v 焊接速度、f 脉冲频率、d 焊斑直径）：焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》及激光焊接机行业公式；②单脉冲能量 E_p = P_peak×τ，平均功率 P_avg = P_peak×占空比；③熔深受峰值功率密度、脉冲能量、光斑直径与脉冲作用时间主导（焊接学报《脉冲激光焊接的数学模型》），本模型以匙孔能量平衡为基础并加入脉冲占空比/脉宽修正；④光学链路：放大倍率 M=f_f/f_c、焦点光斑 d₀=纤芯×M、瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。结果供工艺预研参考，请以实测为准。
+          </div>
+        </div>
+      </div><!-- /libSimQcw -->
     </section>
 
     <!-- ===== 视图4：高能激光焊接仿真 ===== -->
@@ -2859,7 +3057,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.4</span>
+        <span class="ar-value">v1.4.5</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -2872,22 +3070,22 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.3 更新说明 -->
+  <!-- 首次登录：v1.4.5 更新说明 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.4</span></h3>
-      <div class="up-sub">更新的工具箱</div>
+      <h3>版本更新 <span class="vtag">v1.4.5</span></h3>
+      <div class="up-sub">测试专区新增 QCW 脉冲焊接模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">工具箱新增工具下拉菜单</b>：可在「打焦点记录」「加速距离计算」「点间距频率计算」三个工具间一键切换。</span>
+        <span><b style="color:var(--text)">测试专区新增下拉菜单</b>：可在「环形光斑摆动焊接仿真」「QCW 脉冲焊接模拟」之间一键切换。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">新增加速距离计算 · 焊接运动分析</b>：加速度、减速度、焊接速度、焊接距离、焊接时间均可手动设置，按「匀加速→匀速→匀减速」模型计算加速/匀速/减速的距离与时间，并附动态速度-时间曲线。</span>
+        <span><b style="color:var(--text)">新增 QCW 脉冲焊接模拟</b>：输入光学元件（光纤芯径、准直镜、聚焦镜、离焦量）与脉冲参数（峰值功率、脉宽、重复频率、焊接速度、焊接长度、材料、母材厚度），自动仿真脉冲熔深/熔宽，并输出平均功率、单脉冲能量、峰值功率密度、焊斑间距、重叠率、每毫米脉冲数、线能量、深宽比等 12 项结果。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">新增点间距频率计算 · 脉冲焊接</b>：输入焊接速度、焊接距离、加速度与点间距，自动计算脉冲频率 f=v/d 与焊缝点数，附焊缝点分布与速度-时间曲线动态示意。</span>
+        <span><b style="color:var(--text)">新增 QCW 动态演化动画</b>：脉冲光束 ON/OFF 熔深截面动态演化 + 焊斑重叠分布俯视图（重叠率可视化），均支持保存图片。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -2907,6 +3105,14 @@
         <ul class="cl-list">
           <li>激光填丝焊接熔深计算及熔深动态演化<span style="font-size:10px;color:var(--text-3);margin-left:4px">（技术支持：张飞）</span></li>
           <li>环形光斑光纤激光器焊接熔深计算及熔深动态演化</li>
+        </ul>
+      </div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.5</span><span class="cl-date">2026-09</span></div>
+        <ul class="cl-list">
+          <li>测试专区新增下拉菜单：「环形光斑摆动焊接仿真」「QCW 脉冲焊接模拟」一键切换。</li>
+          <li>新增「QCW 脉冲焊接模拟」：输入光学元件（光纤芯径/准直镜/聚焦镜/离焦量）与脉冲参数（峰值功率/脉宽/重复频率/焊接速度/焊接长度/材料/母材厚度），自动仿真脉冲熔深与熔宽，输出平均功率、单脉冲能量、峰值功率密度、焊斑间距、重叠率、每毫米脉冲数、线能量、深宽比等 12 项结果。</li>
+          <li>新增 QCW 熔深动态演化动画：脉冲光束 ON/OFF 截面演化 + 焊斑重叠分布俯视图（重叠率可视化），支持保存图片。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -3418,8 +3624,17 @@
       if (!weldAnimId) startWeldSim();
     }
     if (view === 'lib') {
-      resizeWobCanvas();
-      if (!wobAnimId) startWobSim();
+      const ls = $('libSimSelect');
+      const cur = ls ? ls.value : 'ring';
+      const ring = $('libSimRing'), qcw = $('libSimQcw');
+      if (ring) ring.style.display = cur === 'ring' ? '' : 'none';
+      if (qcw) qcw.style.display = cur === 'qcw' ? '' : 'none';
+      if (cur === 'qcw') {
+        startQcwSim();
+      } else {
+        resizeWobCanvas();
+        if (!wobAnimId) startWobSim();
+      }
     }
     if (view === 'toolbox') {
       const cur = toolSelect ? toolSelect.value : 'focus';
@@ -7574,6 +7789,398 @@
     const el = $(id);
     if (el) el.addEventListener('input', calcFit);
   });
+
+  // ===== QCW 脉冲焊接模拟 =====
+  const qcwCanvas = $('qcwCanvas');
+  const qcwCtx = qcwCanvas ? qcwCanvas.getContext('2d') : null;
+  const qcwOCanvas = $('qcwOverlapCanvas');
+  const qcwOCtx = qcwOCanvas ? qcwOCanvas.getContext('2d') : null;
+  const qcwState = { t: 0, running: true, speed: 1, _lt: 0 };
+  let qcwAnimId = null;
+
+  function qcwRead() {
+    const num = (id, def) => { const el = $(id); const v = parseFloat(el ? el.value : NaN); return isNaN(v) ? def : v; };
+    return {
+      core: Math.max(num('qcwCoreNum', 100), 1),
+      fc: Math.max(num('qcwFcNum', 100), 10),
+      ff: Math.max(num('qcwFfNum', 200), 10),
+      def: num('qcwDefocusNum', 0),
+      pp: Math.max(num('qcwPpNum', 1500), 0),
+      tau: Math.max(num('qcwTauNum', 1), 0.05),
+      freq: Math.max(num('qcwFreqNum', 100), 0.5),
+      v: Math.max(num('qcwVNum', 80), 0.1),
+      len: Math.max(num('qcwLenNum', 100), 0.5),
+      material: $('qcwMaterial') ? $('qcwMaterial').value : 'steel',
+      thickness: Math.max(num('qcwThicknessNum', 1.5), 0.05)
+    };
+  }
+
+  // QCW 脉冲焊接模型（半经验，文献校准）
+  // [1] 焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》：重叠率 η=1−v/(f·d)
+  // [2] LaserPulse Calc / 激光焊接机行业公式：单脉冲能量 Ep=P_peak·τ，平均功率=P_peak×占空比
+  // [3] 焊接学报《脉冲激光焊接的数学模型》：功率、光斑直径、脉冲作用时间是焊缝主导因素
+  // [4] Lankalapalli 匙孔能量平衡 + Rosenthal 熔宽（与摆动焊接同一基准）
+  function qcwCalculate(p) {
+    const mat = MATERIALS[p.material] || MATERIALS.steel;
+    const M = p.ff / p.fc;
+    const d0Um = p.core * M;
+    const zR = Math.PI * Math.pow(d0Um / 1000, 2) / (4 * (1080e-6));
+    const dUm = d0Um * Math.sqrt(1 + Math.pow(p.def / zR, 2));
+    const d = dUm / 1000;
+    const duty = Math.min(p.tau / 1000 * p.freq, 0.95);
+    const pAvg = p.pp * duty;
+    const ep = p.pp * p.tau / 1000;
+    const Ipeak = d > 0 ? 4 * p.pp * mat.eta / (Math.PI * d * d) : 0;
+    const dx = p.v / p.freq;
+    const overlap = Math.max(0, Math.min(1, 1 - dx / Math.max(d, 0.001)));
+    const IKH = mat.IKH || 10;
+    const tKH = Math.max(0, Math.min(1, (Ipeak - 0.5 * IKH) / (1.5 * IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH);
+    const etaEff = mat.eta + (mat.etaKH - mat.eta) * smoothKH;
+    const kEff = mat.k + (mat.kWeld - mat.k) * smoothKH;
+    const alphaE = kEff / (mat.rho * mat.c) * 1e6;
+    const alphaRef = 4.08;
+    // 熔深：匙孔能量平衡 + 脉冲修正（占空比^0.25、脉宽^0.15）
+    const C1p = (mat.C1 || 0.12) * 2.6;
+    const h = C1p * Math.pow(Math.max(p.pp * etaEff / p.v, 0.001), 0.7) / Math.pow(Math.max(d, 0.01), 0.3)
+              * Math.pow(alphaRef / alphaE, 0.4) * Math.pow(duty, 0.25) * Math.pow(p.tau, 0.15);
+    // 熔宽：光斑基础直径 + Rosenthal 热导项
+    const C3 = mat.C3 || 0.5;
+    const wTh = C3 * Math.sqrt(pAvg * etaEff * alphaE / (p.v * p.v)) * 1.2;
+    const w = Math.max(d * 1.15, wTh);
+    const tWeld = p.len / p.v;
+    const nPulse = p.len / dx;
+    const heat = pAvg * etaEff / p.v;
+    const eTotal = pAvg * tWeld;
+    return { mat, M, d0Um, zR, dUm, d, duty, pAvg, ep, Ipeak, dx, overlap, alphaE, alphaRef, smoothKH, etaEff, kEff, h, w, tWeld, nPulse, heat, eTotal, thickness: p.thickness, freq: p.freq, v: p.v };
+  }
+
+  function qcwUpdateResults(r) {
+    const fmt = (v, d = 2) => Number(v).toFixed(d);
+    $('qcwDepth').textContent = fmt(r.h, 2);
+    $('qcwWidthOut').textContent = fmt(r.w, 2);
+    $('qcwPavg').textContent = fmt(r.pAvg, 0) + ' W';
+    $('qcwEp').textContent = fmt(r.ep, 3) + ' J';
+    $('qcwSpot').textContent = fmt(r.dUm, 1) + ' μm';
+    $('qcwDensity').textContent = (r.Ipeak >= 10000 ? fmt(r.Ipeak / 1000, 1) + ' kW/mm²' : fmt(r.Ipeak, 0) + ' W/mm²');
+    $('qcwDuty').textContent = fmt(r.duty * 100, 1) + '%';
+    $('qcwDx').textContent = fmt(r.dx, 3) + ' mm';
+    $('qcwOverlap').textContent = fmt(r.overlap * 100, 1) + '%';
+    $('qcwPps').textContent = fmt(r.freq / r.v, 2);
+    $('qcwHeat').textContent = fmt(r.heat, 3) + ' J/mm';
+    $('qcwRatio').textContent = r.w > 0 ? fmt(r.h / r.w, 2) : '—';
+    $('qcwTime').textContent = fmt(r.tWeld, 2) + ' s';
+    $('qcwCount').textContent = Math.round(r.nPulse);
+    const ms = $('qcwMatSpec');
+    if (ms) ms.textContent = r.mat.name + ' · k=' + r.mat.k + ' W/m·K';
+  }
+
+  function resizeQcwCanvas() {
+    if (!qcwCanvas || !qcwCtx) return;
+    const wrap = qcwCanvas.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    let wCss = rect.width || 320, hCss = rect.height;
+    const wantH = wCss * 0.66;
+    if (!hCss || hCss < wCss * 0.3 || hCss > wCss * 1.6) hCss = wantH;
+    wrap.style.height = hCss + 'px';
+    qcwCanvas.style.width = wCss + 'px';
+    qcwCanvas.style.height = hCss + 'px';
+    qcwCanvas.width = Math.max(2, Math.round(wCss * d));
+    qcwCanvas.height = Math.max(2, Math.round(hCss * d));
+    qcwCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  function resizeQcwOverlap() {
+    if (!qcwOCanvas || !qcwOCtx) return;
+    const wrap = qcwOCanvas.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    let wCss = rect.width || 320, hCss = rect.height;
+    const wantH = wCss * 0.42;
+    if (!hCss || hCss < wCss * 0.2 || hCss > wCss * 1.2) hCss = wantH;
+    wrap.style.height = hCss + 'px';
+    qcwOCanvas.style.width = wCss + 'px';
+    qcwOCanvas.style.height = hCss + 'px';
+    qcwOCanvas.width = Math.max(2, Math.round(wCss * d));
+    qcwOCanvas.height = Math.max(2, Math.round(hCss * d));
+    qcwOCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  // 截面：熔深动态演化（脉冲光束 + U形熔池 + 匙孔）
+  function drawQcwSection(r, prog) {
+    if (!qcwCtx) return;
+    const w = qcwCanvas.width / (window.devicePixelRatio || 1);
+    const h = qcwCanvas.height / (window.devicePixelRatio || 1);
+    const ctx = qcwCtx;
+    ctx.clearRect(0, 0, w, h);
+    // 布局
+    const padL = w * 0.10, padR = w * 0.86, padT = h * 0.10, padB = h * 0.88;
+    const bw = padR - padL;
+    const availH = padB - padT;
+    const thk = Math.max(r.thickness, 0.1);
+    const scale = Math.min(bw / 3.2, availH / (Math.max(r.h * 1.5, thk) * 1.25));
+    const baseY = padB;
+    const boardW = Math.min(bw * 0.9, 3.2 * scale);
+    const boardX = padL + (bw - boardW) / 2;
+    const thkPx = Math.max(thk * scale, 4);
+    const topY = baseY - thkPx;
+    // 母材
+    ctx.fillStyle = 'rgba(26,35,64,0.85)';
+    ctx.strokeStyle = 'rgba(138,150,173,0.8)';
+    ctx.lineWidth = 1.2;
+    ctx.fillRect(boardX, topY, boardW, thkPx);
+    ctx.strokeRect(boardX, topY, boardW, thkPx);
+    ctx.fillStyle = 'rgba(160,175,200,0.55)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('母材 ' + thk.toFixed(2) + 'mm', boardX + boardW / 2, topY - 8);
+    // 熔池（U形，深度随脉冲累积）
+    const depth = Math.min(r.h, thk) * scale * (1 - Math.exp(-5 * prog));
+    const mw = Math.min(r.w * scale, boardW * 0.9);
+    const poolCX = boardX + boardW / 2;
+    const poolTop = topY;
+    const poolBot = Math.min(poolTop + depth, baseY - 2);
+    if (depth > 0.5) {
+      const grad = ctx.createLinearGradient(poolCX, poolTop, poolCX, poolBot);
+      grad.addColorStop(0, 'rgba(255,120,60,0.95)');
+      grad.addColorStop(1, 'rgba(255,40,20,0.8)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(poolCX - mw / 2, poolTop);
+      ctx.lineTo(poolCX - mw / 2, poolBot - mw / 2);
+      ctx.arc(poolCX, poolBot - mw / 2, mw / 2, Math.PI, 0);
+      ctx.lineTo(poolCX + mw / 2, poolTop);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,110,60,1)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // 匙孔（脉冲ON时更深更亮）
+    const pulseOn = (qcwState.t * r.freq) % 1 < r.duty;
+    if (depth > 1.5) {
+      const khW = Math.max(2, mw * 0.16);
+      const khD = pulseOn ? Math.min(depth, thk * scale) : depth * 0.55;
+      ctx.fillStyle = pulseOn ? 'rgba(255,230,150,0.95)' : 'rgba(255,183,77,0.55)';
+      ctx.beginPath();
+      ctx.moveTo(poolCX - khW / 2, poolTop + 1);
+      ctx.lineTo(poolCX + khW / 2, poolTop + 1);
+      ctx.lineTo(poolCX, poolTop + khD);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // 脉冲光束（ON时青色锥形+光斑闪烁）
+    const beamCX = poolCX;
+    const beamTop = padT;
+    const spotR = Math.max(2, r.d / 1000 * scale * 4);
+    if (pulseOn) {
+      const bg = ctx.createLinearGradient(beamCX, beamTop, beamCX, poolTop);
+      bg.addColorStop(0, 'rgba(0,229,255,0)');
+      bg.addColorStop(1, 'rgba(0,229,255,0.55)');
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.moveTo(beamCX - spotR * 0.35, beamTop);
+      ctx.lineTo(beamCX + spotR * 0.35, beamTop);
+      ctx.lineTo(beamCX + spotR, poolTop);
+      ctx.lineTo(beamCX - spotR, poolTop);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,229,255,0.9)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(beamCX, beamTop); ctx.lineTo(beamCX, poolTop); ctx.stroke();
+      const flash = 0.8 + 0.2 * Math.sin(qcwState.t * 60);
+      ctx.fillStyle = 'rgba(0,229,255,' + (0.5 * flash) + ')';
+      ctx.beginPath(); ctx.arc(beamCX, poolTop, spotR * (0.6 + 0.2 * flash), 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.strokeStyle = 'rgba(138,150,173,0.35)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(beamCX, beamTop); ctx.lineTo(beamCX, poolTop); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // 标注：熔深 / 熔宽
+    ctx.fillStyle = 'rgba(200,210,225,0.9)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    const dimDepth = Math.min(r.h, thk);
+    ctx.fillText('预估熔深 ' + dimDepth.toFixed(2) + 'mm', boardX + boardW / 2 + 6, topY + Math.min(depth, thkPx) / 2 + 4);
+    ctx.fillText('熔宽 ' + r.w.toFixed(2) + 'mm', boardX + boardW / 2 - mw / 2 - 8, topY + thkPx + 14);
+    ctx.fillStyle = 'rgba(0,229,255,0.9)';
+    ctx.fillText('脉冲 ' + (pulseOn ? 'ON' : 'OFF'), beamCX + spotR + 4, beamTop + 10);
+  }
+
+  // 焊斑重叠俯视图
+  function drawQcwOverlap(r, prog) {
+    if (!qcwOCtx) return;
+    const w = qcwOCanvas.width / (window.devicePixelRatio || 1);
+    const h = qcwOCanvas.height / (window.devicePixelRatio || 1);
+    const ctx = qcwOCtx;
+    ctx.clearRect(0, 0, w, h);
+    const padL = w * 0.08, padR = w * 0.94, padT = h * 0.22, padB = h * 0.72;
+    const availW = padR - padL, availH = padB - padT;
+    const cy = padT + availH / 2;
+    const spotR = Math.max(r.d / 2, 0.001);
+    const gap = Math.max(r.dx, 0.001);
+    // 比例：单脉冲间距 ≥ 4px，光斑半径按间距比例
+    const sc = Math.max(availW / (Math.min(r.nPulse, 24) * Math.max(gap, spotR * 1.01) * 1.05), 0);
+    const px = Math.min(sc, availH / 2.6);
+    const spotPx = Math.max(spotR * px, 2);
+    const gapPx = gap * px;
+    // 已焊数量
+    const done = Math.min(prog * r.nPulse, r.nPulse);
+    const nShow = Math.min(Math.max(Math.ceil(done), 6), 24);
+    const startX = padL + (availW - (nShow - 1) * gapPx) / 2;
+    // 底板（焊缝轨迹带）
+    ctx.fillStyle = 'rgba(120,135,160,0.12)';
+    ctx.fillRect(padL, cy - spotPx - 6, padR - padL, spotPx * 2 + 12);
+    ctx.strokeStyle = 'rgba(138,150,173,0.3)';
+    ctx.strokeRect(padL, cy - spotPx - 6, padR - padL, spotPx * 2 + 12);
+    // 已焊轨迹
+    ctx.strokeStyle = 'rgba(38,194,129,0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(startX, cy); ctx.lineTo(startX + Math.min(done, nShow - 1) * gapPx, cy); ctx.stroke();
+    // 焊斑 + 重叠区
+    for (let i = 0; i < nShow; i++) {
+      const x = startX + i * gapPx;
+      const isCur = i === Math.floor(done) && done < r.nPulse;
+      const isDone = i < done;
+      if (!isDone && !isCur) break;
+      // 重叠区（与前一个斑的相交部分）
+      if (i > 0 && isDone && gapPx < spotPx * 2) {
+        const ov = x - spotPx * 0.25;
+        ctx.fillStyle = 'rgba(255,213,79,0.55)';
+        ctx.beginPath();
+        ctx.arc(x - gapPx, cy, spotPx * 0.55, -Math.PI / 2.4, Math.PI / 2.4);
+        ctx.arc(x, cy, spotPx * 0.55, Math.PI * 0.85, Math.PI * 1.65);
+        ctx.fill();
+      }
+      ctx.fillStyle = isCur ? 'rgba(0,229,255,0.85)' : 'rgba(0,180,216,0.55)';
+      ctx.strokeStyle = isCur ? 'rgba(255,255,255,0.9)' : 'rgba(0,188,212,0.9)';
+      ctx.lineWidth = isCur ? 1.6 : 1;
+      ctx.beginPath(); ctx.arc(x, cy, spotPx, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    // 方向箭头
+    ctx.strokeStyle = 'rgba(200,210,225,0.8)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(startX + (nShow - 1) * gapPx + 10, cy);
+    ctx.lineTo(startX + (nShow - 1) * gapPx + 26, cy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(startX + (nShow - 1) * gapPx + 26, cy);
+    ctx.lineTo(startX + (nShow - 1) * gapPx + 21, cy - 4);
+    ctx.moveTo(startX + (nShow - 1) * gapPx + 26, cy);
+    ctx.lineTo(startX + (nShow - 1) * gapPx + 21, cy + 4);
+    ctx.stroke();
+    // 标注
+    ctx.fillStyle = 'rgba(200,210,225,0.9)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('焊斑直径 d=' + (r.d * 1000).toFixed(0) + 'μm  焊斑间距 Δx=' + r.dx.toFixed(3) + 'mm', padL, padT - 8);
+    ctx.fillStyle = 'rgba(0,229,255,0.95)';
+    ctx.fillText('重叠率 η=' + (r.overlap * 100).toFixed(1) + '%', padL, padB + 20);
+    ctx.fillStyle = 'rgba(200,210,225,0.8)';
+    ctx.fillText('焊接方向 →', startX + (nShow - 1) * gapPx + 34, cy + 4);
+  }
+
+  function qcwLoop() {
+    if (!qcwState.running) { qcwAnimId = null; return; }
+    const now = performance.now();
+    const dt = qcwState._lt ? (now - qcwState._lt) / 1000 : 0.016;
+    qcwState._lt = now;
+    qcwState.t += dt * qcwState.speed;
+    const p = qcwRead();
+    const r = qcwCalculate(p);
+    const prog = (qcwState.t / r.tWeld) % 1;
+    drawQcwSection(r, prog);
+    drawQcwOverlap(r, prog);
+    qcwAnimId = requestAnimationFrame(qcwLoop);
+  }
+  function startQcwSim() {
+    if (qcwAnimId || !qcwCtx) return;
+    resizeQcwCanvas(); resizeQcwOverlap();
+    qcwState._lt = 0;
+    try { qcwUpdateResults(qcwCalculate(qcwRead())); } catch (e) {}
+    qcwLoop();
+  }
+  function stopQcwSim() {
+    if (qcwAnimId) { cancelAnimationFrame(qcwAnimId); qcwAnimId = null; }
+  }
+
+  // QCW 事件绑定
+  const qcwPlayBtn = $('qcwPlay');
+  if (qcwPlayBtn) qcwPlayBtn.addEventListener('click', () => {
+    qcwState.running = !qcwState.running;
+    qcwPlayBtn.textContent = qcwState.running ? '暂停' : '播放';
+    if (qcwState.running && !qcwAnimId) { qcwState._lt = 0; qcwLoop(); }
+  });
+  const qcwResetBtn = $('qcwReset');
+  if (qcwResetBtn) qcwResetBtn.addEventListener('click', () => {
+    qcwState.t = 0; qcwState._lt = 0;
+    const p = qcwRead(); const r = qcwCalculate(p);
+    drawQcwSection(r, 0); drawQcwOverlap(r, 0);
+  });
+  const qcwSaveBtn = $('qcwSave');
+  if (qcwSaveBtn) qcwSaveBtn.addEventListener('click', () => {
+    if (window.AndroidBridge && AndroidBridge.savePng) {
+      AndroidBridge.savePng(qcwCanvas.toDataURL('image/png'), 'QCW脉冲焊接仿真_' + new Date().toISOString().slice(0, 10) + '.png');
+    } else {
+      const a = document.createElement('a');
+      a.href = qcwCanvas.toDataURL('image/png');
+      a.download = 'QCW脉冲焊接仿真_' + new Date().toISOString().slice(0, 10) + '.png';
+      a.click();
+    }
+  });
+  const qcwSpeedSel = $('qcwSpeed');
+  if (qcwSpeedSel) qcwSpeedSel.addEventListener('change', () => { qcwState.speed = parseFloat(qcwSpeedSel.value) || 1; });
+  ['qcwCore', 'qcwCoreNum', 'qcwFc', 'qcwFcNum', 'qcwFf', 'qcwFfNum', 'qcwDefocus', 'qcwDefocusNum',
+   'qcwPp', 'qcwPpNum', 'qcwTau', 'qcwTauNum', 'qcwFreq', 'qcwFreqNum', 'qcwV', 'qcwVNum', 'qcwLen', 'qcwLenNum',
+   'qcwThickness', 'qcwThicknessNum'].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    const sync = () => {
+      const numId = id.endsWith('Num') ? id : id + 'Num';
+      const rangeId = id.endsWith('Num') ? id.slice(0, -3) : id;
+      const rEl = $(rangeId), nEl = $(numId);
+      if (nEl && rEl && rEl.type === 'range') rEl.value = nEl.value;
+      if (nEl && rEl && nEl.type === 'range') nEl.value = rEl.value;
+      const p = qcwRead();
+      const r = qcwCalculate(p);
+      qcwUpdateResults(r);
+    };
+    el.addEventListener('input', sync);
+    if (el.type === 'range') {
+      el.addEventListener('input', () => {
+        const numId = id + 'Num';
+        const nEl = $(numId);
+        if (nEl) nEl.value = el.value;
+        const p = qcwRead(); const r = qcwCalculate(p);
+        qcwUpdateResults(r);
+      });
+    }
+  });
+  const qcwMatSel = $('qcwMaterial');
+  if (qcwMatSel) qcwMatSel.addEventListener('change', () => {
+    const p = qcwRead(); const r = qcwCalculate(p);
+    qcwUpdateResults(r);
+  });
+
+  // 测试专区下拉切换：环形光斑 / QCW
+  const libSimSelect = $('libSimSelect');
+  if (libSimSelect) {
+    libSimSelect.addEventListener('change', () => {
+      const v = libSimSelect.value;
+      const ring = $('libSimRing'), qcw = $('libSimQcw');
+      if (ring) ring.style.display = v === 'ring' ? '' : 'none';
+      if (qcw) qcw.style.display = v === 'qcw' ? '' : 'none';
+      if (v === 'ring') {
+        stopQcwSim();
+        if (!wobAnimId) startWobSim();
+      } else {
+        if (wobAnimId) { cancelAnimationFrame(wobAnimId); wobAnimId = null; }
+        startQcwSim();
+      }
+    });
+  }
 
   // 初始
   if (fitCtx) { resizeFitCanvas(); calcFit(); }
