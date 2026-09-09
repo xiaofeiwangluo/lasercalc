@@ -1866,6 +1866,8 @@
   .doe-anova th, .doe-anova td { border: 1px solid var(--border); padding: 4px 8px; text-align: center; white-space: nowrap; }
   .doe-anova th { background: var(--bg-2); color: var(--text-2); font-weight: 600; }
   .doe-anova td.sig { color: var(--laser); font-weight: 700; }
+  .doe-anova tr.mh td { background: var(--bg-2); font-weight: 700; color: var(--text-1); }
+  .doe-anova tr.msub td { font-weight: 600; color: var(--text-2); border-style: dashed; }
   .doe-factor-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; align-items: center; margin-bottom: 6px; }
   .doe-factor-row input, .doe-factor-row select { width: 100%; background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 7px 10px; font-size: 13px; }
   .doe-factor-row input:focus, .doe-factor-row select:focus { outline: none; border-color: var(--laser); }
@@ -3251,7 +3253,7 @@
             </div>
           </div>
           <div class="fit-section" id="doeSimSection" style="margin-top:14px;">
-            <div class="fit-section-title">仿真数据填入 · 焊接模型自动计算响应：功率 / 速度 / 离焦 / 芯径 / 准直 / 聚焦 / 摆动宽度 / 摆动间距 / 脉宽 / 频率 / 长度 / 外环芯径 / 外环功率</div>
+            <div class="fit-section-title">仿真数据填入 · 光学配置（工艺参数由因子自动匹配对应模型）</div>
             <div class="input-group">
               <div class="input-label"><span>焊接类型 / 材料</span></div>
               <div class="input-row">
@@ -3264,34 +3266,16 @@
               </div>
             </div>
             <div class="input-group">
-              <div class="input-label"><span>焊接参数</span><span class="unit">因子名匹配到参数时自动覆盖</span></div>
-              <div class="input-row">
-                <span class="sim-param"><span class="sim-lbl">功率</span><input type="number" id="doeSimP" value="1000"><span class="unit">W</span></span>
-                <span class="sim-param"><span class="sim-lbl">速度</span><input type="number" id="doeSimV" value="10" step="0.1"><span class="unit">mm/s</span></span>
+              <div class="input-label"><span>光学配置</span><span class="unit">准直 / 聚焦 / 光纤芯径；工艺参数由因子自动匹配</span></div>
+              <div class="input-row" id="doeSimOptRow">
                 <span class="sim-param"><span class="sim-lbl">准直</span><input type="number" id="doeSimFc" value="100"><span class="unit">mm</span></span>
                 <span class="sim-param"><span class="sim-lbl">聚焦</span><input type="number" id="doeSimFf" value="200"><span class="unit">mm</span></span>
-                <span class="sim-param"><span class="sim-lbl">长度</span><input type="number" id="doeSimLen" value="100"><span class="unit">mm</span></span>
+                <span class="sim-param" id="doeSimDiaWrap"><span class="sim-lbl">光纤芯径</span><input type="number" id="doeSimDia" value="100"><span class="unit">μm</span></span>
+                <span class="sim-param" id="doeSimRingWrap" style="display:none;"><span class="sim-lbl">外环芯径</span><input type="number" id="doeSimRingDia" value="100"><span class="unit">μm</span></span>
+                <span class="sim-param" id="doeSimCoreWrap" style="display:none;"><span class="sim-lbl">内芯芯径</span><input type="number" id="doeSimCoreDia" value="50"><span class="unit">μm</span></span>
               </div>
             </div>
-            <div id="doeSimWobRow" class="input-group" style="display:none;">
-              <div class="input-label"><span>摆动光学</span><span class="unit">外环芯径/功率 · 摆动宽度/间距</span></div>
-              <div class="input-row">
-                <span class="sim-param"><span class="sim-lbl">外环芯径</span><input type="number" id="doeSimRingDia" value="100"><span class="unit">μm</span></span>
-                <span class="sim-param"><span class="sim-lbl">外环功率</span><input type="number" id="doeSimRingP" value="500"><span class="unit">W</span></span>
-                <span class="sim-param"><span class="sim-lbl">内芯功率</span><input type="number" id="doeSimCoreP" value="1000"><span class="unit">W</span></span>
-                <span class="sim-param"><span class="sim-lbl">摆动宽度</span><input type="number" id="doeSimB" value="0.4"><span class="unit">mm</span></span>
-                <span class="sim-param"><span class="sim-lbl">摆动间距</span><input type="number" id="doeSimPitch" value="0.1"><span class="unit">mm</span></span>
-              </div>
-            </div>
-            <div id="doeSimQcwRow" class="input-group" style="display:none;">
-              <div class="input-label"><span>脉冲参数</span><span class="unit">峰值功率/脉宽/频率</span></div>
-              <div class="input-row">
-                <span class="sim-param"><span class="sim-lbl">峰值功率</span><input type="number" id="doeSimPp" value="1500"><span class="unit">W</span></span>
-                <span class="sim-param"><span class="sim-lbl">脉宽</span><input type="number" id="doeSimTau" value="1"><span class="unit">ms</span></span>
-                <span class="sim-param"><span class="sim-lbl">频率</span><input type="number" id="doeSimFreq" value="100"><span class="unit">Hz</span></span>
-              </div>
-            </div>
-            <div class="doe-sim-note">因子名称包含 <b>功率 / 速度 / 离焦 / 芯径 / 准直 / 聚焦 / 摆动宽度 / 摆动间距 / 脉宽 / 频率 / 长度 / 外环芯径 / 外环功率</b> 时，自动将该因子水平值代入对应模型参数；响应名称含「宽」输出熔宽，否则输出熔深。模型与焊接仿真共用同一套半经验公式（匙孔能量平衡 + Rosenthal 热传导），结果供工艺预研参考。</div>
+            <div class="doe-sim-note">因子名包含 <b>功率 / 速度 / 离焦 / 芯径 / 外环芯径 / 外环功率 / 内芯功率 / 摆动宽度 / 摆动间距 / 脉宽 / 频率 / 长度</b> 时，自动按焊接方式（CW / 摆动 / QCW）代入对应模型参数；响应名称含「宽」输出熔宽，否则输出熔深。模型与焊接仿真共用同一套半经验公式（匙孔能量平衡 + Rosenthal 热传导），结果供工艺预研参考。</div>
             <div class="tp-actions">
               <button id="doeSimRun">填入仿真数据</button>
             </div>
@@ -9501,16 +9485,37 @@
         if (r2) doeRenderResults();
       });
     }
-    let anovaHtml = '<div class="doe-anova"><table><thead><tr><th>来源</th><th>DF</th><th>SS</th><th>MS</th><th>F</th><th>P</th></tr></thead><tbody>';
+    let anovaHtml = '<div class="doe-anova"><table><thead><tr><th>来源</th><th>DF</th><th>Adj SS</th><th>Adj MS</th><th>F</th><th>P</th></tr></thead><tbody>';
+    // 模型汇总行（模型 / 线性 / 交互 / 弯曲）
+    const errA = r.anova.find(x => x.src === '误差'), totA = r.anova.find(x => x.src === '合计'), curvA = r.anova.find(x => x.src.indexOf('弯曲') >= 0);
+    const ssM = totA.ss - (errA ? errA.ss : 0) - (curvA ? curvA.ss : 0);
+    const dfM = totA.df - (errA ? errA.df : 0) - (curvA ? curvA.df : 0);
+    const msM = dfM > 0 ? ssM / dfM : null;
+    const FM = (r.msErr > 0 && msM) ? msM / r.msErr : null;
+    const PM = (r.dfErr > 0 && FM !== null) ? doeFPval(FM, dfM, r.dfErr) : NaN;
+    anovaHtml += '<tr class="mh"><td>模型</td><td>' + dfM + '</td><td>' + ssM.toFixed(3) + '</td><td>' + (msM !== null ? msM.toFixed(3) : '—') + '</td><td>' + (FM !== null ? FM.toFixed(2) : '—') + '</td><td>' + (isFinite(PM) ? PM.toFixed(4) : '—') + '</td></tr>';
+    const linT = r.terms.filter(t => t.type === 'main');
+    const intT = r.terms.filter(t => t.type === 'inter');
+    const mhRow = (label, arr) => {
+      if (!arr.length) return;
+      const ssA = arr.reduce((s, t) => s + t.ss, 0), dfA = arr.reduce((s, t) => s + (t.df || 1), 0);
+      const msA = dfA > 0 ? ssA / dfA : null;
+      const FA = (r.msErr > 0 && msA) ? msA / r.msErr : null;
+      const PA = (r.dfErr > 0 && FA !== null) ? doeFPval(FA, dfA, r.dfErr) : NaN;
+      anovaHtml += '<tr class="msub"><td>' + label + '</td><td>' + dfA + '</td><td>' + ssA.toFixed(3) + '</td><td>' + (msA !== null ? msA.toFixed(3) : '—') + '</td><td>' + (FA !== null ? FA.toFixed(2) : '—') + '</td><td>' + (isFinite(PA) ? PA.toFixed(4) : '—') + '</td></tr>';
+    };
+    mhRow('线性', linT);
+    mhRow('2 因子交互', intT);
     r.anova.forEach(row => {
       anovaHtml += '<tr' + (row.sig ? ' class="sig"' : '') + '><td>' + row.src + '</td><td>' + row.df + '</td><td>' + row.ss.toFixed(3) + '</td><td>' + (row.ms !== null ? row.ms.toFixed(3) : '—') + '</td><td>' + (row.F !== null ? row.F.toFixed(2) : '—') + '</td><td>' + (row.P !== null ? row.P.toFixed(4) : '—') + '</td></tr>';
     });
     anovaHtml += '</tbody></table></div>';
     let effHtml = '';
     if (r.terms.length && !r.gen) {
-      effHtml = '<div class="doe-anova" style="margin-top:10px;"><table><thead><tr><th>项</th><th>效应</th><th>系数</th><th>标准化效应 t</th><th>P 值</th><th>显著</th></tr></thead><tbody>';
+      effHtml = '<div class="doe-anova" style="margin-top:10px;"><div style="font-size:11px;color:var(--text-3);margin-bottom:6px;">模型汇总：S = ' + (r.msErr > 0 ? Math.sqrt(r.msErr).toFixed(4) : '—') + '　R-sq = ' + (r.r2 * 100).toFixed(2) + '%　R-sq(adj) = ' + (r.r2adj * 100).toFixed(2) + '%</div><table><thead><tr><th>项</th><th>效应</th><th>系数</th><th>SE Coef</th><th>T</th><th>P 值</th><th>VIF</th><th>显著</th></tr></thead><tbody>';
       r.terms.forEach(t => {
-        effHtml += '<tr' + (t.p < 0.05 ? ' class="sig"' : '') + '><td>' + t.name + '</td><td>' + t.effect.toFixed(3) + '</td><td>' + t.coef.toFixed(3) + '</td><td>' + (isFinite(t.t) ? t.t.toFixed(2) : '—') + '</td><td>' + (isFinite(t.p) ? t.p.toFixed(4) : '—') + '</td><td>' + (t.p < 0.05 ? '✓ 显著' : '') + '</td></tr>';
+        const seC = t.se && isFinite(t.se) ? t.se / 2 : null;
+        effHtml += '<tr' + (t.p < 0.05 ? ' class="sig"' : '') + '><td>' + t.name + '</td><td>' + t.effect.toFixed(3) + '</td><td>' + t.coef.toFixed(3) + '</td><td>' + (seC !== null ? seC.toFixed(3) : '—') + '</td><td>' + (isFinite(t.t) ? t.t.toFixed(2) : '—') + '</td><td>' + (isFinite(t.p) ? t.p.toFixed(4) : '—') + '</td><td>1.00</td><td>' + (t.p < 0.05 ? '✓ 显著' : '') + '</td></tr>';
       });
       effHtml += '</tbody></table></div>';
     }
@@ -10097,21 +10102,21 @@
       def: 0
     };
     if (type === 'cw') {
-      base.P = Math.max(num('doeSimP', 1000), 0);
-      base.core = 100;
+      base.P = 1000;
+      base.core = Math.max(num('doeSimDia', 100), 1);
     } else if (type === 'wob') {
       base.ringDia = Math.max(num('doeSimRingDia', 100), 1);
-      base.ringP = Math.max(num('doeSimRingP', 500), 0);
-      base.coreP = Math.max(num('doeSimCoreP', 1000), 0);
-      base.B = Math.max(num('doeSimB', 0.4), 0);
-      base.pitch = Math.max(num('doeSimPitch', 0.1), 0.001);
-      base.coreDia = 50;
+      base.ringP = 500;
+      base.coreP = 1000;
+      base.B = 0.4;
+      base.pitch = 0.1;
+      base.coreDia = Math.max(num('doeSimCoreDia', 50), 1);
     } else {
-      base.pp = Math.max(num('doeSimPp', 1500), 0);
-      base.tau = Math.max(num('doeSimTau', 1), 0.05);
-      base.freq = Math.max(num('doeSimFreq', 100), 0.5);
+      base.pp = 1500;
+      base.tau = 1;
+      base.freq = 100;
       base.v = base.V;
-      base.core = 100;
+      base.core = Math.max(num('doeSimDia', 100), 1);
       base.pp = base.pp || 1500;
     }
     // 逐行计算
@@ -10244,6 +10249,10 @@
       const wr = $('doeSimWobRow'), qr = $('doeSimQcwRow');
       if (wr) wr.style.display = v === 'wob' ? '' : 'none';
       if (qr) qr.style.display = v === 'qcw' ? '' : 'none';
+      const dw = $('doeSimDiaWrap'), rw = $('doeSimRingWrap'), cw = $('doeSimCoreWrap');
+      if (dw) dw.style.display = v === 'wob' ? 'none' : '';
+      if (rw) rw.style.display = v === 'wob' ? '' : 'none';
+      if (cw) cw.style.display = v === 'wob' ? '' : 'none';
     });
     const simRun = $('doeSimRun'); if (simRun) simRun.addEventListener('click', () => { try { doeSimRun(); } catch (e) { window.__simErr = e.message + ' @' + e.stack.split('\n')[0]; showToast('仿真错误: ' + e.message); } });
   })();
