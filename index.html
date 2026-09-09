@@ -1849,6 +1849,10 @@
   .doe-anova { overflow-x: auto; margin-top: 10px; }
   .doe-sim-note { font-size: 11px; color: var(--text-3); line-height: 1.6; margin: 8px 2px; }
   .doe-sim-note b { color: var(--laser); font-weight: 600; }
+  /* 焊接参数输入行：任意宽度下自动换行，防止超出面板 */
+  #doeSimSection .input-row { flex-wrap: wrap; gap: 10px 12px; }
+  #doeSimSection .input-row input[type="number"] { width: auto; flex: 1 1 30%; min-width: 84px; }
+  #doeSimSection .input-row .unit { flex: 0 0 auto; }
   .doe-resp-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
   .doe-resp-tab { flex: 1; min-width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-2); color: var(--text-2); font-size: 12px; cursor: pointer; }
   .doe-resp-tab.active { border-color: var(--laser); color: var(--laser); background: color-mix(in srgb, var(--laser) 12%, transparent); font-weight: 700; }
@@ -1867,7 +1871,7 @@
   @media (max-width: 480px) {
     .doe-factor-row { grid-template-columns: 1fr 1fr; }
     .doe-fhead { display: none; }
-    /* DOE 仿真参数输入行在手机端换行排列，避免横向溢出 */
+    /* DOE 仿真参数输入行在手机端换行排列（全局已有 wrap，此处保持），避免横向溢出 */
     #doeSimSection .input-row { flex-wrap: wrap; gap: 8px; }
     #doeSimSection .input-row input[type="number"] { width: auto; flex: 1 1 32%; min-width: 88px; }
     #doeSimSection .input-row .unit { flex: 0 0 auto; font-size: 11px; }
