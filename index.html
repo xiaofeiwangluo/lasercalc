@@ -9870,6 +9870,7 @@
     ctx.clearRect(0, 0, w, h);
     const th = doeTheme();
     const r = doeState.result;
+    if (!r || !r.doe) return;
     const factors = r.factors, N = r.N, yc = r.yArr.slice(0, N);
     const inters = r.terms.filter(t => t.type === 'inter' && isFinite(t.p));
     if (!inters.length) {
@@ -9878,29 +9879,47 @@
       return;
     }
     const top = inters.slice().sort((a, b) => a.p - b.p).slice(0, 2);
-    const per = top.length, cw = w / per;
+    const per = top.length, seg = w / per;
     const m = { l: 30, r: w - 6, t: 16, b: h - 30 };
-    const allY = yc.concat(r.ycc);
-    const yMin = Math.min(...allY) - 1, yMax = Math.max(...allY) + 1;
-    const y2p = y => m.b - (y - yMin) / (yMax - yMin) * (m.b - m.t);
+    const allY = yc.concat(r.ycc || []);
+    const yMin = Math.min.apply(null, allY) - 1, yMax = Math.max.apply(null, allY) + 1;
+    const span = (yMax - yMin) || 1;
+    const y2p = y => isFinite(y) ? m.b - (y - yMin) / span * (m.b - m.t) : null;
     const colors = [th.line, th.line2, th.line3];
+    // 浅色网格背景
+    ctx.strokeStyle = th.grid; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let g = 0; g <= 4; g++) {
+      const yy = m.t + (m.b - m.t) * g / 4;
+      ctx.moveTo(m.l, yy); ctx.lineTo(m.r, yy);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
     top.forEach((it, idx) => {
-      const [i, j] = it.idx;
-      const x0 = m.l + cw * idx + cw * 0.1, x1 = m.l + cw * idx + cw * 0.9;
-      const vals = [factors[i].vals[0], factors[i].vals[1]];
+      const i = it.idx[0], j = it.idx[1];
+      const x0 = m.l + seg * idx + seg * 0.15, x1 = m.l + seg * idx + seg * 0.85;
+      const vals = factors[i].vals || [-1, 1];
       for (const jv of [-1, 1]) {
         const ys = [];
         for (const iv of [-1, 1]) {
           let sum = 0, n = 0;
           for (let ri = 0; ri < N; ri++) {
-            if (r.runs[ri].codes[i] === iv && r.runs[ri].codes[j] === jv) { sum += yc[ri]; n++; }
+            const codes = r.runs[ri].codes;
+            if (codes[i] === iv && codes[j] === jv) { sum += yc[ri]; n++; }
           }
-          ys.push(sum / n);
+          ys.push(n > 0 ? sum / n : NaN);
         }
+        if (!isFinite(ys[0]) || !isFinite(ys[1])) continue;
         const col = jv === -1 ? colors[0] : colors[1];
-        ctx.strokeStyle = col; ctx.lineWidth = 1.8;
-        ctx.beginPath(); ctx.moveTo(x0, y2p(ys[0])); ctx.lineTo(x1, y2p(ys[1])); ctx.stroke();
-        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x0, y2p(ys[0]), 3, 0, Math.PI * 2); ctx.arc(x1, y2p(ys[1]), 3, 0, Math.PI * 2); ctx.fill();
+        const p0 = y2p(ys[0]), p1 = y2p(ys[1]);
+        ctx.strokeStyle = col; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(x0, p0); ctx.lineTo(x1, p1); ctx.stroke();
+        [[x0, p0], [x1, p1]].forEach(([px, py]) => {
+          ctx.fillStyle = col; ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.stroke();
+        });
+        ctx.fillStyle = th.text; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(ys[1].toFixed(2), x1, p1 - 9);
       }
       ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(factors[i].name + '（' + vals[0] + ' → ' + vals[1] + '）', (x0 + x1) / 2, m.b + 14);
