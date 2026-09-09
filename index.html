@@ -1868,6 +1868,7 @@
   .doe-factor-lv { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .doe-factor-lv3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
   .doe-fhead { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+  .doe-fname-hint { font-size: 10.5px; color: var(--text-3); line-height: 1.6; margin: 2px 0 8px; padding: 5px 8px; background: var(--bg-2); border-radius: 6px; }
   @media (max-width: 480px) {
     .doe-factor-row { grid-template-columns: 1fr 1fr; }
     .doe-fhead { display: none; }
@@ -9151,7 +9152,8 @@
   function doeRenderFactorBox() {
     const type = doeState.type, k = doeState.k;
     const box = $('doeFactorBox'); if (!box) return;
-    let html = '<div class="doe-fhead"><span>因子名称</span><span>水平数</span><span>水平值</span><span></span></div>';
+    let html = '<div class="doe-fhead"><span>因子名称</span><span>水平数</span><span>水平值</span><span></span></div>' +
+      '<div class="doe-fname-hint">因子名使用：功率 / 速度 / 离焦 / 芯径 / 准直 / 聚焦 / 摆动宽度 / 摆动间距 / 脉宽 / 频率 / 长度 / 外环芯径 / 外环功率 等词时，自动代入对应仿真模型参数</div>';
     for (let i = 0; i < k; i++) {
       const def = doeState.factors[i] || { name: String.fromCharCode(65 + i), lv: 2, vals: [-1, 1] };
       const name = def.name || String.fromCharCode(65 + i);
