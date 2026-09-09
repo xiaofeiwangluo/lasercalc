@@ -9551,9 +9551,8 @@
 
   function doeClearPlots() {
     ['doePareto', 'doeMain', 'doeInter', 'doeContour'].forEach(id => {
-      const c = $(id); if (!c) return;
-      const ctx = c.getContext('2d');
-      ctx.clearRect(0, 0, c.width, c.height);
+      const cv = doeCanvas(id); if (!cv) return;
+      cv.ctx.clearRect(0, 0, cv.w, cv.h);
     });
   }
 
@@ -9599,8 +9598,9 @@
     const factors = doeState.factors;
     const fx = parseInt(($('doeContourX') || {}).value || '0', 10), fy = parseInt(($('doeContourY') || {}).value || '1', 10);
     const X = factors[fx] || factors[0], Y = factors[fy] || (factors[1] || factors[0]);
-    const pad = 44, N = 80;
-    const pw = w - pad * 2, ph = h - pad * 2;
+    const mL = 40, mR = 14, mT = 16, mB = 26;
+    const N = 80;
+    const pw = w - mL - mR, ph = h - mT - mB;
     if (pw <= 20 || ph <= 20) return;
     const Z = [];
     let zmin = Infinity, zmax = -Infinity;
@@ -9619,7 +9619,7 @@
     for (let jy = 0; jy < N; jy++) for (let ix = 0; ix < N; ix++) {
       const t = (Z[jy][ix] - zmin) / (zmax - zmin);
       ctx.fillStyle = doeContourColor(t);
-      ctx.fillRect(pad + ix * pw / N, pad + jy * ph / N, pw / N + 1, ph / N + 1);
+      ctx.fillRect(mL + ix * pw / N, mT + jy * ph / N, pw / N + 1, ph / N + 1);
     }
     // 等值线（简化 marching-squares：按格子中心极角排序相邻交点连线）
     const L = 8;
@@ -9629,7 +9629,7 @@
       ctx.beginPath();
       for (let jy = 0; jy < N - 1; jy++) for (let ix = 0; ix < N - 1; ix++) {
         const z00 = Z[jy][ix], z10 = Z[jy][ix + 1], z01 = Z[jy + 1][ix], z11 = Z[jy + 1][ix + 1];
-        const x0 = pad + ix * pw / N, x1 = x0 + pw / N, y0 = pad + jy * ph / N, y1 = y0 + ph / N;
+        const x0 = mL + ix * pw / N, x1 = x0 + pw / N, y0 = mT + jy * ph / N, y1 = y0 + ph / N;
         const lerp = (a, b, za, zb) => { if ((za - lv) * (zb - lv) >= 0 || za === zb) return null; const t = (lv - za) / (zb - za); return a + (b - a) * t; };
         const pts = [];
         const tx = lerp(x0, x1, z00, z10); if (tx !== null) pts.push([tx, y0]);
@@ -9650,32 +9650,32 @@
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = th.text;
     [-1, 0, 1].forEach(v => {
-      const xx = pad + (v + 1) / 2 * pw;
-      ctx.fillText(String(v), xx, pad - 12);
-      const yy = pad + (1 - (v + 1) / 2) * ph;
-      ctx.fillText(String(v), pad - 16, yy);
+      const xx = mL + (v + 1) / 2 * pw;
+      ctx.fillText(String(v), xx, mT - 10);
+      const yy = mT + (1 - (v + 1) / 2) * ph;
+      ctx.fillText(String(v), mL - 12, yy);
     });
     ctx.fillStyle = th.text; ctx.font = 'bold 11px sans-serif';
-    ctx.fillText(X.name + '（编码）', pad + pw / 2, h - 12);
+    ctx.fillText(X.name + '（编码）', mL + pw / 2, h - 8);
     ctx.save();
-    ctx.translate(13, pad + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.translate(10, mT + ph / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillText(Y.name + '（编码）', 0, 0);
     ctx.restore();
     // 图例
-    const lgW = pw * 0.4, lgX = pad + pw - lgW - 14, lgY = pad + 14, lgH = 9;
+    const lgW = pw * 0.34, lgX = mL + pw - lgW - 10, lgY = mT + 10, lgH = 8;
     for (let i = 0; i < lgW; i++) {
       ctx.fillStyle = doeContourColor(i / lgW);
       ctx.fillRect(lgX + i, lgY, 1, lgH);
     }
     ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeRect(lgX, lgY, lgW, lgH);
     ctx.fillStyle = th.text; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText(zmin.toFixed(2), lgX, lgY + lgH + 10);
+    ctx.fillText(zmin.toFixed(2), lgX, lgY + lgH + 9);
     ctx.textAlign = 'right';
-    ctx.fillText(zmax.toFixed(2), lgX + lgW, lgY + lgH + 10);
+    ctx.fillText(zmax.toFixed(2), lgX + lgW, lgY + lgH + 9);
     // 最优标记（若有优化结果）
     if (doeState.optBest && doeState.optBest.x.length === factors.length) {
       const ox = doeState.optBest.x[fx], oy = doeState.optBest.x[fy];
-      const px = pad + (ox + 1) / 2 * pw, py = pad + (1 - (oy + 1) / 2) * ph;
+      const px = mL + (ox + 1) / 2 * pw, py = mT + (1 - (oy + 1) / 2) * ph;
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(px - 6, py); ctx.lineTo(px - 2, py); ctx.moveTo(px + 2, py); ctx.lineTo(px + 6, py); ctx.moveTo(px, py - 6); ctx.lineTo(px, py - 2); ctx.moveTo(px, py + 2); ctx.lineTo(px, py + 6); ctx.stroke();
     }
@@ -9751,7 +9751,10 @@
   // ---- 图表绘制（Minitab 风格）----
   function doeCanvas(id) {
     const c = $(id); if (!c) return null;
-    return { c, ctx: c.getContext('2d'), w: c.width / (window.devicePixelRatio || 1), h: c.height / (window.devicePixelRatio || 1) };
+    const d = window.devicePixelRatio || 1;
+    const ctx = c.getContext('2d');
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    return { c, ctx, w: c.width / d, h: c.height / d };
   }
   function doeResizeCanvas(id) {
     const c = $(id); if (!c) return;
