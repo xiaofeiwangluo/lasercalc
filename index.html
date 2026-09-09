@@ -1836,6 +1836,8 @@
   .doe-table td input:focus { outline: none; border-color: var(--laser); }
   .doe-table td.doe-resp { background: rgba(0,188,212,0.06); }
   .doe-res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  #doeResults { display: block; }
+  #doeResults .doe-sec-title { display: block; width: 100%; margin-top: 16px; margin-bottom: 4px; font-size: 13px; font-weight: 700; color: var(--text-2); }
   .doe-res-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
   .doe-res-item .dr-label { font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
   .doe-res-item .dr-value { font-size: 16px; font-weight: 700; color: var(--text); }
@@ -9465,6 +9467,7 @@
       html += '</div>';
     }
     html += '<div class="doe-cur-resp">当前响应：<b>' + respName + '</b></div>';
+    html += '<div class="doe-res-grid">';
     const addItem = (label, value, sub) => { html += '<div class="doe-res-item"><div class="dr-label">' + label + '</div><div class="dr-value">' + value + '</div>' + (sub ? '<div class="dr-sub">' + sub + '</div>' : '') + '</div>'; };
     addItem('R²', (r.r2 * 100).toFixed(2) + '%', '模型解释率');
     addItem('R²(调整)', (r.r2adj * 100).toFixed(2) + '%', 'Adj R²');
@@ -9474,6 +9477,7 @@
     const sigs = r.terms.filter(t => t.p !== undefined && t.p !== NaN && t.p < 0.05);
     if (sigs.length) addItem('显著项（P<0.05）', sigs.map(t => t.name).join('、'), sigs.length + ' 项');
     else addItem('显著项', '无', 'P 均 ≥ 0.05');
+    html += '</div>';
     wrap.innerHTML = html;
     if (!wrap._respTabBound) {
       wrap._respTabBound = true;
@@ -9519,7 +9523,7 @@
       });
       effHtml += '</tbody></table></div>';
     }
-    wrap.innerHTML += '<div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-2);">方差分析（ANOVA）</div>' + anovaHtml + (effHtml ? '<div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-2);">效应与系数（编码单位）</div>' + effHtml : '');
+    wrap.innerHTML += '<div class="doe-sec-title">方差分析（ANOVA）</div>' + anovaHtml + (effHtml ? '<div class="doe-sec-title">效应与系数（编码单位）</div>' + effHtml : '');
   }
 
   function doeClearPlots() {
