@@ -1838,6 +1838,10 @@
   .doe-res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
   #doeResults { display: block; }
   #doeResults .doe-sec-title { display: block; width: 100%; margin-top: 16px; margin-bottom: 4px; font-size: 13px; font-weight: 700; color: var(--text-2); }
+  #doeResults .doe-opt-bar { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-left: 8px; vertical-align: middle; }
+  #doeResults .doe-opt-btn { font-size: 11px; padding: 2px 10px; border-radius: 4px; border: 1px solid var(--laser); background: rgba(0, 229, 255, .08); color: var(--laser); cursor: pointer; }
+  #doeResults .doe-opt-btn:hover { background: rgba(0, 229, 255, .18); }
+  #doeResults .doe-opt-note { font-size: 11px; font-weight: 400; color: var(--text-3); }
   .doe-res-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
   .doe-res-item .dr-label { font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
   .doe-res-item .dr-value { font-size: 16px; font-weight: 700; color: var(--text); }
@@ -9101,7 +9105,7 @@
   }
 
   // ---- DOE 状态 ----
-  const doeState = { type: 'full2', k: 3, cp: 3, factors: [], design: null, result: null, analyzed: false, curResp: 0 };
+  const doeState = { type: 'full2', k: 3, cp: 3, factors: [], design: null, result: null, analyzed: false, curResp: 0, activeMask: null, modelNote: '' };
 
   function doeReadRespNames() {
     const n = Math.max(1, parseInt($('doeRespCountNum') ? $('doeRespCountNum').value : 1, 10) || 1);
@@ -9273,6 +9277,7 @@
     doeState.design = design;
     doeState.curResp = 0;
     doeState.analyzed = false;
+    doeState.activeMask = null; doeState.modelNote = '';
     doeRenderDesignTable();
     doeRenderDesignInfo();
     const r = doeAnalyze();
@@ -9339,19 +9344,21 @@
     const allMean = yArr.reduce((a, b) => a + b, 0) / yArr.length;
     const ssTotal = yArr.reduce((s, y) => s + (y - allMean) * (y - allMean), 0);
     const result = { factors, type: d.type, N, nc, ycMean, yccMean, allMean, ssTotal, terms: [], anova: [], curvature: null, runs: d.runs, yArr };
+    const optimized = !!doeState.activeMask; // 一键优化模式：被删项并入误差（残差法）
     let ssPure = 0, dfPure = 0;
     if (nc >= 2) {
       ycc.forEach(y => { ssPure += (y - yccMean) * (y - yccMean); });
       dfPure = nc - 1;
     }
     if (d.type === 'full2' || d.type === 'frac2') {
-      const terms = [];
-      for (let i = 0; i < k; i++) terms.push({ name: factors[i].name, idx: [i], type: 'main' });
+      const termsAll = [];
+      for (let i = 0; i < k; i++) termsAll.push({ name: factors[i].name, idx: [i], type: 'main' });
       if (d.type === 'full2') {
-        for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) terms.push({ name: factors[i].name + '×' + factors[j].name, idx: [i, j], type: 'inter' });
+        for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) termsAll.push({ name: factors[i].name + '×' + factors[j].name, idx: [i, j], type: 'inter' });
       } else {
-        for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) terms.push({ name: factors[i].name + '×' + factors[j].name, idx: [i, j], type: 'inter', alias: true });
+        for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) termsAll.push({ name: factors[i].name + '×' + factors[j].name, idx: [i, j], type: 'inter', alias: true });
       }
+      const terms = doeState.activeMask ? termsAll.filter((t, i) => !!doeState.activeMask[i]) : termsAll;
       const termStats = terms.map(t => {
         let contrast = 0;
         for (let r = 0; r < N; r++) {
@@ -9364,7 +9371,7 @@
       });
       const ssModel = termStats.reduce((s, t) => s + t.ss, 0);
       let ssErr, dfErr;
-      if (dfPure > 0) {
+      if (dfPure > 0 && !optimized) {
         ssErr = ssPure; dfErr = dfPure;
       } else {
         const hiTerms = [];
@@ -9391,9 +9398,9 @@
         dfCurv = 1;
       }
       let ssErrFinal = ssErr, dfErrFinal = dfErr;
-      if (dfCurv > 0 && dfPure > 0) { ssErrFinal = ssPure - ssCurv; dfErrFinal = dfPure - 1; }
-      // 保护：纯误差不可估计、或弯曲项使残差为负时，退化为模型残差估计误差（Minitab 无纯误差时同类做法）
-      if (dfErrFinal <= 0 || !(ssErrFinal > 0)) {
+      if (dfCurv > 0 && dfPure > 0 && !optimized) { ssErrFinal = ssPure - ssCurv; dfErrFinal = dfPure - 1; }
+      // 保护：优化模式或纯误差不可估计、或弯曲项使残差为负时，退化为模型残差估计误差（Minitab 逐步回归同类做法）
+      if (optimized || dfErrFinal <= 0 || !(ssErrFinal > 0)) {
         const ssModelAll = termStats.reduce((s, t) => s + t.ss, 0);
         const dfRes = Math.max(1, yArr.length - 1 - termStats.length - (dfCurv > 0 ? 1 : 0));
         ssErrFinal = Math.max(0, ssTotal - ssModelAll - (dfCurv > 0 ? ssCurv : 0));
@@ -9472,6 +9479,86 @@
     return result;
   }
 
+  // ---- 一键优化模型（Minitab 向后消元法 + 最佳子集准则）----
+  // 从全模型开始，每步删除 p 值最大且 > α 的项并重估，记录每一步候选模型的
+  // R-sq / R-sq(adj)；最后选择 R-sq(adj) 最高（相近时 R-sq 更高）的模型作为最终模型。
+  function doeOptimizeModel() {
+    const r0 = doeState.result;
+    if (!r0 || !r0.doe || r0.gen) { showToast('一键优化模型仅支持 2 水平全因子 / 部分因子设计'); return; }
+    const d = doeState.design, factors = d.factors, k = factors.length;
+    const curResp = doeState.curResp || 0;
+    const yArr = d.runs.map(run => parseFloat((run.resps && run.resps[curResp] !== undefined) ? run.resps[curResp] : ''));
+    if (yArr.some(y => !isFinite(y))) { showToast('请先填写响应数据'); return; }
+    const N = d.N, nc = d.nc;
+    const yc = yArr.slice(0, N), ycc = yArr.slice(N);
+    const ycMean = yc.reduce((a, b) => a + b, 0) / N;
+    const yccMean = nc > 0 ? ycc.reduce((a, b) => a + b, 0) / nc : 0;
+    const allMean = yArr.reduce((a, b) => a + b, 0) / yArr.length;
+    const ssTotal = yArr.reduce((s, y) => s + (y - allMean) * (y - allMean), 0);
+    const dfTotal = yArr.length - 1;
+    // 全项列表（与 doeAnalyze 一致）
+    const allT = [];
+    for (let i = 0; i < k; i++) allT.push({ name: factors[i].name, idx: [i], type: 'main' });
+    if (d.type === 'full2' || d.type === 'frac2') {
+      for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) allT.push({ name: factors[i].name + '×' + factors[j].name, idx: [i, j], type: 'inter' });
+    }
+    const M = allT.length;
+    const termSS = allT.map(t => {
+      let contrast = 0;
+      for (let r = 0; r < N; r++) {
+        const x = t.idx.reduce((p, ii) => p * d.runs[r].codes[ii], 1);
+        contrast += x * yc[r];
+      }
+      return contrast * contrast / N;
+    });
+    let ssCurv = 0, dfCurv = 0;
+    if (nc >= 1 && d.type === 'full2') { ssCurv = (ycMean - yccMean) * (ycMean - yccMean) * N * nc / (N + nc); dfCurv = 1; }
+    // 模型残差法拟合（逐步回归标准：被删项并入误差）
+    const fit = (mask) => {
+      const nAct = mask.filter(Boolean).length;
+      const ssModel = mask.reduce((s, on, i) => s + (on ? termSS[i] : 0), 0) + ssCurv;
+      const dfErr = Math.max(1, dfTotal - nAct - dfCurv);
+      const ssErr = Math.max(0, ssTotal - ssModel);
+      const msErr = ssErr / dfErr;
+      const r2 = ssTotal > 0 ? ssModel / ssTotal : 0;
+      const r2adj = 1 - (ssErr / dfErr) / (ssTotal / dfTotal);
+      const seEff = msErr > 0 ? Math.sqrt(4 * msErr / N) : 0;
+      const ps = mask.map((on, i) => {
+        if (!on) return 1;
+        const effect = 2 * Math.sqrt(Math.max(0, termSS[i] * N)) / N; // |效应|（双侧 p 与符号无关）
+        const tval = seEff > 0 ? effect / seEff : 0;
+        return (dfErr > 0 && seEff > 0) ? doeTPval(tval, dfErr) : NaN;
+      });
+      return { r2, r2adj, ps, dfErr };
+    };
+    const fullMask = new Array(M).fill(true);
+    let cur = fullMask.slice();
+    const ALPHA = 0.10;
+    const history = [Object.assign({ mask: cur.slice() }, fit(cur))];
+    let guard = 0;
+    while (guard++ < 30) {
+      const f = fit(cur);
+      let worst = -1, worstP = ALPHA;
+      cur.forEach((on, i) => { if (on && isFinite(f.ps[i]) && f.ps[i] > worstP) { worstP = f.ps[i]; worst = i; } });
+      if (worst < 0) break;
+      // 保护：至少保留 1 个主效应项，避免模型被删空
+      const remainMain = cur.reduce((s, on, i) => s + (on && allT[i].type === 'main' ? 1 : 0), 0);
+      if (remainMain <= 1 && allT[worst].type === 'main') { cur[worst] = false; if (!cur.some(Boolean)) break; }
+      else cur[worst] = false;
+      if (!cur.some(Boolean)) break;
+      history.push(Object.assign({ mask: cur.slice() }, fit(cur)));
+    }
+    // 最佳子集准则：R-sq(adj) 最高；相近时保留更全模型（R-sq 更高）
+    let best = history[0];
+    history.forEach(h => { if (h.r2adj > best.r2adj + 1e-9) best = h; });
+    const removed = M - best.mask.filter(Boolean).length;
+    doeState.activeMask = best.mask.slice();
+    doeState.modelNote = '已优化（向后消除 α=0.10 + 最佳子集）：删除 ' + removed + ' 个不显著项，R-sq ' + (best.r2 * 100).toFixed(2) + '%，R-sq(adj) ' + (best.r2adj * 100).toFixed(2) + '%';
+    const r = doeAnalyze();
+    if (r) doeRenderResults();
+    showToast('模型优化完成：删除 ' + removed + ' 个不显著项');
+  }
+
   // ---- 结果渲染 ----
   function doeRenderResults() {
     const r = doeState.result; if (!r) return;
@@ -9506,6 +9593,7 @@
         const btn = ev.target && ev.target.closest ? ev.target.closest('.doe-resp-tab') : null;
         if (!btn) return;
         doeState.curResp = parseInt(btn.dataset.r, 10);
+        doeState.activeMask = null; doeState.modelNote = '';
         const r2 = doeAnalyze();
         if (r2) doeRenderResults();
       });
@@ -9544,7 +9632,15 @@
       });
       effHtml += '</tbody></table></div>';
     }
-    wrap.innerHTML += '<div class="doe-sec-title">方差分析（ANOVA）</div>' + anovaHtml + (effHtml ? '<div class="doe-sec-title">效应与系数（编码单位）</div>' + effHtml : '');
+    wrap.innerHTML += '<div class="doe-sec-title">方差分析（ANOVA）</div>' + anovaHtml + (effHtml ? '<div class="doe-sec-title">效应与系数（编码单位）<span class="doe-opt-bar"><button class="doe-opt-btn" id="doeOptModelBtn" title="Minitab 向后消元法：逐步删除 p 值最大的不显著项，按 R-sq(adj) 最高选择最佳模型">一键优化模型</button><button class="doe-opt-btn" id="doeResetModelBtn">重置全模型</button><span class="doe-opt-note">' + (doeState.modelNote || '') + '</span></span></div>' + effHtml : '');
+    if (!wrap._optBound) {
+      wrap._optBound = true;
+      wrap.addEventListener('click', (ev) => {
+        const t = ev.target;
+        if (t && t.id === 'doeOptModelBtn') { try { doeOptimizeModel(); } catch (e) { showToast('优化失败: ' + e.message); } }
+        if (t && t.id === 'doeResetModelBtn') { doeState.activeMask = null; doeState.modelNote = ''; const r = doeAnalyze(); if (r) doeRenderResults(); }
+      });
+    }
     doeFillContourSelects();
     doeOptimize();
   }
@@ -9990,6 +10086,7 @@
       run.resps[0] = i < d.N ? demoResp(run.codes) : (20 + (Math.random() - 0.5) * 0.4).toFixed(2);
     });
     doeState.curResp = 0;
+    doeState.activeMask = null; doeState.modelNote = '';
     doeRenderDesignTable();
     const r = doeAnalyze();
     if (r) doeRenderResults();
@@ -10380,6 +10477,7 @@
       });
     });
     doeRenderDesignTable();
+    doeState.activeMask = null; doeState.modelNote = '';
     const r = doeAnalyze();
     if (r) doeRenderResults();
     const typeName = $('doeSimType').selectedOptions && $('doeSimType').selectedOptions[0] ? $('doeSimType').selectedOptions[0].text : type;
@@ -10427,6 +10525,7 @@
       doeState.k = parseInt(kNum.value, 10) || 3;
       doeState.cp = parseInt(cpNum.value, 10) || 0;
       doeState.design = null; doeState.analyzed = false;
+      doeState.activeMask = null; doeState.modelNote = '';
       doeRenderFactorBox();
       $('doeDesignInfo').innerHTML = '点击「生成试验设计」开始。';
       $('doeResults').innerHTML = ''; $('doeTableWrap').innerHTML = '';
@@ -10437,6 +10536,7 @@
       kNum.value = kSel.value;
       doeState.k = parseInt(kSel.value, 10);
       doeState.design = null; doeState.analyzed = false;
+      doeState.activeMask = null; doeState.modelNote = '';
       doeRenderFactorBox();
       $('doeDesignInfo').innerHTML = '点击「生成试验设计」开始。';
       $('doeResults').innerHTML = ''; $('doeTableWrap').innerHTML = '';
@@ -10463,7 +10563,7 @@
     const genBtn = $('doeGen'); if (genBtn) genBtn.addEventListener('click', doeGenerateDesign);
     const demoBtn = $('doeDemo'); if (demoBtn) demoBtn.addEventListener('click', doeFillDemo);
     const clearBtn = $('doeClear'); if (clearBtn) clearBtn.addEventListener('click', () => {
-      if (doeState.design) { doeState.design.runs.forEach(r => { if (!r.resps) r.resps = []; r.resps.forEach((v, i) => r.resps[i] = ''); }); doeRenderDesignTable(); $('doeResults').innerHTML = ''; doeState.analyzed = false; doeClearPlots(); }
+      if (doeState.design) { doeState.design.runs.forEach(r => { if (!r.resps) r.resps = []; r.resps.forEach((v, i) => r.resps[i] = ''); }); doeRenderDesignTable(); $('doeResults').innerHTML = ''; doeState.analyzed = false; doeState.activeMask = null; doeState.modelNote = ''; doeClearPlots(); }
     });
     const pptBtn = $('doePpt'); if (pptBtn) pptBtn.addEventListener('click', doeExportPpt);
     const docBtn = $('doeDoc'); if (docBtn) docBtn.addEventListener('click', doeExportDoc);
