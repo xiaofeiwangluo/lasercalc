@@ -1181,6 +1181,7 @@
     .doe-plot-box .tp-canvas-wrap {
       aspect-ratio: 4 / 3;
       max-height: none;
+      min-height: 320px;
     }
   }
   /* 桌面端能量分布画布也加大 */
@@ -1842,7 +1843,8 @@
   .doe-plot-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
   @media (min-width: 1000px) { .doe-plot-row { grid-template-columns: 1fr 1fr; } .doe-plot-box:first-child { grid-column: 1 / -1; } }
   .doe-plot-title { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
-  .doe-plot-box .tp-canvas-wrap { aspect-ratio: 16/9; max-height: 320px; }
+  .doe-plot-box .tp-canvas-wrap { aspect-ratio: 16/9; max-height: 420px; min-height: 300px; }
+  .doe-plot-box canvas { width: 100%; height: 100%; display: block; }
   .doe-anova { overflow-x: auto; margin-top: 10px; }
   .doe-sim-note { font-size: 11px; color: var(--text-3); line-height: 1.6; margin: 8px 2px; }
   .doe-sim-note b { color: var(--laser); font-weight: 600; }
@@ -9533,7 +9535,9 @@
     return {
       grid: dark ? 'rgba(138,150,173,0.18)' : 'rgba(90,100,120,0.18)',
       text: dark ? 'rgba(200,210,230,0.9)' : 'rgba(60,70,90,0.95)',
-      bar: '#00bcd4', barSig: '#ff5722', line: '#00bcd4', line2: '#ff9800', line3: '#7c4dff', ref: '#ff5722'
+      bar: dark ? 'rgba(0,229,255,0.92)' : 'rgba(0,180,212,0.82)',
+      barSig: dark ? 'rgba(255,150,110,0.95)' : 'rgba(255,112,66,0.88)',
+      line: '#00bcd4', line2: '#ff9800', line3: '#7c4dff', ref: dark ? '#ff8a65' : '#e64a19'
     };
   }
   function doeDrawPareto() {
@@ -9542,33 +9546,40 @@
     ctx.clearRect(0, 0, w, h);
     const th = doeTheme();
     const r = doeState.result;
-    const items = r.terms.filter(t => isFinite(t.t) && t.t !== 0).map(t => ({ name: t.name, t: Math.abs(t.t), sig: t.p < 0.05 }));
+    const items = r.terms.filter(t => isFinite(t.t) && Math.abs(t.t) > 1e-9).map(t => ({ name: t.name, t: Math.abs(t.t), sig: t.p < 0.05 }));
     if (!items.length) { ctx.fillStyle = th.text; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('暂无足够数据', w / 2, h / 2); return; }
     items.sort((a, b) => b.t - a.t);
-    const m = { l: 30, r: w * 0.92, t: 24, b: h - 30 };
-    const maxT = Math.max(...items.map(i => i.t), r.critT || 0) * 1.15;
+    // Minitab 风格：左侧标签栏 + 右侧条形区，大效应在顶部
+    const m = { l: Math.min(w * 0.34, 96), r: w - 8, t: 26, b: h - 34 };
+    const maxT = Math.max(...items.map(i => i.t), r.critT || 0) * 1.12;
+    // 网格与刻度（X 轴 t 值）
     ctx.strokeStyle = th.grid; ctx.lineWidth = 1;
     ctx.font = '10px sans-serif'; ctx.fillStyle = th.text; ctx.textAlign = 'center';
     for (let g = 0; g <= 4; g++) {
       const v = maxT * g / 4, x = m.l + (m.r - m.l) * g / 4;
       ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.b); ctx.stroke();
-      ctx.fillText(v.toFixed(1), x, h - 12);
+      ctx.fillText(v.toFixed(1), x, h - 8);
     }
+    // 参考线 t（α=0.05）
     if (r.critT > 0) {
-      const rx = m.l + (m.r - m.l) * r.critT / maxT;
+      const rx = m.l + (m.r - m.l) * Math.min(r.critT, maxT) / maxT;
       ctx.strokeStyle = th.ref; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(rx, m.t); ctx.lineTo(rx, m.b); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = th.ref; ctx.textAlign = 'left';
-      ctx.fillText('参考线 t=' + r.critT.toFixed(2) + '（α=0.05）', Math.min(rx + 4, m.r - 100), m.t + 10);
+      ctx.fillText('参考线 t=' + r.critT.toFixed(2) + '（α=0.05）', Math.min(rx + 4, m.r - 120), m.t + 10);
     }
-    const bh = Math.min(26, (m.b - m.t) / items.length * 0.72);
+    const bandH = Math.min(24, (m.b - m.t) / items.length * 0.62);
+    window.__doeDrawLog = 'h=' + h + ' mT=' + m.t + ' mB=' + m.b + ' n=' + items.length + ' maxT=' + maxT.toFixed(2) + ' | ';
     items.forEach((it, i) => {
-      const y = m.b - (i + 0.5) * (m.b - m.t) / items.length;
+      const y = m.t + (i + 0.5) * (m.b - m.t) / items.length;
       const bw = (m.r - m.l) * it.t / maxT;
+      // 条形（有最小可见宽度）
       ctx.fillStyle = it.sig ? th.barSig : th.bar;
-      ctx.beginPath(); ctx.rect(m.l, y - bh / 2, Math.max(2, bw), bh); ctx.fill();
-      ctx.fillStyle = th.text; ctx.textAlign = 'left'; ctx.font = '10px sans-serif';
-      ctx.fillText(it.name + '  ' + it.t.toFixed(2), m.l + Math.max(4, bw) + 4, y + 3.5);
+      ctx.beginPath(); ctx.rect(m.l, y - bandH / 2, Math.max(3, bw), bandH); ctx.fill();
+      // 标签固定在左侧栏，始终可见不被裁切
+      ctx.fillStyle = th.text; ctx.textAlign = 'right'; ctx.font = '12px sans-serif';
+      ctx.fillText(it.name + '  ' + it.t.toFixed(2), m.l - 6, y + 4);
+      window.__doeDrawLog += it.name + '@y' + y.toFixed(0) + 'w' + bw.toFixed(0) + ':' + (it.sig ? 'S' : 'N') + '; ';
     });
   }
   function doeDrawMain() {
