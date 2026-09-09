@@ -1869,8 +1869,7 @@
   .doe-factor-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; align-items: center; margin-bottom: 6px; }
   .doe-factor-row input, .doe-factor-row select { width: 100%; background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 7px 10px; font-size: 13px; }
   .doe-factor-row input:focus, .doe-factor-row select:focus { outline: none; border-color: var(--laser); }
-  .doe-factor-lv { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-  .doe-factor-lv3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  .doe-factor-lv { display: grid; grid-template-columns: repeat(auto-fit, minmax(46px, 1fr)); gap: 4px; }
   .doe-fhead { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
   .doe-fname-hint { font-size: 10.5px; color: var(--text-3); line-height: 1.6; margin: 2px 0 8px; padding: 5px 8px; background: var(--bg-2); border-radius: 6px; }
   @media (max-width: 480px) {
@@ -9163,12 +9162,13 @@
       const name = def.name || String.fromCharCode(65 + i);
       if (type === 'gen') {
         const lv = def.lv || 2;
-        const vals = (def.vals && def.vals.length === lv) ? def.vals : (lv === 2 ? [-1, 1] : [-1, 0, 1]);
+        const vals = (def.vals && def.vals.length === lv) ? def.vals : (lv === 2 ? [-1, 1] : Array.from({ length: lv }, (_, ii) => ii - Math.floor(lv / 2)));
+        const lvTag = lv === 2 ? '低/高' : (lv === 3 ? '低/中/高' : 'L1~L' + lv);
         html += '<div class="doe-factor-row">' +
           '<input class="df-name" value="' + name + '">' +
-          '<select class="df-lv"><option value="2"' + (lv === 2 ? ' selected' : '') + '>2</option><option value="3"' + (lv === 3 ? ' selected' : '') + '>3</option></select>' +
-          '<div class="doe-factor-lv' + (lv === 3 ? '3' : '') + '">' + vals.map(v => '<input class="df-val" type="number" value="' + v + '">').join('') + '</div>' +
-          '<span style="font-size:10px;color:var(--text-3);text-align:right;">' + (lv === 2 ? '低/高' : '低/中/高') + '</span>' +
+          '<select class="df-lv">' + [2, 3, 4, 5, 6].map(n => '<option value="' + n + '"' + (n === lv ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>' +
+          '<div class="doe-factor-lv">' + vals.map(v => '<input class="df-val" type="number" value="' + v + '">').join('') + '</div>' +
+          '<span style="font-size:10px;color:var(--text-3);text-align:right;">' + lvTag + '</span>' +
           '</div>';
       } else {
         const lo = (def.vals && def.vals.length === 2) ? def.vals[0] : -1;
@@ -9188,15 +9188,15 @@
   }
   function doeSyncFactorRow(sel) {
     const row = sel.closest('.doe-factor-row');
-    const lv = parseInt(sel.value, 10);
-    const wrap = row.querySelector('.doe-factor-lv, .doe-factor-lv3');
-    wrap.className = lv === 3 ? 'doe-factor-lv3' : 'doe-factor-lv';
-    const inputs = wrap.querySelectorAll('input');
-    if (lv === 2 && inputs.length === 3) inputs[2].remove();
-    if (lv === 3 && inputs.length === 2) {
+    const lv = Math.max(2, Math.min(6, parseInt(sel.value, 10) || 2));
+    const wrap = row.querySelector('.doe-factor-lv');
+    while (wrap.querySelectorAll('input').length < lv) {
       const inp = document.createElement('input'); inp.className = 'df-val'; inp.type = 'number'; inp.value = 0;
       wrap.appendChild(inp);
     }
+    while (wrap.querySelectorAll('input').length > lv) wrap.lastElementChild.remove();
+    const tag = row.querySelector('span[style*="text-align:right"]');
+    if (tag) tag.textContent = lv === 2 ? '低/高' : (lv === 3 ? '低/中/高' : 'L1~L' + lv);
   }
 
   // ---- 设计矩阵生成 ----
@@ -9230,7 +9230,7 @@
     return combos;
   }
   function doeActualFromCode(code, vals) {
-    if (vals.length === 3) return code;
+    if (vals.length > 2) return vals[Math.max(0, Math.min(vals.length - 1, Math.round(code)))];
     if (code === 0) return (vals[0] + vals[1]) / 2;
     return (vals[0] + vals[1]) / 2 + code * (vals[1] - vals[0]) / 2;
   }
