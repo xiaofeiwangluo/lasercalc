@@ -1821,7 +1821,38 @@
     height: 100%;
     display: block;
   }
-
+  /* ===== DOE 试验设计 ===== */
+  .doe-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .doe-table table { border-collapse: collapse; font-size: 12px; min-width: 560px; width: 100%; }
+  .doe-table th, .doe-table td { border: 1px solid var(--border); padding: 5px 7px; text-align: center; white-space: nowrap; }
+  .doe-table th { background: var(--bg-2); color: var(--text-2); font-weight: 600; position: sticky; top: 0; }
+  .doe-table td input { width: 64px; background: var(--bg-1); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 4px 6px; font-size: 12px; text-align: center; }
+  .doe-table td input:focus { outline: none; border-color: var(--laser); }
+  .doe-table td.doe-resp { background: rgba(0,188,212,0.06); }
+  .doe-res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .doe-res-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .doe-res-item .dr-label { font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+  .doe-res-item .dr-value { font-size: 16px; font-weight: 700; color: var(--text); }
+  .doe-res-item .dr-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+  .doe-plot-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 1000px) { .doe-plot-row { grid-template-columns: 1fr 1fr; } .doe-plot-box:first-child { grid-column: 1 / -1; } }
+  .doe-plot-title { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+  .doe-plot-box .tp-canvas-wrap { aspect-ratio: 16/9; max-height: 320px; }
+  .doe-anova { overflow-x: auto; margin-top: 10px; }
+  .doe-anova table { border-collapse: collapse; font-size: 12px; min-width: 480px; width: 100%; }
+  .doe-anova th, .doe-anova td { border: 1px solid var(--border); padding: 4px 8px; text-align: center; white-space: nowrap; }
+  .doe-anova th { background: var(--bg-2); color: var(--text-2); font-weight: 600; }
+  .doe-anova td.sig { color: var(--laser); font-weight: 700; }
+  .doe-factor-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .doe-factor-row input, .doe-factor-row select { width: 100%; background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 7px 10px; font-size: 13px; }
+  .doe-factor-row input:focus, .doe-factor-row select:focus { outline: none; border-color: var(--laser); }
+  .doe-factor-lv { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .doe-factor-lv3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  .doe-fhead { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 6px; font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+  @media (max-width: 480px) {
+    .doe-factor-row { grid-template-columns: 1fr 1fr; }
+    .doe-fhead { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -1850,7 +1881,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.7</div>
+    <div class="splash-version">v1.4.8</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2790,6 +2821,7 @@
           <option value="spacing">点间距频率计算 · 脉冲焊接</option>
           <option value="fit">动力电池壳盖配合公差分析</option>
           <option value="mod">通快功率调制焊接仿真</option>
+          <option value="doe">DOE 试验设计 · 数据分析与报告</option>
         </select>
       </div>
 
@@ -3134,6 +3166,90 @@
           </div>
         </div>
       </div>
+
+      <!-- 工具F：DOE 试验设计 · 数据分析与报告 -->
+      <div class="tool-panel" id="tool-doe">
+        <div class="card">
+          <div class="card-title">DOE 试验设计 · 数据分析与报告</div>
+          <div class="hint" style="margin-bottom:12px;">
+            参考 <b>Minitab 官网</b>（Design of Experiments）试验设计方法学：支持 <b>2水平全因子（2^k）</b>、<b>1/2 部分因子（2^(k-1)）</b>与<b>一般全因子（多水平）</b>三类设计；生成试验计划表后输入响应数据，自动完成<b>方差分析 ANOVA（F/P 值）</b>、<b>效应估计</b>、<b>Pareto 标准化效应图</b>、<b>主效应图</b>与<b>交互作用图</b>（参考 Minitab 分析因子设计流程），并可一键输出 <b>PPT 分析报告</b>与 <b>Word 文档/CSV 数据</b>。试验设计与分析依据 Minitab 官方方法（Contrast/SS/F 检验），结果供工艺预研参考。
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">① 设计设置</div>
+            <div class="input-group">
+              <div class="input-label"><span>设计类型</span></div>
+              <div class="input-row">
+                <select id="doeType" style="flex:1;">
+                  <option value="full2">2水平全因子设计 2^k</option>
+                  <option value="frac2">1/2 部分因子设计 2^(k-1)</option>
+                  <option value="gen">一般全因子设计（多水平）</option>
+                </select>
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>因子数</span><span class="unit" id="doeTypeHint">k = 2 ~ 5</span></div>
+              <div class="input-row">
+                <input type="range" id="doeK" min="2" max="5" value="3" step="1">
+                <input type="number" id="doeKNum" value="3" min="2" max="5" step="1">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>中心点数量</span><span class="unit">≥2 时可估计纯误差与弯曲（2水平设计）</span></div>
+              <div class="input-row">
+                <input type="range" id="doeCp" min="0" max="5" value="3" step="1">
+                <input type="number" id="doeCpNum" value="3" min="0" max="10" step="1">
+              </div>
+            </div>
+            <div id="doeFactorBox"></div>
+            <div class="tp-actions">
+              <button id="doeGen">生成试验设计</button>
+              <button class="secondary" id="doeDemo">填入示例数据</button>
+              <button class="secondary" id="doeClear">清空数据</button>
+            </div>
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">② 试验设计与数据输入</div>
+            <div id="doeDesignInfo" style="font-size:12px;color:var(--text-3);margin-bottom:8px;"></div>
+            <div class="doe-table" id="doeTableWrap"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">③ 数据分析 · ANOVA 与效应</div>
+          <div class="doe-res-grid" id="doeResults"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">④ 分析图形（Minitab 风格）</div>
+          <div class="doe-plot-row">
+            <div class="doe-plot-box">
+              <div class="doe-plot-title">Pareto 标准化效应图</div>
+              <div class="tp-canvas-wrap"><canvas id="doePareto"></canvas></div>
+            </div>
+            <div class="doe-plot-box">
+              <div class="doe-plot-title">主效应图</div>
+              <div class="tp-canvas-wrap"><canvas id="doeMain"></canvas></div>
+            </div>
+            <div class="doe-plot-box">
+              <div class="doe-plot-title">交互作用图</div>
+              <div class="tp-canvas-wrap"><canvas id="doeInter"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⑤ 报告输出</div>
+          <div class="hint" style="margin-bottom:12px;">
+            <b>PPT 报告</b>：生成含设计信息、试验数据、ANOVA 表、效应分析与 Pareto/主效应/交互作用图表的演示文稿（需联网加载图表引擎，生成 .pptx）；<b>Word 文档</b>：输出完整分析报告（.doc，Word/WPS 可直接打开，离线可用）；<b>CSV 数据</b>：输出试验设计与响应数据表。
+          </div>
+          <div class="tp-actions">
+            <button id="doePpt">输出 PPT 报告</button>
+            <button class="secondary" id="doeDoc">输出 Word 文档</button>
+            <button class="secondary" id="doeCsv">输出 CSV 数据</button>
+          </div>
+          <div id="doeOutMsg" style="font-size:12px;color:var(--text-3);margin-top:10px;"></div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -3213,7 +3329,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.7</span>
+        <span class="ar-value">v1.4.8</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3226,22 +3342,22 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.7 今日更新汇总 -->
+  <!-- 首次登录：v1.4.8 今日更新汇总 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.7</span></h3>
-      <div class="up-sub">今日更新汇总 · QCW 脉冲焊接 + 通快功率调制 + 动画修复</div>
+      <h3>版本更新 <span class="vtag">v1.4.8</span></h3>
+      <div class="up-sub">DOE 试验设计 · 数据分析与报告输出</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">测试专区新增 QCW 脉冲焊接模拟</b>：输入光学元件与脉冲参数，自动仿真脉冲熔深/熔宽，输出平均功率、单脉冲能量、重叠率、焊斑间距等 12 项结果；含脉冲光束截面动态演化 + 焊斑重叠分布俯视图，支持标注位置拖动与保存图片。</span>
+        <span><b style="color:var(--text)">工具箱新增 DOE 试验设计</b>：参考 Minitab 方法学，支持 2 水平全因子 2^k、1/2 部分因子、一般全因子（多水平）设计，可自定义因子数（2~5）、因子名称与水平值、中心点数，一键生成标准试验计划表。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">工具箱新增通快功率调制焊接仿真</b>：基于 TRUMPF 时间功率调制技术，支持正弦/方波/三角波形，文献校准匙孔惯性增益模型，输出峰值/谷值功率、调制周期、匙孔惯性增益、熔深增量等 12 项结果；含功率-时间波形 + 熔深截面动态演化双动画。</span>
+        <span><b style="color:var(--text)">数据分析与图表</b>：输入响应数据自动完成 ANOVA 方差分析、效应与系数估计（对比法 Contrast）、R²/R²(调整)，输出 Pareto 标准化效应图、主效应图、交互作用图，自动识别显著项（P&lt;0.05）。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">动画与显示优化</b>：功率曲线同步修正、三角波公式修正、频率修改后 x 轴时间刻度立即更新、熔池碗形圆底、配合公差剖面图间隙双箭头尺寸线标注具体数值。</span>
+        <span><b style="color:var(--text)">报告输出</b>：一键导出 PPT 分析报告（含设计信息/试验数据/ANOVA/图表/结论）、Word 文档报告、CSV 试验数据。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3252,6 +3368,14 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.8</span><span class="cl-date">2026-09-09 · DOE 试验设计</span></div>
+        <ul class="cl-list">
+          <li><b>工具箱 · DOE 试验设计及数据分析</b>：参考 Minitab 官网方法学（support.minitab.com），支持 2 水平全因子 2^k、1/2 部分因子、一般全因子（多水平）设计，自定义因子数（2~5）、因子名称、水平值与中心点数，一键生成标准试验计划表。</li>
+          <li><b>数据分析与图表</b>：输入响应数据自动完成 ANOVA 方差分析、效应与系数估计（对比法 Contrast）、中心点弯曲检验、R²/R²(调整)；输出 Pareto 标准化效应图、主效应图、交互作用图（Minitab 风格），自动标注显著项（P&lt;0.05）与参考线 t。</li>
+          <li><b>报告输出</b>：一键导出 PPT 分析报告（设计信息/试验数据/ANOVA/图表/结论，pptxgenjs 生成）、Word 文档报告、CSV 试验数据；内置示例数据演示。</li>
+        </ul>
+      </div>
       <div class="cl-item cl-soon">
         <div class="cl-head">
           <span class="cl-ver">v1.5.0</span>
@@ -7485,7 +7609,7 @@
   // ===== 工具箱 · 工具下拉切换 =====
   const toolSelect = $('toolSelect');
   function switchTool(name) {
-    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod'].forEach(id => {
+    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe'].forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('active', id === 'tool-' + name);
     });
@@ -7495,6 +7619,7 @@
     if (name === 'fit') { resizeFitCanvas(); calcFit(); }
     if (name === 'mod') { resizeModCanvas(); startModSim(); }
     else { stopModSim(); }
+    if (name === 'doe') { initDoe(); }
   }
   if (toolSelect) toolSelect.addEventListener('change', () => switchTool(toolSelect.value));
 
@@ -8801,6 +8926,885 @@
 
   // 初始
   if (fitCtx) { resizeFitCanvas(); calcFit(); }
+
+  // ================== 工具F：DOE 试验设计 · 数据分析与报告 ==================
+  // ---- 统计函数库（不完全 Beta / F / t 分布）----
+  function doeLgamma(x) {
+    const cof = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    let y = x, tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    let ser = 1.000000000190015;
+    for (let j = 0; j < 6; j++) ser += cof[j] / ++y;
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+  function doeBetacf(a, b, x) {
+    const MAXIT = 300, EPS = 3e-12, FPMIN = 1e-300;
+    let qab = a + b, qap = a + 1, qam = a - 1;
+    let c = 1, d = 1 - qab * x / qap;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d; let h = d;
+    for (let m = 1; m <= MAXIT; m++) {
+      const m2 = 2 * m;
+      let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; const del = d * c; h *= del;
+      if (Math.abs(del - 1) < EPS) break;
+    }
+    return h;
+  }
+  function doeIbeta(a, b, x) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    const bt = Math.exp(doeLgamma(a + b) - doeLgamma(a) - doeLgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return bt * doeBetacf(a, b, x) / a;
+    return 1 - bt * doeBetacf(b, a, 1 - x) / b;
+  }
+  function doeFCdf(f, df1, df2) {
+    if (f <= 0 || df1 <= 0 || df2 <= 0) return 0;
+    const x = df1 * f / (df1 * f + df2);
+    return doeIbeta(df1 / 2, df2 / 2, x);
+  }
+  function doeTCdf(t, df) {
+    if (df <= 0) return 0.5;
+    const x = df / (df + t * t);
+    const i = doeIbeta(df / 2, 0.5, x);
+    return t >= 0 ? 1 - 0.5 * i : 0.5 * i;
+  }
+  function doeTPval(t, df) { return 2 * (1 - doeTCdf(Math.abs(t), df)); }
+  function doeFPval(f, df1, df2) { return 1 - doeFCdf(f, df1, df2); }
+  function doeTInv(p, df) {
+    if (!(p > 0 && p < 1) || df <= 0) return 0;
+    let lo = -100, hi = 100;
+    for (let i = 0; i < 200; i++) {
+      const mid = (lo + hi) / 2;
+      if (doeTCdf(mid, df) < p) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // ---- DOE 状态 ----
+  const doeState = { type: 'full2', k: 3, cp: 3, factors: [], design: null, result: null, analyzed: false };
+  function doeReadFactors() {
+    const rows = document.querySelectorAll('#doeFactorBox .doe-factor-row');
+    const fs = [];
+    rows.forEach(row => {
+      const name = (row.querySelector('.df-name').value || '').trim() || 'F';
+      const lvSel = row.querySelector('.df-lv');
+      const lv = lvSel ? parseInt(lvSel.value, 10) : 2;
+      const vals = [];
+      row.querySelectorAll('.df-val').forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (isFinite(v)) vals.push(v);
+      });
+      fs.push({ name, lv, vals });
+    });
+    return fs;
+  }
+  function doeRenderFactorBox() {
+    const type = doeState.type, k = doeState.k;
+    const box = $('doeFactorBox'); if (!box) return;
+    let html = '<div class="doe-fhead"><span>因子名称</span><span>水平数</span><span>水平值</span><span></span></div>';
+    for (let i = 0; i < k; i++) {
+      const def = doeState.factors[i] || { name: String.fromCharCode(65 + i), lv: 2, vals: [-1, 1] };
+      const name = def.name || String.fromCharCode(65 + i);
+      if (type === 'gen') {
+        const lv = def.lv || 2;
+        const vals = (def.vals && def.vals.length === lv) ? def.vals : (lv === 2 ? [-1, 1] : [-1, 0, 1]);
+        html += '<div class="doe-factor-row">' +
+          '<input class="df-name" value="' + name + '">' +
+          '<select class="df-lv"><option value="2"' + (lv === 2 ? ' selected' : '') + '>2</option><option value="3"' + (lv === 3 ? ' selected' : '') + '>3</option></select>' +
+          '<div class="doe-factor-lv' + (lv === 3 ? '3' : '') + '">' + vals.map(v => '<input class="df-val" type="number" value="' + v + '">').join('') + '</div>' +
+          '<span style="font-size:10px;color:var(--text-3);text-align:right;">' + (lv === 2 ? '低/高' : '低/中/高') + '</span>' +
+          '</div>';
+      } else {
+        const lo = (def.vals && def.vals.length === 2) ? def.vals[0] : -1;
+        const hi = (def.vals && def.vals.length === 2) ? def.vals[1] : 1;
+        html += '<div class="doe-factor-row">' +
+          '<input class="df-name" value="' + name + '">' +
+          '<span style="font-size:11px;color:var(--text-3);text-align:center;">2</span>' +
+          '<div class="doe-factor-lv"><input class="df-val" type="number" value="' + lo + '"><input class="df-val" type="number" value="' + hi + '"></div>' +
+          '<span style="font-size:10px;color:var(--text-3);text-align:right;">低/高</span>' +
+          '</div>';
+      }
+    }
+    box.innerHTML = html;
+    box.querySelectorAll('.df-lv').forEach(sel => {
+      sel.addEventListener('change', () => { doeSyncFactorRow(sel); });
+    });
+  }
+  function doeSyncFactorRow(sel) {
+    const row = sel.closest('.doe-factor-row');
+    const lv = parseInt(sel.value, 10);
+    const wrap = row.querySelector('.doe-factor-lv, .doe-factor-lv3');
+    wrap.className = lv === 3 ? 'doe-factor-lv3' : 'doe-factor-lv';
+    const inputs = wrap.querySelectorAll('input');
+    if (lv === 2 && inputs.length === 3) inputs[2].remove();
+    if (lv === 3 && inputs.length === 2) {
+      const inp = document.createElement('input'); inp.className = 'df-val'; inp.type = 'number'; inp.value = 0;
+      wrap.appendChild(inp);
+    }
+  }
+
+  // ---- 设计矩阵生成 ----
+  function doeYatesMatrix(k) {
+    const N = Math.pow(2, k), mat = [];
+    for (let r = 0; r < N; r++) {
+      const row = [];
+      for (let j = 0; j < k; j++) row.push((Math.floor(r / Math.pow(2, j)) % 2) === 0 ? -1 : 1);
+      mat.push(row);
+    }
+    return mat;
+  }
+  function doeGenFrac2(factors) {
+    const k = factors.length;
+    const base = doeYatesMatrix(k - 1);
+    const alias = [];
+    for (let i = 0; i < k - 1; i++) {
+      for (let j = i + 1; j < k - 1; j++) {
+        alias.push('交互 ' + factors[i].name + '×' + factors[j].name + ' 与主效应 ' + factors[k - 1].name + ' 别名');
+      }
+    }
+    return { mat: base.map(r => { const prod = r.reduce((a, b) => a * b, 1); return [...r, prod]; }), alias };
+  }
+  function doeGenGeneral(factors) {
+    let combos = [[]];
+    factors.forEach(f => {
+      const next = [];
+      for (const c of combos) for (let v = 0; v < f.lv; v++) next.push([...c, v]);
+      combos = next;
+    });
+    return combos;
+  }
+  function doeActualFromCode(code, vals) {
+    if (vals.length === 3) return code;
+    if (code === 0) return (vals[0] + vals[1]) / 2;
+    return (vals[0] + vals[1]) / 2 + code * (vals[1] - vals[0]) / 2;
+  }
+
+  // ---- 生成设计表 ----
+  function doeGenerateDesign() {
+    const type = doeState.type;
+    doeState.factors = doeReadFactors();
+    const factors = doeState.factors;
+    if (factors.some(f => !f.name || f.vals.length < 2 || f.vals.some(v => !isFinite(v)))) {
+      showToast('请完整填写因子名称与水平值'); return;
+    }
+    let codes, alias = [], centerCodes = [];
+    const cp = Math.max(0, parseInt($('doeCpNum').value, 10) || 0);
+    if (type === 'full2') {
+      codes = doeYatesMatrix(factors.length);
+      for (let i = 0; i < cp; i++) centerCodes.push(new Array(factors.length).fill(0));
+    } else if (type === 'frac2') {
+      const g = doeGenFrac2(factors);
+      codes = g.mat; alias = g.alias;
+      for (let i = 0; i < cp; i++) centerCodes.push(new Array(factors.length).fill(0));
+    } else {
+      codes = doeGenGeneral(factors);
+      centerCodes = [];
+    }
+    const allCodes = codes.concat(centerCodes);
+    const design = {
+      type, factors, cp, codes, centerCodes,
+      runs: allCodes.map(c => ({ codes: c, resp: '' })),
+      N: codes.length, nc: centerCodes.length, alias
+    };
+    doeState.design = design;
+    doeState.analyzed = false;
+    doeRenderDesignTable();
+    doeRenderDesignInfo();
+    const r = doeAnalyze();
+    if (r) doeRenderResults(); else { $('doeResults').innerHTML = ''; doeClearPlots(); }
+  }
+
+  function doeRenderDesignInfo() {
+    const d = doeState.design; if (!d) return;
+    const factors = d.factors;
+    const typeName = d.type === 'full2' ? '2水平全因子 2^' + d.factors.length
+      : d.type === 'frac2' ? '1/2 部分因子 2^' + (d.factors.length - 1)
+      : '一般全因子（多水平）';
+    let s = '<b style="color:var(--text-2)">' + typeName + '</b> · 因子：' + factors.map(f => f.name + '（' + f.vals.join('/') + '）').join('，') +
+      ' · 角点游程 ' + d.N + ' 次' + (d.nc > 0 ? ' · 中心点 ' + d.nc + ' 次' : '') + ' · 合计 ' + d.runs.length + ' 次';
+    if (d.alias.length) s += '<br><span style="color:var(--text-3)">别名结构（分辨率 III/IV）：' + d.alias.join('；') + '</span>';
+    $('doeDesignInfo').innerHTML = s;
+  }
+
+  function doeRenderDesignTable() {
+    const d = doeState.design; if (!d) return;
+    const factors = d.factors;
+    const wrap = $('doeTableWrap');
+    let html = '<table><thead><tr><th>运行序</th>';
+    factors.forEach(f => html += '<th>' + f.name + '</th>');
+    html += '<th>响应 y</th></tr></thead><tbody>';
+    d.runs.forEach((run, i) => {
+      html += '<tr' + (i >= d.N ? ' style="opacity:.75"' : '') + '><td>' + (i + 1) + '</td>';
+      run.codes.forEach((c, j) => {
+        html += '<td>' + doeActualFromCode(c, factors[j].vals) + '</td>';
+      });
+      html += '<td class="doe-resp"><input type="number" step="any" class="doe-y" data-i="' + i + '" value="' + (run.resp === '' ? '' : run.resp) + '"' + (i >= d.N ? ' style="border-color:var(--laser);"' : '') + '></td></tr>';
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('.doe-y').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.dataset.i, 10);
+        doeState.design.runs[i].resp = inp.value;
+        const r = doeAnalyze();
+        if (r) doeRenderResults(); else { $('doeResults').innerHTML = ''; doeClearPlots(); }
+      });
+    });
+  }
+
+  // ---- 数据分析 ----
+  function doeAnalyze() {
+    const d = doeState.design; if (!d) return null;
+    const yArr = d.runs.map(r => parseFloat(r.resp));
+    if (yArr.some(y => !isFinite(y))) { doeState.analyzed = false; return null; }
+    const factors = d.factors, k = factors.length;
+    const N = d.N, nc = d.nc;
+    const yc = yArr.slice(0, N), ycc = yArr.slice(N);
+    const ycMean = yc.reduce((a, b) => a + b, 0) / N;
+    const yccMean = nc > 0 ? ycc.reduce((a, b) => a + b, 0) / nc : 0;
+    const allMean = yArr.reduce((a, b) => a + b, 0) / yArr.length;
+    const ssTotal = yArr.reduce((s, y) => s + (y - allMean) * (y - allMean), 0);
+    const result = { factors, type: d.type, N, nc, ycMean, yccMean, allMean, ssTotal, terms: [], anova: [], curvature: null, runs: d.runs, yArr };
+    let ssPure = 0, dfPure = 0;
+    if (nc >= 2) {
+      ycc.forEach(y => { ssPure += (y - yccMean) * (y - yccMean); });
+      dfPure = nc - 1;
+    }
+    if (d.type === 'full2' || d.type === 'frac2') {
+      const terms = [];
+      for (let i = 0; i < k; i++) terms.push({ name: factors[i].name, idx: [i], type: 'main' });
+      if (d.type === 'full2') {
+        for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) terms.push({ name: factors[i].name + '×' + factors[j].name, idx: [i, j], type: 'inter' });
+      } else {
+        for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) terms.push({ name: factors[i].name + '×' + factors[j].name, idx: [i, j], type: 'inter', alias: true });
+      }
+      const termStats = terms.map(t => {
+        let contrast = 0;
+        for (let r = 0; r < N; r++) {
+          const x = t.idx.reduce((p, ii) => p * d.runs[r].codes[ii], 1);
+          contrast += x * yc[r];
+        }
+        const effect = contrast / (N / 2);
+        const ss = contrast * contrast / N;
+        return { ...t, contrast, effect, ss, coef: effect / 2 };
+      });
+      const ssModel = termStats.reduce((s, t) => s + t.ss, 0);
+      let ssErr, dfErr;
+      if (dfPure > 0) {
+        ssErr = ssPure; dfErr = dfPure;
+      } else {
+        const hiTerms = [];
+        const genHigh = (start, depth, cur) => {
+          if (depth >= 3) hiTerms.push(cur.slice());
+          for (let i = start; i < k; i++) { cur.push(i); genHigh(i + 1, depth + 1, cur); cur.pop(); }
+        };
+        genHigh(0, 0, []);
+        if (hiTerms.length > 0) {
+          const ssHigh = hiTerms.reduce((s, idxs) => {
+            let contrast = 0;
+            for (let r = 0; r < N; r++) {
+              const x = idxs.reduce((p, ii) => p * d.runs[r].codes[ii], 1);
+              contrast += x * yc[r];
+            }
+            return s + contrast * contrast / N;
+          }, 0);
+          ssErr = ssHigh; dfErr = hiTerms.length;
+        } else { ssErr = 0; dfErr = 0; }
+      }
+      let ssCurv = 0, dfCurv = 0;
+      if (nc >= 1 && d.type === 'full2') {
+        ssCurv = (ycMean - yccMean) * (ycMean - yccMean) * N * nc / (N + nc);
+        dfCurv = 1;
+      }
+      let ssErrFinal = ssErr, dfErrFinal = dfErr;
+      if (dfCurv > 0 && dfPure > 0) { ssErrFinal = ssPure - ssCurv; dfErrFinal = dfPure - 1; }
+      const msErr = dfErrFinal > 0 ? ssErrFinal / dfErrFinal : 0;
+      const seEff = msErr > 0 ? Math.sqrt(4 * msErr / N) : 0;
+      const statTerms = termStats.map(t => {
+        const tval = seEff > 0 ? t.effect / seEff : 0;
+        const p = (dfErrFinal > 0 && seEff > 0) ? doeTPval(tval, dfErrFinal) : NaN;
+        return { ...t, t: tval, p, se: seEff };
+      });
+      const anovaRows = [];
+      statTerms.forEach(t => {
+        const F = msErr > 0 ? t.ss / msErr : 0;
+        const P = (dfErrFinal > 0 && msErr > 0) ? doeFPval(F, 1, dfErrFinal) : NaN;
+        anovaRows.push({ src: t.name, df: 1, ss: t.ss, ms: t.ss, F, P, sig: P < 0.05 });
+      });
+      if (dfCurv > 0) {
+        const F = msErr > 0 ? ssCurv / msErr : 0;
+        const P = (dfErrFinal > 0 && msErr > 0) ? doeFPval(F, 1, dfErrFinal) : NaN;
+        anovaRows.push({ src: '弯曲（中心点）', df: 1, ss: ssCurv, ms: ssCurv, F, P, sig: P < 0.05 });
+      }
+      if (dfErrFinal > 0) anovaRows.push({ src: '误差', df: dfErrFinal, ss: ssErrFinal, ms: msErr, F: null, P: null, sig: false });
+      anovaRows.push({ src: '合计', df: yArr.length - 1, ss: ssTotal, ms: null, F: null, P: null, sig: false });
+      const r2 = ssTotal > 0 ? (ssModel + (dfCurv > 0 ? ssCurv : 0)) / ssTotal : 0;
+      const dfTotal = yArr.length - 1;
+      const r2adj = (dfTotal > 0 && dfErrFinal > 0) ? 1 - (ssErrFinal / dfErrFinal) / (ssTotal / dfTotal) : r2;
+      result.terms = statTerms;
+      result.anova = anovaRows;
+      result.r2 = r2; result.r2adj = r2adj;
+      result.dfErr = dfErrFinal; result.msErr = msErr; result.ssErr = ssErrFinal;
+      result.critT = dfErrFinal > 0 ? doeTInv(0.975, dfErrFinal) : 0;
+      result.critP = 0.05;
+      result.doe = true;
+    } else {
+      const termStats = [];
+      let ssModel = 0;
+      factors.forEach((f, fi) => {
+        const lvMeans = [], lvN = [];
+        for (let lv = 0; lv < f.lv; lv++) {
+          const ys = [];
+          d.runs.forEach((run, ri) => { if (run.codes[fi] === lv) ys.push(yArr[ri]); });
+          lvMeans.push(ys.reduce((a, b) => a + b, 0) / ys.length);
+          lvN.push(ys.length);
+        }
+        let ss = 0;
+        lvMeans.forEach((m, li) => { ss += lvN[li] * (m - allMean) * (m - allMean); });
+        termStats.push({ name: f.name, type: 'main', ss, df: f.lv - 1, lvMeans, lvN });
+        ssModel += ss;
+      });
+      const ssErrG = ssTotal - ssModel;
+      const dfErrG = yArr.length - 1 - termStats.reduce((s, t) => s + t.df, 0);
+      const msErrG = dfErrG > 0 ? ssErrG / dfErrG : 0;
+      const anovaRows = [];
+      termStats.forEach(t => {
+        const F = msErrG > 0 ? (t.ss / t.df) / msErrG : 0;
+        const P = (dfErrG > 0 && msErrG > 0) ? doeFPval(F, t.df, dfErrG) : NaN;
+        anovaRows.push({ src: t.name, df: t.df, ss: t.ss, ms: t.ss / t.df, F, P, sig: P < 0.05 });
+      });
+      if (dfErrG > 0) anovaRows.push({ src: '误差', df: dfErrG, ss: ssErrG, ms: msErrG, F: null, P: null, sig: false });
+      anovaRows.push({ src: '合计', df: yArr.length - 1, ss: ssTotal, ms: null, F: null, P: null, sig: false });
+      const r2 = ssTotal > 0 ? ssModel / ssTotal : 0;
+      const r2adj = (yArr.length - 1 > 0 && dfErrG > 0) ? 1 - (ssErrG / dfErrG) / (ssTotal / (yArr.length - 1)) : r2;
+      result.terms = termStats;
+      result.anova = anovaRows;
+      result.r2 = r2; result.r2adj = r2adj;
+      result.dfErr = dfErrG; result.msErr = msErrG; result.ssErr = ssErrG;
+      result.critT = 0; result.critP = 0.05;
+      result.doe = true;
+      result.gen = true;
+    }
+    doeState.result = result;
+    doeState.analyzed = true;
+    doeDrawPlots();
+    return result;
+  }
+
+  // ---- 结果渲染 ----
+  function doeRenderResults() {
+    const r = doeState.result; if (!r) return;
+    const wrap = $('doeResults');
+    let html = '';
+    const addItem = (label, value, sub) => { html += '<div class="doe-res-item"><div class="dr-label">' + label + '</div><div class="dr-value">' + value + '</div>' + (sub ? '<div class="dr-sub">' + sub + '</div>' : '') + '</div>'; };
+    addItem('R²', (r.r2 * 100).toFixed(2) + '%', '模型解释率');
+    addItem('R²(调整)', (r.r2adj * 100).toFixed(2) + '%', 'Adj R²');
+    addItem('角点均值', r.ycMean.toFixed(3), r.nc > 0 ? '中心点均值 ' + r.yccMean.toFixed(3) : '');
+    if (r.msErr > 0) addItem('误差 MS', r.msErr.toFixed(4), 'df = ' + r.dfErr);
+    else addItem('误差 MS', '—', '需中心点/高阶交互');
+    const sigs = r.terms.filter(t => t.p !== undefined && t.p !== NaN && t.p < 0.05);
+    if (sigs.length) addItem('显著项（P<0.05）', sigs.map(t => t.name).join('、'), sigs.length + ' 项');
+    else addItem('显著项', '无', 'P 均 ≥ 0.05');
+    wrap.innerHTML = html;
+    let anovaHtml = '<div class="doe-anova"><table><thead><tr><th>来源</th><th>DF</th><th>SS</th><th>MS</th><th>F</th><th>P</th></tr></thead><tbody>';
+    r.anova.forEach(row => {
+      anovaHtml += '<tr' + (row.sig ? ' class="sig"' : '') + '><td>' + row.src + '</td><td>' + row.df + '</td><td>' + row.ss.toFixed(3) + '</td><td>' + (row.ms !== null ? row.ms.toFixed(3) : '—') + '</td><td>' + (row.F !== null ? row.F.toFixed(2) : '—') + '</td><td>' + (row.P !== null ? row.P.toFixed(4) : '—') + '</td></tr>';
+    });
+    anovaHtml += '</tbody></table></div>';
+    let effHtml = '';
+    if (r.terms.length && !r.gen) {
+      effHtml = '<div class="doe-anova" style="margin-top:10px;"><table><thead><tr><th>项</th><th>效应</th><th>系数</th><th>标准化效应 t</th><th>P 值</th><th>显著</th></tr></thead><tbody>';
+      r.terms.forEach(t => {
+        effHtml += '<tr' + (t.p < 0.05 ? ' class="sig"' : '') + '><td>' + t.name + '</td><td>' + t.effect.toFixed(3) + '</td><td>' + t.coef.toFixed(3) + '</td><td>' + (isFinite(t.t) ? t.t.toFixed(2) : '—') + '</td><td>' + (isFinite(t.p) ? t.p.toFixed(4) : '—') + '</td><td>' + (t.p < 0.05 ? '✓ 显著' : '') + '</td></tr>';
+      });
+      effHtml += '</tbody></table></div>';
+    }
+    wrap.innerHTML += '<div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-2);">方差分析（ANOVA）</div>' + anovaHtml + (effHtml ? '<div style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-2);">效应与系数（编码单位）</div>' + effHtml : '');
+  }
+
+  function doeClearPlots() {
+    ['doePareto', 'doeMain', 'doeInter'].forEach(id => {
+      const c = $(id); if (!c) return;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+    });
+  }
+
+  // ---- 图表绘制（Minitab 风格）----
+  function doeCanvas(id) {
+    const c = $(id); if (!c) return null;
+    return { c, ctx: c.getContext('2d'), w: c.width / (window.devicePixelRatio || 1), h: c.height / (window.devicePixelRatio || 1) };
+  }
+  function doeResizeCanvas(id) {
+    const c = $(id); if (!c) return;
+    const rect = c.parentElement.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    c.width = Math.max(200, rect.width * d);
+    c.height = Math.max(140, rect.height * d);
+  }
+  function doeDrawPlots() {
+    const r = doeState.result; if (!r) return;
+    if (r.gen) { doeDrawMainGen(); doeClearPlotsExtra(); }
+    else { doeDrawPareto(); doeDrawMain(); doeDrawInter(); }
+  }
+  function doeClearPlotsExtra() {
+    ['doePareto', 'doeInter'].forEach(id => {
+      const cv = doeCanvas(id); if (!cv) return;
+      cv.ctx.clearRect(0, 0, cv.w, cv.h);
+    });
+  }
+  function doeTheme() {
+    const dark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+    return {
+      grid: dark ? 'rgba(138,150,173,0.18)' : 'rgba(90,100,120,0.18)',
+      text: dark ? 'rgba(200,210,230,0.9)' : 'rgba(60,70,90,0.95)',
+      bar: '#00bcd4', barSig: '#ff5722', line: '#00bcd4', line2: '#ff9800', line3: '#7c4dff', ref: '#ff5722'
+    };
+  }
+  function doeDrawPareto() {
+    const cv = doeCanvas('doePareto'); if (!cv) return;
+    const { ctx, w, h } = cv;
+    ctx.clearRect(0, 0, w, h);
+    const th = doeTheme();
+    const r = doeState.result;
+    const items = r.terms.filter(t => isFinite(t.t) && t.t !== 0).map(t => ({ name: t.name, t: Math.abs(t.t), sig: t.p < 0.05 }));
+    if (!items.length) { ctx.fillStyle = th.text; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('暂无足够数据', w / 2, h / 2); return; }
+    items.sort((a, b) => b.t - a.t);
+    const m = { l: 30, r: w * 0.92, t: 24, b: h - 30 };
+    const maxT = Math.max(...items.map(i => i.t), r.critT || 0) * 1.15;
+    ctx.strokeStyle = th.grid; ctx.lineWidth = 1;
+    ctx.font = '10px sans-serif'; ctx.fillStyle = th.text; ctx.textAlign = 'center';
+    for (let g = 0; g <= 4; g++) {
+      const v = maxT * g / 4, x = m.l + (m.r - m.l) * g / 4;
+      ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.b); ctx.stroke();
+      ctx.fillText(v.toFixed(1), x, h - 12);
+    }
+    if (r.critT > 0) {
+      const rx = m.l + (m.r - m.l) * r.critT / maxT;
+      ctx.strokeStyle = th.ref; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(rx, m.t); ctx.lineTo(rx, m.b); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = th.ref; ctx.textAlign = 'left';
+      ctx.fillText('参考线 t=' + r.critT.toFixed(2) + '（α=0.05）', Math.min(rx + 4, m.r - 100), m.t + 10);
+    }
+    const bh = Math.min(26, (m.b - m.t) / items.length * 0.72);
+    items.forEach((it, i) => {
+      const y = m.b - (i + 0.5) * (m.b - m.t) / items.length;
+      const bw = (m.r - m.l) * it.t / maxT;
+      ctx.fillStyle = it.sig ? th.barSig : th.bar;
+      ctx.beginPath(); ctx.rect(m.l, y - bh / 2, Math.max(2, bw), bh); ctx.fill();
+      ctx.fillStyle = th.text; ctx.textAlign = 'left'; ctx.font = '10px sans-serif';
+      ctx.fillText(it.name + '  ' + it.t.toFixed(2), m.l + Math.max(4, bw) + 4, y + 3.5);
+    });
+  }
+  function doeDrawMain() {
+    const cv = doeCanvas('doeMain'); if (!cv) return;
+    const { ctx, w, h } = cv;
+    ctx.clearRect(0, 0, w, h);
+    const th = doeTheme();
+    const r = doeState.result;
+    const factors = r.factors, N = r.N, yc = r.yArr.slice(0, N);
+    const m = { l: 30, r: w - 8, t: 18, b: h - 26 };
+    const nf = factors.length, cw = (m.r - m.l) / nf;
+    const yMin = Math.min(...yc, r.ycMean) - 1, yMax = Math.max(...yc, r.ycMean) + 1;
+    const y2p = y => m.b - (y - yMin) / (yMax - yMin) * (m.b - m.t);
+    ctx.strokeStyle = th.grid; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(m.l, y2p(r.ycMean)); ctx.lineTo(m.r, y2p(r.ycMean)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('总均值 ' + r.ycMean.toFixed(2), m.r, y2p(r.ycMean) - 3);
+    factors.forEach((f, fi) => {
+      const x0 = m.l + cw * fi + cw * 0.2, x1 = m.l + cw * fi + cw * 0.8;
+      const lowY = [], highY = [];
+      for (let i = 0; i < N; i++) { if (r.runs[i].codes[fi] === -1) lowY.push(yc[i]); else highY.push(yc[i]); }
+      const lowM = lowY.reduce((a, b) => a + b, 0) / lowY.length;
+      const highM = highY.reduce((a, b) => a + b, 0) / highY.length;
+      ctx.strokeStyle = th.line; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x0, y2p(lowM)); ctx.lineTo(x1, y2p(highM)); ctx.stroke();
+      [[x0, lowM], [x1, highM]].forEach(([x, y]) => {
+        ctx.fillStyle = th.line; ctx.beginPath(); ctx.arc(x, y2p(y), 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = th.text; ctx.textAlign = 'center'; ctx.font = '10px sans-serif';
+        ctx.fillText(y.toFixed(2), x, y2p(y) - 8);
+      });
+      ctx.fillStyle = th.text; ctx.font = '12px sans-serif';
+      ctx.fillText(f.name + '（' + f.vals[0] + ' / ' + f.vals[1] + '）', x0 + cw * 0.3, m.b + 14);
+    });
+    ctx.save();
+    ctx.translate(10, (m.t + m.b) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('响应 y 均值', 0, 0);
+    ctx.restore();
+  }
+  function doeDrawInter() {
+    const cv = doeCanvas('doeInter'); if (!cv) return;
+    const { ctx, w, h } = cv;
+    ctx.clearRect(0, 0, w, h);
+    const th = doeTheme();
+    const r = doeState.result;
+    const factors = r.factors, N = r.N, yc = r.yArr.slice(0, N);
+    const inters = r.terms.filter(t => t.type === 'inter' && isFinite(t.p));
+    if (!inters.length) {
+      ctx.fillStyle = th.text; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('（部分因子/一般全因子设计不绘制交互作用图）', w / 2, h / 2);
+      return;
+    }
+    const top = inters.slice().sort((a, b) => a.p - b.p).slice(0, 2);
+    const per = top.length, cw = w / per;
+    const m = { l: 30, r: w - 6, t: 16, b: h - 30 };
+    const allY = yc.concat(r.ycc);
+    const yMin = Math.min(...allY) - 1, yMax = Math.max(...allY) + 1;
+    const y2p = y => m.b - (y - yMin) / (yMax - yMin) * (m.b - m.t);
+    const colors = [th.line, th.line2, th.line3];
+    top.forEach((it, idx) => {
+      const [i, j] = it.idx;
+      const x0 = m.l + cw * idx + cw * 0.1, x1 = m.l + cw * idx + cw * 0.9;
+      const vals = [factors[i].vals[0], factors[i].vals[1]];
+      for (const jv of [-1, 1]) {
+        const ys = [];
+        for (const iv of [-1, 1]) {
+          let sum = 0, n = 0;
+          for (let ri = 0; ri < N; ri++) {
+            if (r.runs[ri].codes[i] === iv && r.runs[ri].codes[j] === jv) { sum += yc[ri]; n++; }
+          }
+          ys.push(sum / n);
+        }
+        const col = jv === -1 ? colors[0] : colors[1];
+        ctx.strokeStyle = col; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(x0, y2p(ys[0])); ctx.lineTo(x1, y2p(ys[1])); ctx.stroke();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x0, y2p(ys[0]), 3, 0, Math.PI * 2); ctx.arc(x1, y2p(ys[1]), 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(factors[i].name + '（' + vals[0] + ' → ' + vals[1] + '）', (x0 + x1) / 2, m.b + 14);
+      ctx.fillText('交互 ' + factors[i].name + '×' + factors[j].name, (x0 + x1) / 2, 10);
+      ctx.fillStyle = th.text; ctx.font = '9px sans-serif';
+      ctx.fillText('— ' + factors[j].name + '=' + factors[j].vals[0] + '　— ' + factors[j].name + '=' + factors[j].vals[1], (x0 + x1) / 2, m.b + 26);
+    });
+    ctx.save();
+    ctx.translate(8, (m.t + m.b) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('响应 y 均值', 0, 0);
+    ctx.restore();
+  }
+  function doeDrawMainGen() {
+    const cv = doeCanvas('doeMain'); if (!cv) return;
+    const { ctx, w, h } = cv;
+    ctx.clearRect(0, 0, w, h);
+    const th = doeTheme();
+    const r = doeState.result;
+    const factors = r.factors;
+    const m = { l: 30, r: w - 8, t: 18, b: h - 26 };
+    const nf = factors.length, seg = (m.r - m.l) / nf;
+    const yMin = Math.min(...r.yArr) - 1, yMax = Math.max(...r.yArr) + 1;
+    const y2p = y => m.b - (y - yMin) / (yMax - yMin) * (m.b - m.t);
+    ctx.strokeStyle = th.grid; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(m.l, y2p(r.allMean)); ctx.lineTo(m.r, y2p(r.allMean)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('总均值 ' + r.allMean.toFixed(2), m.r, y2p(r.allMean) - 3);
+    factors.forEach((f, fi) => {
+      const term = r.terms.find(t => t.name === f.name);
+      if (!term) return;
+      const x0 = m.l + seg * fi + seg * 0.15, x1 = m.l + seg * fi + seg * 0.85;
+      ctx.strokeStyle = th.line2; ctx.lineWidth = 2;
+      ctx.beginPath();
+      term.lvMeans.forEach((mm, li) => {
+        const x = x0 + (x1 - x0) * li / (term.lv - 1);
+        if (li === 0) ctx.moveTo(x, y2p(mm)); else ctx.lineTo(x, y2p(mm));
+      });
+      ctx.stroke();
+      term.lvMeans.forEach((mm, li) => {
+        const x = x0 + (x1 - x0) * li / (term.lv - 1);
+        ctx.fillStyle = th.line2; ctx.beginPath(); ctx.arc(x, y2p(mm), 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = th.text; ctx.textAlign = 'center'; ctx.font = '9px sans-serif';
+        ctx.fillText(mm.toFixed(2), x, y2p(mm) - 8);
+      });
+      ctx.fillStyle = th.text; ctx.font = '12px sans-serif';
+      ctx.fillText(f.name + '（' + f.vals.join(' / ') + '）', (x0 + x1) / 2, m.b + 14);
+    });
+    ctx.save();
+    ctx.translate(10, (m.t + m.b) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('响应 y 均值', 0, 0);
+    ctx.restore();
+  }
+
+  // ---- 示例数据 ----
+  function doeFillDemo() {
+    if (!doeState.design) { showToast('请先生成试验设计'); return; }
+    const d = doeState.design, k = d.factors.length;
+    const demoResp = (codes) => {
+      let y = 20 + 3 * codes[0] + 1.2 * (k > 1 ? codes[1] : 0) + 1.8 * (k > 1 ? codes[0] * codes[1] : 0);
+      if (k > 2) y += 0.4 * codes[2];
+      y += (Math.random() - 0.5) * 0.6;
+      return y.toFixed(2);
+    };
+    d.runs.forEach((run, i) => {
+      if (i < d.N) run.resp = demoResp(run.codes);
+      else run.resp = (20 + (Math.random() - 0.5) * 0.4).toFixed(2);
+    });
+    doeRenderDesignTable();
+    const r = doeAnalyze();
+    if (r) doeRenderResults();
+  }
+
+  // ---- 报告输出 ----
+  function doeBuildReportHtml() {
+    const r = doeState.result, d = doeState.design, factors = d.factors;
+    const typeName = d.type === 'full2' ? '2水平全因子设计 2^' + factors.length
+      : d.type === 'frac2' ? '1/2 部分因子设计 2^' + (factors.length - 1)
+      : '一般全因子设计（多水平）';
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>DOE试验设计分析报告</title><style>body{font-family:微软雅黑,Arial,sans-serif;font-size:11pt;color:#222;}h1{font-size:16pt;color:#0d5b8c;}h2{font-size:13pt;color:#0d5b8c;border-bottom:1px solid #ccc;padding-bottom:2px;}table{border-collapse:collapse;width:100%;font-size:9.5pt;}th,td{border:1px solid #999;padding:3px 6px;text-align:center;}th{background:#eef3f8;}</style></head><body>';
+    html += '<h1>DOE 试验设计分析报告</h1>';
+    html += '<p>软件：光纤激光光斑计算器（发布人：肖飞）<br>报告生成时间：' + new Date().toLocaleString() + '<br>设计类型：' + typeName + '</p>';
+    html += '<h2>一、设计信息</h2><table><tr><th>因子</th><th>水平数</th><th>水平值</th></tr>';
+    factors.forEach(f => html += '<tr><td>' + f.name + '</td><td>' + f.lv + '</td><td>' + f.vals.join(' / ') + '</td></tr>');
+    html += '<tr><td colspan="2">角点游程 / 中心点</td><td>' + d.N + ' / ' + d.nc + '</td></tr></table>';
+    html += '<h2>二、试验数据</h2><table><tr><th>运行序</th>';
+    factors.forEach(f => html += '<th>' + f.name + '</th>');
+    html += '<th>响应 y</th></tr>';
+    d.runs.forEach((run, i) => {
+      html += '<tr><td>' + (i + 1) + '</td>';
+      run.codes.forEach((c, j) => html += '<td>' + doeActualFromCode(c, factors[j].vals) + '</td>');
+      html += '<td>' + run.resp + '</td></tr>';
+    });
+    html += '</table>';
+    html += '<h2>三、方差分析（ANOVA）</h2><table><tr><th>来源</th><th>DF</th><th>SS</th><th>MS</th><th>F</th><th>P</th></tr>';
+    r.anova.forEach(row => html += '<tr><td>' + row.src + '</td><td>' + row.df + '</td><td>' + row.ss.toFixed(3) + '</td><td>' + (row.ms !== null ? row.ms.toFixed(3) : '—') + '</td><td>' + (row.F !== null ? row.F.toFixed(2) : '—') + '</td><td>' + (row.P !== null ? row.P.toFixed(4) : '—') + '</td></tr>');
+    html += '</table>';
+    html += '<p>R² = ' + (r.r2 * 100).toFixed(2) + '%　R²(调整) = ' + (r.r2adj * 100).toFixed(2) + '%</p>';
+    if (!r.gen) {
+      html += '<h2>四、效应与系数（编码单位）</h2><table><tr><th>项</th><th>效应</th><th>系数</th><th>标准化效应 t</th><th>P 值</th></tr>';
+      r.terms.forEach(t => html += '<tr><td>' + t.name + '</td><td>' + t.effect.toFixed(3) + '</td><td>' + t.coef.toFixed(3) + '</td><td>' + (isFinite(t.t) ? t.t.toFixed(2) : '—') + '</td><td>' + (isFinite(t.p) ? t.p.toFixed(4) : '—') + '</td></tr>');
+      html += '</table>';
+    }
+    const sigs = r.terms.filter(t => t.p !== undefined && t.p < 0.05);
+    html += '<h2>五、结论</h2><p>显著项（P&lt;0.05）：' + (sigs.length ? sigs.map(t => t.name).join('、') : '无') + '。' + (sigs.length ? '建议优先控制上述显著因子水平以获得稳定响应。' : '当前数据未发现统计显著因子，可考虑扩大因子水平范围或增加试验次数。') + '</p>';
+    html += '<p style="color:#888;font-size:9pt;">模型依据：Minitab DOE（Design of Experiments）方法学——2水平全因子/部分因子对比法（Contrast）、ANOVA F 检验、Pareto 标准化效应（t 统计量，α=0.05）。结果供工艺预研参考，请以实测为准。</p>';
+    html += '</body></html>';
+    return html;
+  }
+  function doeDownload(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  function doeExportDoc() {
+    if (!doeState.analyzed) { showToast('请先生成试验设计并输入完整响应数据'); return; }
+    const blob = new Blob(['\ufeff', doeBuildReportHtml()], { type: 'application/msword' });
+    doeDownload(blob, 'DOE试验设计分析报告.doc');
+    $('doeOutMsg').textContent = '已输出 Word 文档：DOE试验设计分析报告.doc';
+  }
+  function doeExportCsv() {
+    const d = doeState.design; if (!d) { showToast('请先生成试验设计'); return; }
+    const factors = d.factors;
+    let csv = '运行序,' + factors.map(f => f.name).join(',') + ',响应y\n';
+    d.runs.forEach((run, i) => {
+      csv += (i + 1) + ',' + run.codes.map((c, j) => doeActualFromCode(c, factors[j].vals)).join(',') + ',' + run.resp + '\n';
+    });
+    const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' });
+    doeDownload(blob, 'DOE试验设计数据.csv');
+    $('doeOutMsg').textContent = '已输出 CSV 数据：DOE试验设计数据.csv';
+  }
+  function doeLoadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (window.PptxGenJS) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('load fail'));
+      document.head.appendChild(s);
+    });
+  }
+  async function doeExportPpt() {
+    if (!doeState.analyzed) { showToast('请先生成试验设计并输入完整响应数据'); return; }
+    $('doeOutMsg').textContent = '正在加载 PPT 引擎并生成报告…';
+    try {
+      await doeLoadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js');
+    } catch (e) {
+      showToast('PPT 引擎加载失败，请联网后重试');
+      $('doeOutMsg').textContent = 'PPT 引擎加载失败：需要网络连接（jsDelivr CDN）。Word 文档与 CSV 数据离线可用。';
+      return;
+    }
+    const r = doeState.result, d = doeState.design, factors = d.factors;
+    const typeName = d.type === 'full2' ? '2水平全因子设计 2^' + factors.length
+      : d.type === 'frac2' ? '1/2 部分因子设计 2^' + (factors.length - 1)
+      : '一般全因子设计（多水平）';
+    const pptx = new PptxGenJS();
+    pptx.defineLayout({ name: 'WIDE', width: 10, height: 5.625 });
+    pptx.layout = 'WIDE';
+    const BLUE = '0D5B8C', ORANGE = 'FF8C00', GRAY = '555555', RED = 'D64541';
+    let s = pptx.addSlide();
+    s.background = { color: '0B0F1A' };
+    s.addText('DOE 试验设计分析报告', { x: 0.6, y: 1.2, w: 8.8, h: 0.8, fontSize: 30, bold: true, color: 'FFFFFF', align: 'center' });
+    s.addText('Design of Experiments · 数据分析与报告输出', { x: 0.6, y: 2.05, w: 8.8, h: 0.5, fontSize: 14, color: '9ADBFF', align: 'center' });
+    s.addText('光纤激光光斑计算器 · 发布人：肖飞\n' + new Date().toLocaleString(), { x: 0.6, y: 3.2, w: 8.8, h: 0.8, fontSize: 11, color: 'BBBBBB', align: 'center' });
+    s = pptx.addSlide();
+    s.addText('设计信息', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
+    s.addTable([[{ text: '设计类型', options: { bold: true, color: 'FFFFFF', fill: { color: BLUE } } }, { text: typeName, options: { color: GRAY } }],
+      [{ text: '因子与水平', options: { bold: true, color: 'FFFFFF', fill: { color: BLUE } } }, { text: factors.map(f => f.name + '：' + f.vals.join(' / ')).join('　'), options: { color: GRAY } }],
+      [{ text: '游程数', options: { bold: true, color: 'FFFFFF', fill: { color: BLUE } } }, { text: '角点 ' + d.N + ' 次 + 中心点 ' + d.nc + ' 次 = ' + d.runs.length + ' 次', options: { color: GRAY } }],
+      [{ text: '模型汇总', options: { bold: true, color: 'FFFFFF', fill: { color: BLUE } } }, { text: 'R² = ' + (r.r2 * 100).toFixed(2) + '%，R²(调整) = ' + (r.r2adj * 100).toFixed(2) + '%', options: { color: GRAY } }]], { x: 0.5, y: 0.9, w: 9, border: { pt: 0.5, color: 'CCCCCC' } });
+    s = pptx.addSlide();
+    s.addText('试验数据', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
+    const head = ['运行序'].concat(factors.map(f => f.name), ['响应 y']);
+    const rows = d.runs.map((run, i) => [String(i + 1)].concat(run.codes.map((c, j) => String(doeActualFromCode(c, factors[j].vals))), [String(run.resp)]));
+    s.addTable([head].concat(rows), { x: 0.5, y: 0.85, w: 9, fontSize: 9, border: { pt: 0.4, color: 'CCCCCC' }, colW: [1.2].concat(factors.map(() => 1.4), [1.6]) });
+    s = pptx.addSlide();
+    s.addText('方差分析（ANOVA）', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
+    const aHead = ['来源', 'DF', 'SS', 'MS', 'F', 'P'];
+    const aRows = r.anova.map(row => [row.src, String(row.df), row.ss.toFixed(3), row.ms !== null ? row.ms.toFixed(3) : '—', row.F !== null ? row.F.toFixed(2) : '—', row.P !== null ? row.P.toFixed(4) : '—']);
+    s.addTable([aHead].concat(aRows), { x: 0.5, y: 0.85, w: 9, fontSize: 10, border: { pt: 0.4, color: 'CCCCCC' } });
+    s = pptx.addSlide();
+    s.addText('Pareto 标准化效应图', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
+    if (!r.gen) {
+      const items = r.terms.filter(t => isFinite(t.t) && t.t !== 0).sort((a, b) => Math.abs(b.t) - Math.abs(a.t));
+      const data = [{ name: '标准化效应 |t|', labels: items.map(t => t.name), values: items.map(t => Math.abs(t.t)) }];
+      s.addChart(pptx.charts.BAR, data, { x: 0.6, y: 0.9, w: 8.8, h: 3.9, barDir: 'bar', chartColors: items.map(t => t.p < 0.05 ? RED : BLUE), catAxisLabelColor: GRAY, valAxisLabelColor: GRAY, showLegend: false });
+      s.addText('参考线（α=0.05）：t = ' + r.critT.toFixed(2), { x: 0.6, y: 4.9, w: 8.8, h: 0.4, fontSize: 10, color: RED });
+    } else {
+      s.addText('（一般全因子设计：使用主效应 ANOVA 分析）', { x: 0.6, y: 2, w: 8.8, h: 0.5, fontSize: 12, color: GRAY });
+    }
+    s = pptx.addSlide();
+    s.addText('主效应图', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
+    if (!r.gen) {
+      const series = factors.map((f, fi) => {
+        const yc = r.yArr.slice(0, r.N);
+        const lowY = [], highY = [];
+        for (let i = 0; i < r.N; i++) { if (r.runs[i].codes[fi] === -1) lowY.push(yc[i]); else highY.push(yc[i]); }
+        const lowM = lowY.reduce((a, b) => a + b, 0) / lowY.length;
+        const highM = highY.reduce((a, b) => a + b, 0) / highY.length;
+        return { name: f.name, labels: [String(f.vals[0]), String(f.vals[1])], values: [lowM, highM] };
+      });
+      s.addChart(pptx.charts.LINE, series, { x: 0.6, y: 0.9, w: 8.8, h: 3.9, catAxisLabelColor: GRAY, valAxisLabelColor: GRAY, chartColors: [BLUE, ORANGE, '7C4DFF', '009688'], lineSize: 2, showLegend: true, legendPos: 'b' });
+    } else {
+      const series = factors.map((f, fi) => {
+        const term = r.terms.find(t => t.name === f.name);
+        return { name: f.name, labels: f.vals.map(String), values: term.lvMeans.map(m => +m.toFixed(3)) };
+      });
+      s.addChart(pptx.charts.LINE, series, { x: 0.6, y: 0.9, w: 8.8, h: 3.9, catAxisLabelColor: GRAY, valAxisLabelColor: GRAY, chartColors: [BLUE, ORANGE, '7C4DFF', '009688'], lineSize: 2, showLegend: true, legendPos: 'b' });
+    }
+    s = pptx.addSlide();
+    s.addText('交互作用图', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
+    if (!r.gen) {
+      const inters = r.terms.filter(t => t.type === 'inter' && isFinite(t.p)).sort((a, b) => a.p - b.p).slice(0, 2);
+      if (inters.length) {
+        const series = [];
+        inters.forEach(it => {
+          const [i, j] = it.idx;
+          const yc = r.yArr.slice(0, r.N);
+          for (const jv of [-1, 1]) {
+            const vals = [];
+            for (const iv of [-1, 1]) {
+              let sum = 0, n = 0;
+              for (let ri = 0; ri < r.N; ri++) if (r.runs[ri].codes[i] === iv && r.runs[ri].codes[j] === jv) { sum += yc[ri]; n++; }
+              vals.push(+(sum / n).toFixed(3));
+            }
+            series.push({ name: it.name + '（' + factors[j].name + '=' + factors[j].vals[jv === -1 ? 0 : 1] + '）', labels: [String(factors[i].vals[0]), String(factors[i].vals[1])], values: vals });
+          }
+        });
+        s.addChart(pptx.charts.LINE, series, { x: 0.6, y: 0.9, w: 8.8, h: 3.9, catAxisLabelColor: GRAY, valAxisLabelColor: GRAY, chartColors: [BLUE, ORANGE, '7C4DFF', '009688'], lineSize: 2, showLegend: true, legendPos: 'b' });
+      } else {
+        s.addText('（数据不足，无法估计交互作用）', { x: 0.6, y: 2, w: 8.8, h: 0.5, fontSize: 12, color: GRAY });
+      }
+    } else {
+      s.addText('（一般全因子设计：使用主效应 ANOVA 分析）', { x: 0.6, y: 2, w: 8.8, h: 0.5, fontSize: 12, color: GRAY });
+    }
+    s = pptx.addSlide();
+    s.addText('结论与建议', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
+    const sigs = r.terms.filter(t => t.p !== undefined && t.p < 0.05);
+    const concl = sigs.length ? '显著项（P<0.05）：' + sigs.map(t => t.name).join('、') + '。建议优先控制上述显著因子水平以获得稳定响应。' : '当前数据未发现统计显著因子（P≥0.05），可考虑扩大因子水平范围、增加中心点或试验次数。';
+    s.addText(concl, { x: 0.6, y: 1.0, w: 8.8, h: 1.2, fontSize: 13, color: GRAY, valign: 'top' });
+    s.addText('模型依据：Minitab DOE 方法学（Contrast 对比法、ANOVA F 检验、Pareto 标准化效应，α=0.05）。结果供工艺预研参考，请以实测为准。', { x: 0.6, y: 4.3, w: 8.8, h: 0.8, fontSize: 9, color: '999999' });
+    await pptx.writeFile({ fileName: 'DOE试验设计分析报告.pptx' });
+    $('doeOutMsg').textContent = '已输出 PPT 报告：DOE试验设计分析报告.pptx';
+  }
+
+  // ---- DOE 初始化与事件绑定 ----
+  function initDoe() {
+    const typeSel = $('doeType'), kNum = $('doeKNum'), cpNum = $('doeCpNum');
+    if (!typeSel) return;
+    if (!doeState.factors.length) doeState.factors = [{ name: 'A', lv: 2, vals: [-1, 1] }, { name: 'B', lv: 2, vals: [-1, 1] }, { name: 'C', lv: 2, vals: [-1, 1] }];
+    doeState.type = typeSel.value;
+    doeState.k = parseInt(kNum.value, 10) || 3;
+    doeState.cp = parseInt(cpNum.value, 10) || 3;
+    doeRenderFactorBox();
+    ['doePareto', 'doeMain', 'doeInter'].forEach(doeResizeCanvas);
+    if (doeState.design) {
+      doeRenderDesignInfo();
+      doeRenderDesignTable();
+      const r = doeAnalyze();
+      if (r) doeRenderResults();
+    } else {
+      $('doeDesignInfo').innerHTML = '点击「生成试验设计」开始。可设置因子数、水平值、中心点数后生成试验计划表。';
+      $('doeResults').innerHTML = '';
+      doeClearPlots();
+    }
+  }
+
+  (function bindDoeEvents() {
+    const typeSel = $('doeType'), kSel = $('doeK'), kNum = $('doeKNum'), cpSel = $('doeCp'), cpNum = $('doeCpNum');
+    if (!typeSel) return;
+    typeSel.addEventListener('change', () => {
+      doeState.type = typeSel.value;
+      const hint = $('doeTypeHint');
+      if (hint) hint.textContent = typeSel.value === 'full2' ? 'k = 2 ~ 5' : typeSel.value === 'frac2' ? 'k = 3 ~ 5' : '2 ~ 4 因子';
+      if (typeSel.value === 'gen') {
+        if (kNum) { kNum.max = 4; if (parseInt(kNum.value, 10) > 4) { kNum.value = 4; kSel.value = 4; } }
+        if (cpNum) { cpNum.value = 0; cpSel.value = 0; }
+      } else {
+        if (kNum) kNum.max = 5;
+        if (typeSel.value === 'frac2') {
+          if (kNum) { kNum.min = 3; if (parseInt(kNum.value, 10) < 3) { kNum.value = 3; kSel.value = 3; } }
+        } else if (kNum) { kNum.min = 2; }
+      }
+      doeState.k = parseInt(kNum.value, 10) || 3;
+      doeState.cp = parseInt(cpNum.value, 10) || 0;
+      doeState.design = null; doeState.analyzed = false;
+      doeRenderFactorBox();
+      $('doeDesignInfo').innerHTML = '点击「生成试验设计」开始。';
+      $('doeResults').innerHTML = ''; $('doeTableWrap').innerHTML = '';
+      doeClearPlots();
+    });
+    const syncK = () => {
+      if (!kNum || !kSel) return;
+      kNum.value = kSel.value;
+      doeState.k = parseInt(kSel.value, 10);
+      doeState.design = null; doeState.analyzed = false;
+      doeRenderFactorBox();
+      $('doeDesignInfo').innerHTML = '点击「生成试验设计」开始。';
+      $('doeResults').innerHTML = ''; $('doeTableWrap').innerHTML = '';
+      doeClearPlots();
+    };
+    if (kSel) kSel.addEventListener('input', syncK);
+    if (kNum) kNum.addEventListener('input', () => {
+      if (!kSel) return;
+      let v = parseInt(kNum.value, 10);
+      const min = parseInt(kNum.min, 10), max = parseInt(kNum.max, 10);
+      if (!isFinite(v)) v = min;
+      v = Math.min(Math.max(v, min), max);
+      kNum.value = v; kSel.value = v; syncK();
+    });
+    const syncCp = () => { if (!cpNum || !cpSel) return; cpNum.value = cpSel.value; doeState.cp = parseInt(cpSel.value, 10); };
+    if (cpSel) cpSel.addEventListener('input', syncCp);
+    if (cpNum) cpNum.addEventListener('input', () => {
+      if (!cpSel) return;
+      let v = parseInt(cpNum.value, 10);
+      if (!isFinite(v)) v = 0;
+      v = Math.min(Math.max(v, 0), 10);
+      cpNum.value = v; cpSel.value = v; doeState.cp = v;
+    });
+    const genBtn = $('doeGen'); if (genBtn) genBtn.addEventListener('click', doeGenerateDesign);
+    const demoBtn = $('doeDemo'); if (demoBtn) demoBtn.addEventListener('click', doeFillDemo);
+    const clearBtn = $('doeClear'); if (clearBtn) clearBtn.addEventListener('click', () => {
+      if (doeState.design) { doeState.design.runs.forEach(r => { r.resp = ''; }); doeRenderDesignTable(); $('doeResults').innerHTML = ''; doeState.analyzed = false; doeClearPlots(); }
+    });
+    const pptBtn = $('doePpt'); if (pptBtn) pptBtn.addEventListener('click', doeExportPpt);
+    const docBtn = $('doeDoc'); if (docBtn) docBtn.addEventListener('click', doeExportDoc);
+    const csvBtn = $('doeCsv'); if (csvBtn) csvBtn.addEventListener('click', doeExportCsv);
+  })();
 
 })();
 </script>
