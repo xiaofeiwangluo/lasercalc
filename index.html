@@ -1864,6 +1864,10 @@
   .doe-resp-tab.active { border-color: var(--laser); color: var(--laser); background: color-mix(in srgb, var(--laser) 12%, transparent); font-weight: 700; }
   .doe-cur-resp { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
   .doe-cur-resp b { color: var(--laser); }
+  .doe-contour-ctl { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; font-size: 12px; color: var(--text-2); }
+  .doe-contour-ctl select { padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-2); color: var(--text); font-size: 12px; margin-left: 4px; }
+  .doe-opt-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 12px; color: var(--text-2); }
+  .doe-opt-ctl select, .doe-opt-ctl input { padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-2); color: var(--text); font-size: 12px; margin-left: 4px; }
   .doe-anova table { border-collapse: collapse; font-size: 12px; min-width: 480px; width: 100%; }
   .doe-anova th, .doe-anova td { border: 1px solid var(--border); padding: 4px 8px; text-align: center; white-space: nowrap; }
   .doe-anova th { background: var(--bg-2); color: var(--text-2); font-weight: 600; }
@@ -3309,11 +3313,28 @@
               <div class="doe-plot-title">交互作用图</div>
               <div class="tp-canvas-wrap"><canvas id="doeInter"></canvas></div>
             </div>
+            <div class="doe-plot-box">
+              <div class="doe-plot-title">等值线图（Contour Plot）</div>
+              <div class="doe-contour-ctl"><span>X 因子 <select id="doeContourX"></select></span><span>Y 因子 <select id="doeContourY"></select></span></div>
+              <div class="tp-canvas-wrap"><canvas id="doeContour"></canvas></div>
+              <div id="doeContourNote" class="doe-sim-note" style="margin-top:6px;">基于编码回归模型（主效应+交互，不含弯曲项）绘制，其他因子固定在中点（0）。</div>
+            </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title">⑤ 报告输出</div>
+          <div class="card-title">⑤ 响应优化器（Response Optimizer）</div>
+          <div class="doe-opt-ctl">
+            <span>目标 <select id="doeOptGoal"><option value="max">最大化</option><option value="min">最小化</option><option value="target">目标值</option></select></span>
+            <span id="doeOptTargetWrap" style="display:none;">目标值 <input type="number" id="doeOptTarget" step="any" style="width:90px;"></span>
+            <button id="doeOptRun">运行优化</button>
+          </div>
+          <div id="doeOptResult" class="doe-res-grid" style="margin-top:10px;"></div>
+          <div id="doeOptNote" class="doe-sim-note">基于编码回归模型，在设计范围内搜索使合意性最大的因子组合；支持 2 水平全因子 / 部分因子设计。</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⑥ 报告输出</div>
           <div class="hint" style="margin-bottom:12px;">
             <b>PPT 报告</b>：生成含设计信息、试验数据、ANOVA 表、效应分析与 Pareto/主效应/交互作用图表的演示文稿（需联网加载图表引擎，生成 .pptx）；<b>Word 文档</b>：输出完整分析报告（.doc，Word/WPS 可直接打开，离线可用）；<b>CSV 数据</b>：输出试验设计与响应数据表。
           </div>
@@ -9524,14 +9545,207 @@
       effHtml += '</tbody></table></div>';
     }
     wrap.innerHTML += '<div class="doe-sec-title">方差分析（ANOVA）</div>' + anovaHtml + (effHtml ? '<div class="doe-sec-title">效应与系数（编码单位）</div>' + effHtml : '');
+    doeFillContourSelects();
+    doeOptimize();
   }
 
   function doeClearPlots() {
-    ['doePareto', 'doeMain', 'doeInter'].forEach(id => {
+    ['doePareto', 'doeMain', 'doeInter', 'doeContour'].forEach(id => {
       const c = $(id); if (!c) return;
       const ctx = c.getContext('2d');
       ctx.clearRect(0, 0, c.width, c.height);
     });
+  }
+
+  // ---- 等值线图（Contour Plot，基于编码回归模型）----
+  function doeContourColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    const stops = [[20, 50, 110], [0, 130, 190], [0, 195, 130], [220, 205, 60], [225, 70, 40]];
+    const seg = t * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(seg)), f = seg - i;
+    const a = stops[i], b = stops[i + 1];
+    return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * f) + ',' + Math.round(a[1] + (b[1] - a[1]) * f) + ',' + Math.round(a[2] + (b[2] - a[2]) * f) + ')';
+  }
+  function doeModelY(x, r) {
+    let z = r.allMean;
+    r.terms.forEach(t => {
+      let v = 1;
+      t.idx.forEach(ii => { v *= x[ii]; });
+      z += t.coef * v;
+    });
+    return z;
+  }
+  function doeCodeToActual(code, vals) {
+    if (vals.length > 2) return vals[Math.max(0, Math.min(vals.length - 1, Math.round(code)))];
+    return vals[0] + (vals[1] - vals[0]) * (code + 1) / 2;
+  }
+  function doeFillContourSelects() {
+    const cx = $('doeContourX'), cy = $('doeContourY');
+    if (!cx || !cy || !doeState.factors || !doeState.factors.length) return;
+    const opts = doeState.factors.map((f, i) => '<option value="' + i + '">' + f.name + '</option>').join('');
+    if (!cx.options.length) cx.innerHTML = opts;
+    if (!cy.options.length) { cy.innerHTML = opts; cy.value = '1'; }
+  }
+  function doeDrawContour() {
+    const cv = doeCanvas('doeContour'); if (!cv) return;
+    const { c, ctx, w, h } = cv;
+    ctx.clearRect(0, 0, w, h);
+    const r = doeState.result;
+    const note = $('doeContourNote');
+    if (!r || !r.doe || r.gen) {
+      if (note) note.textContent = '一般全因子设计无编码回归模型，等值线图仅支持 2 水平全因子 / 部分因子设计。';
+      return;
+    }
+    if (note) note.textContent = '基于编码回归模型（主效应+交互，不含弯曲项），其他因子固定在中点（0）。';
+    const factors = doeState.factors;
+    const fx = parseInt(($('doeContourX') || {}).value || '0', 10), fy = parseInt(($('doeContourY') || {}).value || '1', 10);
+    const X = factors[fx] || factors[0], Y = factors[fy] || (factors[1] || factors[0]);
+    const pad = 44, N = 80;
+    const pw = w - pad * 2, ph = h - pad * 2;
+    if (pw <= 20 || ph <= 20) return;
+    const Z = [];
+    let zmin = Infinity, zmax = -Infinity;
+    for (let jy = 0; jy < N; jy++) {
+      const row = [];
+      const yv = -1 + 2 * jy / (N - 1);
+      for (let ix = 0; ix < N; ix++) {
+        const xv = -1 + 2 * ix / (N - 1);
+        const x = factors.map((f, i) => (i === fx ? xv : (i === fy ? yv : 0)));
+        const z = doeModelY(x, r);
+        row.push(z); if (z < zmin) zmin = z; if (z > zmax) zmax = z;
+      }
+      Z.push(row);
+    }
+    if (!(zmax > zmin)) { zmax = zmin + 1; }
+    for (let jy = 0; jy < N; jy++) for (let ix = 0; ix < N; ix++) {
+      const t = (Z[jy][ix] - zmin) / (zmax - zmin);
+      ctx.fillStyle = doeContourColor(t);
+      ctx.fillRect(pad + ix * pw / N, pad + jy * ph / N, pw / N + 1, ph / N + 1);
+    }
+    // 等值线（简化 marching-squares：按格子中心极角排序相邻交点连线）
+    const L = 8;
+    for (let li = 1; li < L; li++) {
+      const lv = zmin + (zmax - zmin) * li / L;
+      ctx.strokeStyle = 'rgba(15,20,30,0.8)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let jy = 0; jy < N - 1; jy++) for (let ix = 0; ix < N - 1; ix++) {
+        const z00 = Z[jy][ix], z10 = Z[jy][ix + 1], z01 = Z[jy + 1][ix], z11 = Z[jy + 1][ix + 1];
+        const x0 = pad + ix * pw / N, x1 = x0 + pw / N, y0 = pad + jy * ph / N, y1 = y0 + ph / N;
+        const lerp = (a, b, za, zb) => { if ((za - lv) * (zb - lv) >= 0 || za === zb) return null; const t = (lv - za) / (zb - za); return a + (b - a) * t; };
+        const pts = [];
+        const tx = lerp(x0, x1, z00, z10); if (tx !== null) pts.push([tx, y0]);
+        const bx = lerp(x0, x1, z01, z11); if (bx !== null) pts.push([bx, y1]);
+        const ly = lerp(y0, y1, z00, z01); if (ly !== null) pts.push([x0, ly]);
+        const ry = lerp(y0, y1, z10, z11); if (ry !== null) pts.push([x1, ry]);
+        if (pts.length >= 2) {
+          const cxm = (x0 + x1) / 2, cym = (y0 + y1) / 2;
+          pts.sort((a, b) => Math.atan2(a[1] - cym, a[0] - cxm) - Math.atan2(b[1] - cym, b[0] - cxm));
+          for (let pi = 0; pi + 1 < pts.length; pi += 2) { ctx.moveTo(pts[pi][0], pts[pi][1]); ctx.lineTo(pts[pi + 1][0], pts[pi + 1][1]); }
+        }
+      }
+      ctx.stroke();
+    }
+    // 轴、刻度与标签
+    const th = doeTheme();
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = th.text;
+    [-1, 0, 1].forEach(v => {
+      const xx = pad + (v + 1) / 2 * pw;
+      ctx.fillText(String(v), xx, pad - 12);
+      const yy = pad + (1 - (v + 1) / 2) * ph;
+      ctx.fillText(String(v), pad - 16, yy);
+    });
+    ctx.fillStyle = th.text; ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(X.name + '（编码）', pad + pw / 2, h - 12);
+    ctx.save();
+    ctx.translate(13, pad + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillText(Y.name + '（编码）', 0, 0);
+    ctx.restore();
+    // 图例
+    const lgW = pw * 0.4, lgX = pad + pw - lgW - 14, lgY = pad + 14, lgH = 9;
+    for (let i = 0; i < lgW; i++) {
+      ctx.fillStyle = doeContourColor(i / lgW);
+      ctx.fillRect(lgX + i, lgY, 1, lgH);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.strokeRect(lgX, lgY, lgW, lgH);
+    ctx.fillStyle = th.text; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(zmin.toFixed(2), lgX, lgY + lgH + 10);
+    ctx.textAlign = 'right';
+    ctx.fillText(zmax.toFixed(2), lgX + lgW, lgY + lgH + 10);
+    // 最优标记（若有优化结果）
+    if (doeState.optBest && doeState.optBest.x.length === factors.length) {
+      const ox = doeState.optBest.x[fx], oy = doeState.optBest.x[fy];
+      const px = pad + (ox + 1) / 2 * pw, py = pad + (1 - (oy + 1) / 2) * ph;
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(px - 6, py); ctx.lineTo(px - 2, py); ctx.moveTo(px + 2, py); ctx.lineTo(px + 6, py); ctx.moveTo(px, py - 6); ctx.lineTo(px, py - 2); ctx.moveTo(px, py + 2); ctx.lineTo(px, py + 6); ctx.stroke();
+    }
+  }
+
+  // ---- 响应优化器（Response Optimizer）----
+  function doeOptimize() {
+    const wrap = $('doeOptResult'), note = $('doeOptNote');
+    if (!wrap) return;
+    const r = doeState.result;
+    if (!r || !r.doe || r.gen) {
+      wrap.innerHTML = '<div class="doe-sim-note">一般全因子设计暂不支持响应优化器（需编码回归模型），请使用 2 水平全因子 / 部分因子设计。</div>';
+      doeState.optBest = null; return;
+    }
+    const goal = $('doeOptGoal').value;
+    const target = parseFloat($('doeOptTarget').value) || 0;
+    const k = doeState.factors.length;
+    const yArr = r.yArr;
+    const ymin = Math.min.apply(null, yArr), ymax = Math.max.apply(null, yArr);
+    const range = Math.max(ymax - ymin, 1e-9);
+    const desir = y => {
+      if (goal === 'min') return Math.max(0, Math.min(1, (ymax - y) / range));
+      if (goal === 'target') return Math.max(0, Math.min(1, 1 - Math.abs(y - target) / range));
+      return Math.max(0, Math.min(1, (y - ymin) / range));
+    };
+    let best = null;
+    if (k <= 4) {
+      const steps = 31, axes = new Array(k).fill(0);
+      (function rec(d) {
+        if (d === k) {
+          const y = doeModelY(axes, r);
+          const dsc = desir(y);
+          if (!best || dsc > best.d) best = { x: axes.slice(), y, d: dsc };
+          return;
+        }
+        for (let i = 0; i < steps; i++) { axes[d] = -1 + 2 * i / (steps - 1); rec(d + 1); }
+      })(0);
+    } else {
+      const starts = [new Array(k).fill(0)];
+      for (let s = 0; s < 4; s++) starts.push(Array.from({ length: k }, () => Math.random() * 2 - 1));
+      starts.forEach(x0 => {
+        let x = x0.slice();
+        for (let iter = 0; iter < 3; iter++) {
+          for (let j = 0; j < k; j++) {
+            let bj = x[j], bd = -1;
+            for (let i = 0; i <= 60; i++) {
+              const v = -1 + 2 * i / 60;
+              const xv = x.slice(); xv[j] = v;
+              const dsc = desir(doeModelY(xv, r));
+              if (dsc > bd) { bd = dsc; bj = v; }
+            }
+            x[j] = bj;
+          }
+        }
+        const y = doeModelY(x, r), dsc = desir(y);
+        if (!best || dsc > best.d) best = { x: x.slice(), y, d: dsc };
+      });
+    }
+    doeState.optBest = best;
+    const factors = doeState.factors;
+    const respName = (doeState.design && doeState.design.respNames && doeState.design.respNames[doeState.curResp || 0]) || '响应';
+    const goalName = goal === 'max' ? '最大化' : (goal === 'min' ? '最小化' : '目标值 ' + target);
+    let html = '';
+    factors.forEach((f, i) => {
+      html += '<div class="doe-res-item"><div class="dr-label">' + f.name + '（最优）</div><div class="dr-value">' + doeCodeToActual(best.x[i], f.vals).toFixed(3) + '</div><div class="dr-sub">编码 ' + best.x[i].toFixed(2) + '</div></div>';
+    });
+    html += '<div class="doe-res-item"><div class="dr-label">预测响应</div><div class="dr-value">' + best.y.toFixed(3) + '</div><div class="dr-sub">' + respName + '</div></div>';
+    html += '<div class="doe-res-item"><div class="dr-label">合意性 D</div><div class="dr-value">' + best.d.toFixed(3) + '</div><div class="dr-sub">' + goalName + '</div></div>';
+    wrap.innerHTML = html;
+    doeDrawContour();
   }
 
   // ---- 图表绘制（Minitab 风格）----
@@ -9550,9 +9764,10 @@
     const r = doeState.result; if (!r) return;
     if (r.gen) { doeDrawMainGen(); doeClearPlotsExtra(); }
     else { doeDrawPareto(); doeDrawMain(); doeDrawInter(); }
+    doeDrawContour();
   }
   function doeClearPlotsExtra() {
-    ['doePareto', 'doeInter'].forEach(id => {
+    ['doePareto', 'doeInter', 'doeContour'].forEach(id => {
       const cv = doeCanvas(id); if (!cv) return;
       cv.ctx.clearRect(0, 0, cv.w, cv.h);
     });
@@ -10158,7 +10373,7 @@
     doeState.k = parseInt(kNum.value, 10) || 3;
     doeState.cp = parseInt(cpNum.value, 10) || 3;
     doeRenderFactorBox();
-    ['doePareto', 'doeMain', 'doeInter'].forEach(doeResizeCanvas);
+    ['doePareto', 'doeMain', 'doeInter', 'doeContour'].forEach(doeResizeCanvas);
     if (doeState.design) {
       doeRenderDesignInfo();
       doeRenderDesignTable();
@@ -10259,6 +10474,20 @@
       if (cw) cw.style.display = v === 'wob' ? '' : 'none';
     });
     const simRun = $('doeSimRun'); if (simRun) simRun.addEventListener('click', () => { try { doeSimRun(); } catch (e) { window.__simErr = e.message + ' @' + e.stack.split('\n')[0]; showToast('仿真错误: ' + e.message); } });
+    // 等值线图与响应优化器
+    const cX = $('doeContourX'), cY = $('doeContourY');
+    if (cX) cX.addEventListener('change', doeDrawContour);
+    if (cY) cY.addEventListener('change', doeDrawContour);
+    const oG = $('doeOptGoal');
+    if (oG) oG.addEventListener('change', () => {
+      const tw = $('doeOptTargetWrap');
+      if (tw) tw.style.display = oG.value === 'target' ? '' : 'none';
+      doeOptimize();
+    });
+    const oT = $('doeOptTarget');
+    if (oT) oT.addEventListener('input', doeOptimize);
+    const oR = $('doeOptRun');
+    if (oR) oR.addEventListener('click', doeOptimize);
   })();
 
 })();
