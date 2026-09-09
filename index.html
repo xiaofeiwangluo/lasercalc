@@ -1853,6 +1853,10 @@
   #doeSimSection .input-row { flex-wrap: wrap; gap: 10px 12px; }
   #doeSimSection .input-row input[type="number"] { width: auto; flex: 1 1 30%; min-width: 84px; }
   #doeSimSection .input-row .unit { flex: 0 0 auto; }
+  /* 参数输入组：名称标签 + 输入框 + 单位 */
+  #doeSimSection .sim-param { display: inline-flex; align-items: center; gap: 5px; flex: 1 1 auto; min-width: 150px; }
+  #doeSimSection .sim-lbl { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+  #doeSimSection .sim-param input[type="number"] { flex: 1; min-width: 60px; }
   .doe-resp-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
   .doe-resp-tab { flex: 1; min-width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-2); color: var(--text-2); font-size: 12px; cursor: pointer; }
   .doe-resp-tab.active { border-color: var(--laser); color: var(--laser); background: color-mix(in srgb, var(--laser) 12%, transparent); font-weight: 700; }
@@ -3263,29 +3267,29 @@
             <div class="input-group">
               <div class="input-label"><span>焊接参数</span><span class="unit">因子名匹配到参数时自动覆盖</span></div>
               <div class="input-row">
-                <input type="number" id="doeSimP" value="1000" placeholder="功率"><span class="unit">W</span>
-                <input type="number" id="doeSimV" value="10" step="0.1" placeholder="速度"><span class="unit">mm/s</span>
-                <input type="number" id="doeSimFc" value="100" placeholder="准直"><span class="unit">mm</span>
-                <input type="number" id="doeSimFf" value="200" placeholder="聚焦"><span class="unit">mm</span>
-                <input type="number" id="doeSimLen" value="100" placeholder="长度"><span class="unit">mm</span>
+                <span class="sim-param"><span class="sim-lbl">功率</span><input type="number" id="doeSimP" value="1000"><span class="unit">W</span></span>
+                <span class="sim-param"><span class="sim-lbl">速度</span><input type="number" id="doeSimV" value="10" step="0.1"><span class="unit">mm/s</span></span>
+                <span class="sim-param"><span class="sim-lbl">准直</span><input type="number" id="doeSimFc" value="100"><span class="unit">mm</span></span>
+                <span class="sim-param"><span class="sim-lbl">聚焦</span><input type="number" id="doeSimFf" value="200"><span class="unit">mm</span></span>
+                <span class="sim-param"><span class="sim-lbl">长度</span><input type="number" id="doeSimLen" value="100"><span class="unit">mm</span></span>
               </div>
             </div>
             <div id="doeSimWobRow" class="input-group" style="display:none;">
               <div class="input-label"><span>摆动光学</span><span class="unit">外环芯径/功率 · 摆动宽度/间距</span></div>
               <div class="input-row">
-                <input type="number" id="doeSimRingDia" value="100" placeholder="外环芯径"><span class="unit">μm</span>
-                <input type="number" id="doeSimRingP" value="500" placeholder="外环功率"><span class="unit">W</span>
-                <input type="number" id="doeSimCoreP" value="1000" placeholder="内芯功率"><span class="unit">W</span>
-                <input type="number" id="doeSimB" value="0.4" placeholder="摆动宽度"><span class="unit">mm</span>
-                <input type="number" id="doeSimPitch" value="0.1" placeholder="摆动间距"><span class="unit">mm</span>
+                <span class="sim-param"><span class="sim-lbl">外环芯径</span><input type="number" id="doeSimRingDia" value="100"><span class="unit">μm</span></span>
+                <span class="sim-param"><span class="sim-lbl">外环功率</span><input type="number" id="doeSimRingP" value="500"><span class="unit">W</span></span>
+                <span class="sim-param"><span class="sim-lbl">内芯功率</span><input type="number" id="doeSimCoreP" value="1000"><span class="unit">W</span></span>
+                <span class="sim-param"><span class="sim-lbl">摆动宽度</span><input type="number" id="doeSimB" value="0.4"><span class="unit">mm</span></span>
+                <span class="sim-param"><span class="sim-lbl">摆动间距</span><input type="number" id="doeSimPitch" value="0.1"><span class="unit">mm</span></span>
               </div>
             </div>
             <div id="doeSimQcwRow" class="input-group" style="display:none;">
               <div class="input-label"><span>脉冲参数</span><span class="unit">峰值功率/脉宽/频率</span></div>
               <div class="input-row">
-                <input type="number" id="doeSimPp" value="1500" placeholder="峰值功率"><span class="unit">W</span>
-                <input type="number" id="doeSimTau" value="1" placeholder="脉宽"><span class="unit">ms</span>
-                <input type="number" id="doeSimFreq" value="100" placeholder="频率"><span class="unit">Hz</span>
+                <span class="sim-param"><span class="sim-lbl">峰值功率</span><input type="number" id="doeSimPp" value="1500"><span class="unit">W</span></span>
+                <span class="sim-param"><span class="sim-lbl">脉宽</span><input type="number" id="doeSimTau" value="1"><span class="unit">ms</span></span>
+                <span class="sim-param"><span class="sim-lbl">频率</span><input type="number" id="doeSimFreq" value="100"><span class="unit">Hz</span></span>
               </div>
             </div>
             <div class="doe-sim-note">因子名称包含 <b>功率 / 速度 / 离焦 / 芯径 / 准直 / 聚焦 / 摆动宽度 / 摆动间距 / 脉宽 / 频率 / 长度 / 外环芯径 / 外环功率</b> 时，自动将该因子水平值代入对应模型参数；响应名称含「宽」输出熔宽，否则输出熔深。模型与焊接仿真共用同一套半经验公式（匙孔能量平衡 + Rosenthal 热传导），结果供工艺预研参考。</div>
