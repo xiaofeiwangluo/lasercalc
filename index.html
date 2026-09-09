@@ -1177,6 +1177,11 @@
       aspect-ratio: 3 / 4;
       min-height: 420px;
     }
+    /* DOE 图表画布在手机上加高，保证图形可读 */
+    .doe-plot-box .tp-canvas-wrap {
+      aspect-ratio: 4 / 3;
+      max-height: none;
+    }
   }
   /* 桌面端能量分布画布也加大 */
   .energy-canvas-wrap {
@@ -1839,6 +1844,13 @@
   .doe-plot-title { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
   .doe-plot-box .tp-canvas-wrap { aspect-ratio: 16/9; max-height: 320px; }
   .doe-anova { overflow-x: auto; margin-top: 10px; }
+  .doe-sim-note { font-size: 11px; color: var(--text-3); line-height: 1.6; margin: 8px 2px; }
+  .doe-sim-note b { color: var(--laser); font-weight: 600; }
+  .doe-resp-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .doe-resp-tab { flex: 1; min-width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-2); color: var(--text-2); font-size: 12px; cursor: pointer; }
+  .doe-resp-tab.active { border-color: var(--laser); color: var(--laser); background: color-mix(in srgb, var(--laser) 12%, transparent); font-weight: 700; }
+  .doe-cur-resp { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+  .doe-cur-resp b { color: var(--laser); }
   .doe-anova table { border-collapse: collapse; font-size: 12px; min-width: 480px; width: 100%; }
   .doe-anova th, .doe-anova td { border: 1px solid var(--border); padding: 4px 8px; text-align: center; white-space: nowrap; }
   .doe-anova th { background: var(--bg-2); color: var(--text-2); font-weight: 600; }
@@ -1852,6 +1864,15 @@
   @media (max-width: 480px) {
     .doe-factor-row { grid-template-columns: 1fr 1fr; }
     .doe-fhead { display: none; }
+    /* DOE 仿真参数输入行在手机端换行排列，避免横向溢出 */
+    #doeSimSection .input-row { flex-wrap: wrap; gap: 8px; }
+    #doeSimSection .input-row input[type="number"] { width: auto; flex: 1 1 32%; min-width: 88px; }
+    #doeSimSection .input-row .unit { flex: 0 0 auto; font-size: 11px; }
+    #doeSimSection .doe-sim-note { font-size: 10.5px; }
+    #doeRespNamesBox .input-row { width: 100%; }
+    #doeRespNamesBox .input-row input { flex: 1; }
+    .doe-resp-tab { min-width: 68px; padding: 5px 6px; font-size: 11px; }
+    .doe-table table { min-width: 520px; }
   }
 </style>
 </head>
@@ -1881,7 +1902,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.8</div>
+    <div class="splash-version">v1.4.9</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -3187,10 +3208,10 @@
               </div>
             </div>
             <div class="input-group">
-              <div class="input-label"><span>因子数</span><span class="unit" id="doeTypeHint">k = 2 ~ 5</span></div>
+              <div class="input-label"><span>因子数</span><span class="unit" id="doeTypeHint">k = 2 ~ 8</span></div>
               <div class="input-row">
-                <input type="range" id="doeK" min="2" max="5" value="3" step="1">
-                <input type="number" id="doeKNum" value="3" min="2" max="5" step="1">
+                <input type="range" id="doeK" min="2" max="8" value="3" step="1">
+                <input type="number" id="doeKNum" value="3" min="2" max="8" step="1">
               </div>
             </div>
             <div class="input-group">
@@ -3200,11 +3221,68 @@
                 <input type="number" id="doeCpNum" value="3" min="0" max="10" step="1">
               </div>
             </div>
+            <div class="input-group">
+              <div class="input-label"><span>响应数量</span><span class="unit" id="doeRespHint">1 ~ 4 个响应</span></div>
+              <div class="input-row">
+                <input type="range" id="doeRespCount" min="1" max="4" value="1" step="1">
+                <input type="number" id="doeRespCountNum" value="1" min="1" max="4" step="1">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>响应名称</span><span class="unit">仿真填入：含「宽」→熔宽，含「深」→熔深，含「重叠」→重叠率</span></div>
+              <div id="doeRespNamesBox"></div>
+            </div>
             <div id="doeFactorBox"></div>
             <div class="tp-actions">
               <button id="doeGen">生成试验设计</button>
               <button class="secondary" id="doeDemo">填入示例数据</button>
               <button class="secondary" id="doeClear">清空数据</button>
+            </div>
+          </div>
+          <div class="fit-section" id="doeSimSection" style="margin-top:14px;">
+            <div class="fit-section-title">仿真数据填入 · 焊接模型自动计算响应</div>
+            <div class="input-group">
+              <div class="input-label"><span>焊接类型 / 材料</span></div>
+              <div class="input-row">
+                <select id="doeSimType" style="flex:1.1;">
+                  <option value="cw">CW 焊接（连续激光）</option>
+                  <option value="wob">摆动焊接（环形光斑）</option>
+                  <option value="qcw">QCW 脉冲焊接</option>
+                </select>
+                <select id="doeSimMat" style="flex:1.4;"></select>
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>焊接参数</span><span class="unit">因子名匹配到参数时自动覆盖</span></div>
+              <div class="input-row">
+                <input type="number" id="doeSimP" value="1000" placeholder="功率"><span class="unit">W</span>
+                <input type="number" id="doeSimV" value="10" step="0.1" placeholder="速度"><span class="unit">mm/s</span>
+                <input type="number" id="doeSimFc" value="100" placeholder="准直"><span class="unit">mm</span>
+                <input type="number" id="doeSimFf" value="200" placeholder="聚焦"><span class="unit">mm</span>
+                <input type="number" id="doeSimLen" value="100" placeholder="长度"><span class="unit">mm</span>
+              </div>
+            </div>
+            <div id="doeSimWobRow" class="input-group" style="display:none;">
+              <div class="input-label"><span>摆动光学</span><span class="unit">外环芯径/功率 · 摆动宽度/间距</span></div>
+              <div class="input-row">
+                <input type="number" id="doeSimRingDia" value="100" placeholder="外环芯径"><span class="unit">μm</span>
+                <input type="number" id="doeSimRingP" value="500" placeholder="外环功率"><span class="unit">W</span>
+                <input type="number" id="doeSimCoreP" value="1000" placeholder="内芯功率"><span class="unit">W</span>
+                <input type="number" id="doeSimB" value="0.4" placeholder="摆动宽度"><span class="unit">mm</span>
+                <input type="number" id="doeSimPitch" value="0.1" placeholder="摆动间距"><span class="unit">mm</span>
+              </div>
+            </div>
+            <div id="doeSimQcwRow" class="input-group" style="display:none;">
+              <div class="input-label"><span>脉冲参数</span><span class="unit">峰值功率/脉宽/频率</span></div>
+              <div class="input-row">
+                <input type="number" id="doeSimPp" value="1500" placeholder="峰值功率"><span class="unit">W</span>
+                <input type="number" id="doeSimTau" value="1" placeholder="脉宽"><span class="unit">ms</span>
+                <input type="number" id="doeSimFreq" value="100" placeholder="频率"><span class="unit">Hz</span>
+              </div>
+            </div>
+            <div class="doe-sim-note">因子名称包含 <b>功率 / 速度 / 离焦 / 芯径 / 准直 / 聚焦 / 摆动宽度 / 摆动间距 / 脉宽 / 频率 / 长度 / 外环芯径 / 外环功率</b> 时，自动将该因子水平值代入对应模型参数；响应名称含「宽」输出熔宽，否则输出熔深。模型与焊接仿真共用同一套半经验公式（匙孔能量平衡 + Rosenthal 热传导），结果供工艺预研参考。</div>
+            <div class="tp-actions">
+              <button id="doeSimRun">填入仿真数据</button>
             </div>
           </div>
           <div class="fit-section">
@@ -3329,7 +3407,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.8</span>
+        <span class="ar-value">v1.4.9</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3342,22 +3420,26 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.8 今日更新汇总 -->
+  <!-- 首次登录：v1.4.9 今日更新汇总 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.8</span></h3>
-      <div class="up-sub">DOE 试验设计 · 数据分析与报告输出</div>
+      <h3>版本更新 <span class="vtag">v1.4.9</span></h3>
+      <div class="up-sub">DOE 试验设计 · 多响应增强</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">工具箱新增 DOE 试验设计</b>：参考 Minitab 方法学，支持 2 水平全因子 2^k、1/2 部分因子、一般全因子（多水平）设计，可自定义因子数（2~5）、因子名称与水平值、中心点数，一键生成标准试验计划表。</span>
+        <span><b style="color:var(--text)">响应自定义</b>：响应数量可自定义（1~4 个），每个响应可独立命名（如熔深 mm / 熔宽 mm / 重叠率 %），表格自动生成多列响应数据。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">数据分析与图表</b>：输入响应数据自动完成 ANOVA 方差分析、效应与系数估计（对比法 Contrast）、R²/R²(调整)，输出 Pareto 标准化效应图、主效应图、交互作用图，自动识别显著项（P&lt;0.05）。</span>
+        <span><b style="color:var(--text)">多响应切换分析</b>：ANOVA / R² / Pareto / 主效应 / 交互作用图按当前选中响应独立分析，一键切换；CSV 导出全部响应列，PPT/Word 报告含响应名称标注。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">报告输出</b>：一键导出 PPT 分析报告（含设计信息/试验数据/ANOVA/图表/结论）、Word 文档报告、CSV 试验数据。</span>
+        <span><b style="color:var(--text)">仿真数据填入增强</b>：按响应名称自动匹配模型输出——含「宽」填熔宽、含「深」填熔深、含「重叠」填重叠率、含「深宽比」填深宽比；因子数量上限提升至 8 个。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">4</span>
+        <span><b style="color:var(--text)">全面检查与修复</b>：修复 CW 仿真芯径缺失导致的异常、响应切换失效、响应数量变化后数据不同步等问题。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3368,6 +3450,15 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.9</span><span class="cl-date">2026-09-10 · DOE 多响应增强</span></div>
+        <ul class="cl-list">
+          <li><b>响应自定义</b>：响应数量可自定义（1~4 个），每个响应可独立命名（如熔深 mm / 熔宽 mm / 重叠率 %），表格自动生成多列响应数据。</li>
+          <li><b>多响应切换分析</b>：ANOVA / R² / Pareto / 主效应 / 交互作用图按当前选中响应独立分析，一键切换；CSV 导出全部响应列，PPT/Word 报告含响应名称标注。</li>
+          <li><b>仿真数据填入增强</b>：按响应名称自动匹配模型输出（含「宽」填熔宽、含「深」填熔深、含「重叠」填重叠率、含「深宽比」填深宽比）；因子数量上限提升至 8 个。</li>
+          <li><b>全面检查与修复</b>：修复 CW 仿真芯径缺失导致的异常、响应切换失效、响应数量变化后数据不同步、移动端参数行溢出等问题，手机端 DOE 图表与布局优化。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.8</span><span class="cl-date">2026-09-09 · DOE 试验设计</span></div>
         <ul class="cl-list">
@@ -6796,6 +6887,11 @@
 
   // ===== 启动动画 =====
   function runSplash() {
+    // ?nosplash=1 用于快速进入（自检/演示）
+    if (/[?&]nosplash=1/.test(location.search)) {
+      $('splash').style.display = 'none';
+      return;
+    }
     const slogan = $('splashSlogan');
     const chars = slogan.querySelectorAll('.char');
     chars.forEach((c, i) => {
@@ -8987,7 +9083,48 @@
   }
 
   // ---- DOE 状态 ----
-  const doeState = { type: 'full2', k: 3, cp: 3, factors: [], design: null, result: null, analyzed: false };
+  const doeState = { type: 'full2', k: 3, cp: 3, factors: [], design: null, result: null, analyzed: false, curResp: 0 };
+
+  function doeReadRespNames() {
+    const n = Math.max(1, parseInt($('doeRespCountNum') ? $('doeRespCountNum').value : 1, 10) || 1);
+    const names = [];
+    for (let i = 0; i < n; i++) {
+      const el = $('doeRespName' + i);
+      const v = el ? el.value.trim() : '';
+      names.push(v || ('响应 y' + (n > 1 ? (i + 1) : '')));
+    }
+    return names;
+  }
+  function doeRenderRespNames() {
+    const n = Math.max(1, Math.min(4, parseInt($('doeRespCountNum') ? $('doeRespCountNum').value : 1, 10) || 1));
+    const box = $('doeRespNamesBox'); if (!box) return;
+    const olds = {};
+    for (let i = 0; i < 4; i++) { const el = $('doeRespName' + i); if (el) olds[i] = el.value; }
+    let html = '';
+    const defaults = ['熔深 mm', '熔宽 mm', '重叠率 %', '响应 y4'];
+    for (let i = 0; i < n; i++) {
+      html += '<div class="input-row" style="margin-bottom:4px;"><input type="text" id="doeRespName' + i + '" value="' + (olds[i] !== undefined ? olds[i] : defaults[i]) + '" placeholder="响应名称"></div>';
+    }
+    box.innerHTML = html;
+    // 响应数量/名称变化后同步既有设计，避免旧列数不一致
+    if (doeState.design) {
+      const nn = doeReadRespNames();
+      const old = doeState.design.respNames || [];
+      if (old.length !== nn.length || old.some((v, i) => v !== nn[i])) {
+        doeState.design.respNames = nn;
+        doeState.design.runs.forEach(run => {
+          if (!run.resps) run.resps = [];
+          const nr = [];
+          for (let i = 0; i < nn.length; i++) nr.push(run.resps[i] !== undefined ? run.resps[i] : '');
+          run.resps = nr;
+        });
+        doeState.curResp = Math.min(doeState.curResp || 0, nn.length - 1);
+        if ($('doeTableWrap')) doeRenderDesignTable();
+        const r = doeAnalyze();
+        if (r) doeRenderResults();
+      }
+    }
+  }
   function doeReadFactors() {
     const rows = document.querySelectorAll('#doeFactorBox .doe-factor-row');
     const fs = [];
@@ -9107,12 +9244,14 @@
       centerCodes = [];
     }
     const allCodes = codes.concat(centerCodes);
+    const respNames = doeReadRespNames();
     const design = {
       type, factors, cp, codes, centerCodes,
-      runs: allCodes.map(c => ({ codes: c, resp: '' })),
-      N: codes.length, nc: centerCodes.length, alias
+      runs: allCodes.map(c => ({ codes: c, resps: respNames.map(() => '') })),
+      N: codes.length, nc: centerCodes.length, alias, respNames
     };
     doeState.design = design;
+    doeState.curResp = 0;
     doeState.analyzed = false;
     doeRenderDesignTable();
     doeRenderDesignInfo();
@@ -9135,25 +9274,33 @@
   function doeRenderDesignTable() {
     const d = doeState.design; if (!d) return;
     const factors = d.factors;
+    const respNames = d.respNames || ['响应 y'];
     const wrap = $('doeTableWrap');
     let html = '<table><thead><tr><th>运行序</th>';
     factors.forEach(f => html += '<th>' + f.name + '</th>');
-    html += '<th>响应 y</th></tr></thead><tbody>';
+    respNames.forEach(n => html += '<th>' + n + '</th>');
+    html += '</tr></thead><tbody>';
     d.runs.forEach((run, i) => {
       html += '<tr' + (i >= d.N ? ' style="opacity:.75"' : '') + '><td>' + (i + 1) + '</td>';
       run.codes.forEach((c, j) => {
         html += '<td>' + doeActualFromCode(c, factors[j].vals) + '</td>';
       });
-      html += '<td class="doe-resp"><input type="number" step="any" class="doe-y" data-i="' + i + '" value="' + (run.resp === '' ? '' : run.resp) + '"' + (i >= d.N ? ' style="border-color:var(--laser);"' : '') + '></td></tr>';
+      respNames.forEach((n, r) => {
+        const rv = (run.resps && run.resps[r] !== undefined) ? run.resps[r] : '';
+        html += '<td class="doe-resp"><input type="number" step="any" class="doe-y" data-i="' + i + '" data-r="' + r + '" value="' + (rv === '' ? '' : rv) + '"' + (i >= d.N ? ' style="border-color:var(--laser);"' : '') + '></td>';
+      });
+      html += '</tr>';
     });
     html += '</tbody></table>';
     wrap.innerHTML = html;
     wrap.querySelectorAll('.doe-y').forEach(inp => {
       inp.addEventListener('input', () => {
         const i = parseInt(inp.dataset.i, 10);
-        doeState.design.runs[i].resp = inp.value;
-        const r = doeAnalyze();
-        if (r) doeRenderResults(); else { $('doeResults').innerHTML = ''; doeClearPlots(); }
+        const r = parseInt(inp.dataset.r, 10);
+        if (!doeState.design.runs[i].resps) doeState.design.runs[i].resps = [];
+        doeState.design.runs[i].resps[r] = inp.value;
+        const rres = doeAnalyze();
+        if (rres) doeRenderResults(); else { $('doeResults').innerHTML = ''; doeClearPlots(); }
       });
     });
   }
@@ -9161,7 +9308,8 @@
   // ---- 数据分析 ----
   function doeAnalyze() {
     const d = doeState.design; if (!d) return null;
-    const yArr = d.runs.map(r => parseFloat(r.resp));
+    const cur = doeState.curResp || 0;
+    const yArr = d.runs.map(r => parseFloat((r.resps && r.resps[cur] !== undefined) ? r.resps[cur] : ''));
     if (yArr.some(y => !isFinite(y))) { doeState.analyzed = false; return null; }
     const factors = d.factors, k = factors.length;
     const N = d.N, nc = d.nc;
@@ -9300,8 +9448,19 @@
   // ---- 结果渲染 ----
   function doeRenderResults() {
     const r = doeState.result; if (!r) return;
+    const d = doeState.design;
+    const cur = doeState.curResp || 0;
+    const respName = (d && d.respNames && d.respNames[cur]) ? d.respNames[cur] : '响应 y';
     const wrap = $('doeResults');
     let html = '';
+    if (d && d.respNames && d.respNames.length > 1) {
+      html += '<div class="doe-resp-tabs">';
+      d.respNames.forEach((n, i) => {
+        html += '<button class="doe-resp-tab' + (i === cur ? ' active' : '') + '" data-r="' + i + '">' + n + '</button>';
+      });
+      html += '</div>';
+    }
+    html += '<div class="doe-cur-resp">当前响应：<b>' + respName + '</b></div>';
     const addItem = (label, value, sub) => { html += '<div class="doe-res-item"><div class="dr-label">' + label + '</div><div class="dr-value">' + value + '</div>' + (sub ? '<div class="dr-sub">' + sub + '</div>' : '') + '</div>'; };
     addItem('R²', (r.r2 * 100).toFixed(2) + '%', '模型解释率');
     addItem('R²(调整)', (r.r2adj * 100).toFixed(2) + '%', 'Adj R²');
@@ -9312,6 +9471,16 @@
     if (sigs.length) addItem('显著项（P<0.05）', sigs.map(t => t.name).join('、'), sigs.length + ' 项');
     else addItem('显著项', '无', 'P 均 ≥ 0.05');
     wrap.innerHTML = html;
+    if (!wrap._respTabBound) {
+      wrap._respTabBound = true;
+      wrap.addEventListener('click', (ev) => {
+        const btn = ev.target && ev.target.closest ? ev.target.closest('.doe-resp-tab') : null;
+        if (!btn) return;
+        doeState.curResp = parseInt(btn.dataset.r, 10);
+        const r2 = doeAnalyze();
+        if (r2) doeRenderResults();
+      });
+    }
     let anovaHtml = '<div class="doe-anova"><table><thead><tr><th>来源</th><th>DF</th><th>SS</th><th>MS</th><th>F</th><th>P</th></tr></thead><tbody>';
     r.anova.forEach(row => {
       anovaHtml += '<tr' + (row.sig ? ' class="sig"' : '') + '><td>' + row.src + '</td><td>' + row.df + '</td><td>' + row.ss.toFixed(3) + '</td><td>' + (row.ms !== null ? row.ms.toFixed(3) : '—') + '</td><td>' + (row.F !== null ? row.F.toFixed(2) : '—') + '</td><td>' + (row.P !== null ? row.P.toFixed(4) : '—') + '</td></tr>';
@@ -9436,7 +9605,7 @@
     ctx.save();
     ctx.translate(10, (m.t + m.b) / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('响应 y 均值', 0, 0);
+    ctx.fillText(((doeState.design && doeState.design.respNames && doeState.design.respNames[doeState.curResp]) ? doeState.design.respNames[doeState.curResp] : '响应 y') + ' 均值', 0, 0);
     ctx.restore();
   }
   function doeDrawInter() {
@@ -9486,7 +9655,7 @@
     ctx.save();
     ctx.translate(8, (m.t + m.b) / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('响应 y 均值', 0, 0);
+    ctx.fillText(((doeState.design && doeState.design.respNames && doeState.design.respNames[doeState.curResp]) ? doeState.design.respNames[doeState.curResp] : '响应 y') + ' 均值', 0, 0);
     ctx.restore();
   }
   function doeDrawMainGen() {
@@ -9527,7 +9696,7 @@
     ctx.save();
     ctx.translate(10, (m.t + m.b) / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillStyle = th.text; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('响应 y 均值', 0, 0);
+    ctx.fillText(((doeState.design && doeState.design.respNames && doeState.design.respNames[doeState.curResp]) ? doeState.design.respNames[doeState.curResp] : '响应 y') + ' 均值', 0, 0);
     ctx.restore();
   }
 
@@ -9542,9 +9711,10 @@
       return y.toFixed(2);
     };
     d.runs.forEach((run, i) => {
-      if (i < d.N) run.resp = demoResp(run.codes);
-      else run.resp = (20 + (Math.random() - 0.5) * 0.4).toFixed(2);
+      if (!run.resps) run.resps = [];
+      run.resps[0] = i < d.N ? demoResp(run.codes) : (20 + (Math.random() - 0.5) * 0.4).toFixed(2);
     });
+    doeState.curResp = 0;
     doeRenderDesignTable();
     const r = doeAnalyze();
     if (r) doeRenderResults();
@@ -9564,13 +9734,18 @@
     html += '<tr><td colspan="2">角点游程 / 中心点</td><td>' + d.N + ' / ' + d.nc + '</td></tr></table>';
     html += '<h2>二、试验数据</h2><table><tr><th>运行序</th>';
     factors.forEach(f => html += '<th>' + f.name + '</th>');
-    html += '<th>响应 y</th></tr>';
+    (d.respNames || ['响应 y']).forEach(n => html += '<th>' + n + '</th>');
+    html += '</tr>';
     d.runs.forEach((run, i) => {
       html += '<tr><td>' + (i + 1) + '</td>';
       run.codes.forEach((c, j) => html += '<td>' + doeActualFromCode(c, factors[j].vals) + '</td>');
-      html += '<td>' + run.resp + '</td></tr>';
+      (d.respNames || ['响应 y']).forEach((n, ri) => {
+        html += '<td>' + ((run.resps && run.resps[ri] !== undefined) ? run.resps[ri] : '') + '</td>';
+      });
+      html += '</tr>';
     });
     html += '</table>';
+    html += '<p style="color:#666;">分析响应：' + ((d.respNames && d.respNames[doeState.curResp]) ? d.respNames[doeState.curResp] : '响应 y') + '（R²/R²(调整)/ANOVA/效应/图形均基于该响应）</p>';
     html += '<h2>三、方差分析（ANOVA）</h2><table><tr><th>来源</th><th>DF</th><th>SS</th><th>MS</th><th>F</th><th>P</th></tr>';
     r.anova.forEach(row => html += '<tr><td>' + row.src + '</td><td>' + row.df + '</td><td>' + row.ss.toFixed(3) + '</td><td>' + (row.ms !== null ? row.ms.toFixed(3) : '—') + '</td><td>' + (row.F !== null ? row.F.toFixed(2) : '—') + '</td><td>' + (row.P !== null ? row.P.toFixed(4) : '—') + '</td></tr>');
     html += '</table>';
@@ -9602,9 +9777,11 @@
   function doeExportCsv() {
     const d = doeState.design; if (!d) { showToast('请先生成试验设计'); return; }
     const factors = d.factors;
-    let csv = '运行序,' + factors.map(f => f.name).join(',') + ',响应y\n';
+    const respNames = d.respNames || ['响应 y'];
+    let csv = '运行序,' + factors.map(f => f.name).join(',') + ',' + respNames.join(',') + '\n';
     d.runs.forEach((run, i) => {
-      csv += (i + 1) + ',' + run.codes.map((c, j) => doeActualFromCode(c, factors[j].vals)).join(',') + ',' + run.resp + '\n';
+      const respCells = respNames.map((n, ri) => (run.resps && run.resps[ri] !== undefined) ? run.resps[ri] : '');
+      csv += (i + 1) + ',' + run.codes.map((c, j) => doeActualFromCode(c, factors[j].vals)).join(',') + ',' + respCells.join(',') + '\n';
     });
     const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' });
     doeDownload(blob, 'DOE试验设计数据.csv');
@@ -9649,9 +9826,9 @@
       [{ text: '模型汇总', options: { bold: true, color: 'FFFFFF', fill: { color: BLUE } } }, { text: 'R² = ' + (r.r2 * 100).toFixed(2) + '%，R²(调整) = ' + (r.r2adj * 100).toFixed(2) + '%', options: { color: GRAY } }]], { x: 0.5, y: 0.9, w: 9, border: { pt: 0.5, color: 'CCCCCC' } });
     s = pptx.addSlide();
     s.addText('试验数据', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
-    const head = ['运行序'].concat(factors.map(f => f.name), ['响应 y']);
-    const rows = d.runs.map((run, i) => [String(i + 1)].concat(run.codes.map((c, j) => String(doeActualFromCode(c, factors[j].vals))), [String(run.resp)]));
-    s.addTable([head].concat(rows), { x: 0.5, y: 0.85, w: 9, fontSize: 9, border: { pt: 0.4, color: 'CCCCCC' }, colW: [1.2].concat(factors.map(() => 1.4), [1.6]) });
+    const head = ['运行序'].concat(factors.map(f => f.name), d.respNames || ['响应 y']);
+    const rows = d.runs.map((run, i) => [String(i + 1)].concat(run.codes.map((c, j) => String(doeActualFromCode(c, factors[j].vals))), (d.respNames || ['响应 y']).map((n, ri) => String((run.resps && run.resps[ri] !== undefined) ? run.resps[ri] : ''))));
+    s.addTable([head].concat(rows), { x: 0.5, y: 0.85, w: 9, fontSize: 9, border: { pt: 0.4, color: 'CCCCCC' }, colW: [1.2].concat(factors.map(() => 1.4), (d.respNames || ['响应 y']).map(() => 1.6)) });
     s = pptx.addSlide();
     s.addText('方差分析（ANOVA）', { x: 0.5, y: 0.2, w: 9, h: 0.5, fontSize: 22, bold: true, color: BLUE });
     const aHead = ['来源', 'DF', 'SS', 'MS', 'F', 'P'];
@@ -9722,6 +9899,218 @@
     $('doeOutMsg').textContent = '已输出 PPT 报告：DOE试验设计分析报告.pptx';
   }
 
+  // ---- DOE 仿真数据填入（焊接模型自动计算响应）----
+  // 与焊接仿真共用同一套半经验公式：匙孔能量平衡 + Rosenthal 热传导
+  const DOE_CW_MAT = {
+    steel:   { Kk: 80,  Kc: 15, IKH: 10,  kRef: 16  },
+    al1060:  { Kk: 48,  Kc: 9,  IKH: 30,  kRef: 235 },
+    al3003:  { Kk: 52,  Kc: 10, IKH: 28,  kRef: 190 },
+    al5052:  { Kk: 58,  Kc: 11, IKH: 24,  kRef: 138 },
+    al5083:  { Kk: 60,  Kc: 11, IKH: 22,  kRef: 125 },
+    al6061:  { Kk: 56,  Kc: 10, IKH: 25,  kRef: 167 },
+    al6063:  { Kk: 50,  Kc: 9,  IKH: 28,  kRef: 200 },
+    al7075:  { Kk: 62,  Kc: 12, IKH: 22,  kRef: 130 },
+    cu_t2:   { Kk: 38,  Kc: 7,  IKH: 500, kRef: 401 },
+    cu_c1020:{ Kk: 38,  Kc: 7,  IKH: 500, kRef: 398 },
+    cu_h62:  { Kk: 50,  Kc: 9,  IKH: 100, kRef: 116 },
+    cu_c5191:{ Kk: 55,  Kc: 10, IKH: 80,  kRef: 62  },
+    cu_qbe2: { Kk: 52,  Kc: 9,  IKH: 90,  kRef: 105 }
+  };
+  function doeDefocusModel(z) {
+    const zR = z < 0 ? 3.0 : 2.2;
+    const Iratio = 1 / (1 + Math.pow(z / zR, 2));
+    return Math.pow(Iratio, 0.6);
+  }
+  function doeSpotDefocus(d0Um, z) {
+    const d0Mm = d0Um / 1000;
+    const zR = Math.PI * d0Mm * d0Mm / (4 * (1080e-6));
+    const dUm = d0Um * Math.sqrt(1 + Math.pow(z / zR, 2));
+    return { d0Um, dUm, zR };
+  }
+  // CW 连续焊接（与焊接仿真 weldCalculate 同公式）
+  function doeSimCW(p) {
+    const mat = MATERIALS[p.material] || MATERIALS.steel;
+    const d = p.core * p.ff / p.fc;
+    const r_mm = (d / 2) / 1000;
+    const area_mm2 = Math.PI * r_mm * r_mm;
+    const density = area_mm2 > 0 ? p.P / area_mm2 : 0;
+    const mp = DOE_CW_MAT[p.material] || DOE_CW_MAT.steel;
+    const keyhole = density > mp.IKH;
+    const K = keyhole ? mp.Kk : mp.Kc;
+    const theory = K * p.P * p.eta / (Math.max(p.V, 0.5) * d);
+    const correction = 1 - Math.exp(-Math.max(p.V, 0.5) / 25);
+    const cap = p.P / 400;
+    const est = Math.min(theory * correction, cap);
+    const estDef = est * doeDefocusModel(p.def || 0);
+    const width = Math.max((d / 1000) * 1.3 + estDef * 0.18, 0.1);
+    return { depth: estDef, width };
+  }
+  // 摆动焊接（与测试专区摆动焊接 wobCalculate 同公式）
+  function doeSimWob(p) {
+    const mat = MATERIALS[p.material] || MATERIALS.steel;
+    const M = p.ff / p.fc;
+    const core = doeSpotDefocus(p.coreDia * M, p.def || 0);
+    const ring = doeSpotDefocus(p.ringDia * M, p.def || 0);
+    const f = p.V / Math.max(p.pitch, 0.001);
+    const dCore = core.dUm / 1000, dRing = ring.dUm / 1000;
+    const dCore0 = core.d0Um / 1000;
+    const rCoreMm = dCore / 2;
+    const Icore_rt = rCoreMm > 0 ? p.coreP * mat.eta / (Math.PI * rCoreMm * rCoreMm) : 0;
+    const IKH = mat.IKH || 10;
+    const tKH = Math.max(0, Math.min(1, (Icore_rt - 0.5 * IKH) / (1.5 * IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH);
+    const etaEff = mat.eta + (mat.etaKH - mat.eta) * smoothKH;
+    const kEff = mat.k + (mat.kWeld - mat.k) * smoothKH;
+    const alpha = kEff / (mat.rho * mat.c) * 1e6;
+    const alphaRef = 4.08;
+    const PcoreAbs = p.coreP * etaEff, PringAbs = p.ringP * etaEff;
+    const E_core = PcoreAbs / p.V, E_ring = PringAbs / p.V;
+    const E_total = (PcoreAbs + PringAbs) / p.V;
+    const C1 = mat.C1 || 0.12;
+    let hCore = C1 * Math.pow(Math.max(E_core, 0.001), 0.7) / Math.pow(Math.max(dCore, 0.01), 0.3) * Math.pow(alphaRef / alpha, 0.4);
+    const C2 = 0.05 * (C1 / 0.12);
+    const hRing = C2 * Math.pow(Math.max(E_ring, 0.001), 0.5) * Math.pow(alphaRef / alpha, 0.3);
+    const fDef = Math.pow(dCore0 / Math.max(dCore, 0.01), 1.5);
+    const fWob = Math.pow(1 / (1 + Math.pow(p.B / Math.max(dCore, 0.01), 0.7)), 0.4);
+    const fFreq = Math.pow(100 / Math.max(f, 10), 0.08);
+    let depth = (hCore + hRing) * fDef * fWob * fFreq;
+    if (smoothKH < 0.5) depth *= Math.pow(smoothKH * 2, 0.5);
+    depth = Math.max(depth, 0);
+    const C3 = mat.C3 || 0.15;
+    const wThermal = C3 * Math.pow(Math.max(E_total, 0.001), 0.4) * Math.pow(alpha / alphaRef, 0.3);
+    const width = Math.max(dRing + p.B, wThermal) + p.B * 0.3;
+    return { depth, width };
+  }
+  // QCW 脉冲焊接（与测试专区 QCW qcwCalculate 同公式）
+  function doeSimQcw(p) {
+    const mat = MATERIALS[p.material] || MATERIALS.steel;
+    const M = p.ff / p.fc;
+    const d0Um = p.core * M;
+    const zR = Math.PI * Math.pow(d0Um / 1000, 2) / (4 * (1080e-6));
+    const dUm = d0Um * Math.sqrt(1 + Math.pow((p.def || 0) / zR, 2));
+    const d = dUm / 1000;
+    const duty = Math.min(p.tau / 1000 * p.freq, 0.95);
+    const pAvg = p.pp * duty;
+    const Ipeak = d > 0 ? 4 * p.pp * mat.eta / (Math.PI * d * d) : 0;
+    const IKH = mat.IKH || 10;
+    const tKH = Math.max(0, Math.min(1, (Ipeak - 0.5 * IKH) / (1.5 * IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH);
+    const etaEff = mat.eta + (mat.etaKH - mat.eta) * smoothKH;
+    const kEff = mat.k + (mat.kWeld - mat.k) * smoothKH;
+    const alphaE = kEff / (mat.rho * mat.c) * 1e6;
+    const alphaRef = 4.08;
+    const C1p = (mat.C1 || 0.12) * 2.6;
+    const h = C1p * Math.pow(Math.max(p.pp * etaEff / p.v, 0.001), 0.7) / Math.pow(Math.max(d, 0.01), 0.3) * Math.pow(alphaRef / alphaE, 0.4) * Math.pow(duty, 0.25) * Math.pow(p.tau, 0.15);
+    const C3 = mat.C3 || 0.5;
+    const wTh = C3 * Math.sqrt(Math.max(pAvg, 0) * etaEff * alphaE / (p.v * p.v)) * 1.2;
+    const w = Math.max(d * 1.15, wTh);
+    const overlap = Math.max(0, Math.min(1, 1 - p.v / (Math.max(p.freq, 0.5) * Math.max(d, 0.001))));
+    return { depth: h, width: w, overlap };
+  }
+  // 因子名 → 模型参数映射（长词优先）
+  const DOE_SIM_MAP = {
+    cw:  [['摆动宽度','B'],['摆动间距','pitch'],['外环芯径','ringDia'],['外环功率','ringP'],['内芯功率','coreP'],['功率','P'],['速度','V'],['离焦','def'],['芯径','core'],['准直','fc'],['聚焦','ff'],['脉宽','tau'],['频率','freq'],['长度','len']],
+    wob: [['摆动宽度','B'],['摆动间距','pitch'],['外环芯径','ringDia'],['外环功率','ringP'],['内芯功率','coreP'],['功率','coreP'],['速度','V'],['离焦','def'],['芯径','coreDia'],['准直','fc'],['聚焦','ff'],['脉宽','tau'],['频率','freq'],['长度','len']],
+    qcw: [['摆动宽度','B'],['摆动间距','pitch'],['外环芯径','ringDia'],['外环功率','ringP'],['内芯功率','coreP'],['功率','pp'],['速度','v'],['离焦','def'],['芯径','core'],['准直','fc'],['聚焦','ff'],['脉宽','tau'],['频率','freq'],['长度','len']]
+  };
+  function doeMatchKey(name, type) {
+    const map = DOE_SIM_MAP[type] || DOE_SIM_MAP.cw;
+    for (const item of map) {
+      if (name.indexOf(item[0]) >= 0) return item[1];
+    }
+    return null;
+  }
+  function doeFillSimMatOptions() {
+    const sel = $('doeSimMat'); if (!sel) return;
+    let html = '';
+    const groups = [['钢', 'steel'], ['铝合金', 'al'], ['铜', 'cu']];
+    const list = Object.keys(MATERIALS);
+    const steelFirst = list.filter(k => k === 'steel');
+    const al = list.filter(k => k.indexOf('al') === 0);
+    const cu = list.filter(k => k.indexOf('cu') === 0);
+    html += steelFirst.map(k => '<option value="' + k + '">' + MATERIALS[k].name + '</option>').join('');
+    html += '<optgroup label="铝合金">' + al.map(k => '<option value="' + k + '">' + MATERIALS[k].name + '</option>').join('') + '</optgroup>';
+    html += '<optgroup label="铜">' + cu.map(k => '<option value="' + k + '">' + MATERIALS[k].name + '</option>').join('') + '</optgroup>';
+    sel.innerHTML = html;
+  }
+  function doeRespValue(name, res) {
+    const n = name || '';
+    if (n.indexOf('重叠') >= 0) {
+      const ov = res.overlap;
+      return (ov === undefined || ov === null || isNaN(ov)) ? '' : (ov * 100).toFixed(1);
+    }
+    if (n.indexOf('深宽比') >= 0 || n.indexOf('深/宽') >= 0) {
+      return res.width > 0 ? (res.depth / res.width).toFixed(2) : '';
+    }
+    if (n.indexOf('宽') >= 0) return res.width !== undefined ? res.width.toFixed(3) : '';
+    return res.depth !== undefined ? res.depth.toFixed(3) : '';
+  }
+  function doeSimRun() {
+    if (!doeState.design) { showToast('请先生成试验设计'); return; }
+    // 同步最新响应名称与列数（名称/数量修改后立即生效）
+    doeState.design.respNames = doeReadRespNames();
+    doeState.design.runs.forEach(run => {
+      if (!run.resps) run.resps = [];
+      while (run.resps.length < doeState.design.respNames.length) run.resps.push('');
+    });
+    doeState.curResp = Math.min(doeState.curResp || 0, doeState.design.respNames.length - 1);
+    const type = $('doeSimType').value;
+    const mat = $('doeSimMat').value;
+    const respNames = doeState.design.respNames || ['响应 y'];
+    const num = (id, def) => { const v = parseFloat($(id) ? $(id).value : NaN); return isNaN(v) ? def : v; };
+    // 基础参数
+    const base = {
+      material: mat, eta: (MATERIALS[mat] || MATERIALS.steel).eta,
+      V: Math.max(num('doeSimV', 10), 0.1),
+      fc: Math.max(num('doeSimFc', 100), 10),
+      ff: Math.max(num('doeSimFf', 200), 10),
+      len: Math.max(num('doeSimLen', 100), 0.5),
+      def: 0
+    };
+    if (type === 'cw') {
+      base.P = Math.max(num('doeSimP', 1000), 0);
+      base.core = 100;
+    } else if (type === 'wob') {
+      base.ringDia = Math.max(num('doeSimRingDia', 100), 1);
+      base.ringP = Math.max(num('doeSimRingP', 500), 0);
+      base.coreP = Math.max(num('doeSimCoreP', 1000), 0);
+      base.B = Math.max(num('doeSimB', 0.4), 0);
+      base.pitch = Math.max(num('doeSimPitch', 0.1), 0.001);
+      base.coreDia = 50;
+    } else {
+      base.pp = Math.max(num('doeSimPp', 1500), 0);
+      base.tau = Math.max(num('doeSimTau', 1), 0.05);
+      base.freq = Math.max(num('doeSimFreq', 100), 0.5);
+      base.v = base.V;
+      base.core = 100;
+      base.pp = base.pp || 1500;
+    }
+    // 逐行计算
+    const d = doeState.design;
+    const factors = d.factors;
+    d.runs.forEach((run, i) => {
+      const p = Object.assign({}, base);
+      factors.forEach((f, fi) => {
+        const key = doeMatchKey(f.name, type);
+        if (key) p[key] = doeActualFromCode(run.codes[fi], f.vals);
+      });
+      if (type === 'qcw') p.v = p.v || p.V;
+      let res;
+      try {
+        res = type === 'cw' ? doeSimCW(p) : type === 'wob' ? doeSimWob(p) : doeSimQcw(p);
+      } catch (e) { res = { depth: 0, width: 0 }; }
+      if (!run.resps) run.resps = [];
+      respNames.forEach((name, ri) => {
+        run.resps[ri] = doeRespValue(name, res);
+      });
+    });
+    doeRenderDesignTable();
+    const r = doeAnalyze();
+    if (r) doeRenderResults();
+    const typeName = $('doeSimType').selectedOptions && $('doeSimType').selectedOptions[0] ? $('doeSimType').selectedOptions[0].text : type;
+    showToast('已按 ' + typeName + '（' + MATERIALS[mat].name + '）填入 ' + respNames.join(' / '));
+  }
+
   // ---- DOE 初始化与事件绑定 ----
   function initDoe() {
     const typeSel = $('doeType'), kNum = $('doeKNum'), cpNum = $('doeCpNum');
@@ -9750,12 +10139,12 @@
     typeSel.addEventListener('change', () => {
       doeState.type = typeSel.value;
       const hint = $('doeTypeHint');
-      if (hint) hint.textContent = typeSel.value === 'full2' ? 'k = 2 ~ 5' : typeSel.value === 'frac2' ? 'k = 3 ~ 5' : '2 ~ 4 因子';
+      if (hint) hint.textContent = typeSel.value === 'full2' ? 'k = 2 ~ 8' : typeSel.value === 'frac2' ? 'k = 3 ~ 8' : '2 ~ 4 因子';
       if (typeSel.value === 'gen') {
         if (kNum) { kNum.max = 4; if (parseInt(kNum.value, 10) > 4) { kNum.value = 4; kSel.value = 4; } }
         if (cpNum) { cpNum.value = 0; cpSel.value = 0; }
       } else {
-        if (kNum) kNum.max = 5;
+        if (kNum) kNum.max = 8;
         if (typeSel.value === 'frac2') {
           if (kNum) { kNum.min = 3; if (parseInt(kNum.value, 10) < 3) { kNum.value = 3; kSel.value = 3; } }
         } else if (kNum) { kNum.min = 2; }
@@ -9799,11 +10188,35 @@
     const genBtn = $('doeGen'); if (genBtn) genBtn.addEventListener('click', doeGenerateDesign);
     const demoBtn = $('doeDemo'); if (demoBtn) demoBtn.addEventListener('click', doeFillDemo);
     const clearBtn = $('doeClear'); if (clearBtn) clearBtn.addEventListener('click', () => {
-      if (doeState.design) { doeState.design.runs.forEach(r => { r.resp = ''; }); doeRenderDesignTable(); $('doeResults').innerHTML = ''; doeState.analyzed = false; doeClearPlots(); }
+      if (doeState.design) { doeState.design.runs.forEach(r => { if (!r.resps) r.resps = []; r.resps.forEach((v, i) => r.resps[i] = ''); }); doeRenderDesignTable(); $('doeResults').innerHTML = ''; doeState.analyzed = false; doeClearPlots(); }
     });
     const pptBtn = $('doePpt'); if (pptBtn) pptBtn.addEventListener('click', doeExportPpt);
     const docBtn = $('doeDoc'); if (docBtn) docBtn.addEventListener('click', doeExportDoc);
     const csvBtn = $('doeCsv'); if (csvBtn) csvBtn.addEventListener('click', doeExportCsv);
+    // 响应数量与名称
+    doeRenderRespNames();
+    const respCnt = $('doeRespCount');
+    if (respCnt) respCnt.addEventListener('input', () => {
+      const v = Math.max(1, Math.min(4, parseInt(respCnt.value, 10) || 1));
+      if ($('doeRespCountNum')) $('doeRespCountNum').value = v;
+      doeRenderRespNames();
+    });
+    const respCntNum = $('doeRespCountNum');
+    if (respCntNum) respCntNum.addEventListener('input', () => {
+      const v = Math.max(1, Math.min(4, parseInt(respCntNum.value, 10) || 1));
+      if ($('doeRespCount')) $('doeRespCount').value = v;
+      doeRenderRespNames();
+    });
+    // 仿真数据填入
+    doeFillSimMatOptions();
+    const simType = $('doeSimType');
+    if (simType) simType.addEventListener('change', () => {
+      const v = simType.value;
+      const wr = $('doeSimWobRow'), qr = $('doeSimQcwRow');
+      if (wr) wr.style.display = v === 'wob' ? '' : 'none';
+      if (qr) qr.style.display = v === 'qcw' ? '' : 'none';
+    });
+    const simRun = $('doeSimRun'); if (simRun) simRun.addEventListener('click', () => { try { doeSimRun(); } catch (e) { window.__simErr = e.message + ' @' + e.stack.split('\n')[0]; showToast('仿真错误: ' + e.message); } });
   })();
 
 })();
