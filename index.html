@@ -8764,6 +8764,7 @@
     ctx.textAlign = 'center';
     const offMat = qcwOff('s_mat');
     ctx.fillText('母材 ' + thk.toFixed(2) + 'mm', boardX + boardW / 2 + offMat.dx, topY - 8 + offMat.dy);
+    qcwMark('s_mat', boardX + boardW / 2 + offMat.dx, topY - 8 + offMat.dy, 96, null, 'sec');
     // 熔池（U形，深度随脉冲累积；圆弧半径受深度约束，避免越出母材）
     const depth = Math.min(r.h, thk) * scale * (1 - Math.exp(-5 * prog));
     const mw = Math.min(r.w * scale, boardW * 0.9);
