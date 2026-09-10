@@ -8800,10 +8800,10 @@
       ctx.closePath();
       ctx.fill();
     }
-    // 脉冲光束（ON时青色锥形+光斑闪烁）
+    // 脉冲光束（ON时青色锥形+光斑闪烁；光斑半径受画布宽度约束，避免手机窄屏下盖满熔池）
     const beamCX = poolCX;
     const beamTop = padT;
-    const spotR = Math.max(2, r.d / 1000 * scale * 4);
+    const spotR = Math.max(2, Math.min(r.d / 1000 * scale * 4, w * 0.15));
     if (pulseOn) {
       const bg = ctx.createLinearGradient(beamCX, beamTop, beamCX, poolTop);
       bg.addColorStop(0, 'rgba(0,229,255,0)');
@@ -8834,10 +8834,16 @@
     ctx.textAlign = 'left';
     const dimDepth = Math.min(r.h, thk);
     const offDep = qcwOff('s_depth');
-    ctx.fillText('预估熔深 ' + dimDepth.toFixed(2) + 'mm', poolCX + 6 + offDep.dx, poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy);
-    qcwMark('s_depth', poolCX + 6 + offDep.dx, poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy, 118, null, 'sec');
+    const depTxt = '预估熔深 ' + dimDepth.toFixed(2) + 'mm';
+    const depX = poolCX + 6 + offDep.dx, depY = poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy;
+    const depW = ctx.measureText(depTxt).width;
+    ctx.fillStyle = 'rgba(10,15,30,0.72)';
+    ctx.fillRect(depX - 3, depY - 9, depW + 6, 14);
+    ctx.fillStyle = 'rgba(200,210,225,0.95)';
+    ctx.fillText(depTxt, depX, depY);
+    qcwMark('s_depth', depX, depY, depW + 6, null, 'sec');
     const offWid = qcwOff('s_width');
-    const dimY = baseY + 18 + offWid.dy;
+    const dimY = Math.min(baseY + 18 + offWid.dy, h - 15);
     const dimL = poolCX - mw / 2 + offWid.dx, dimR = poolCX + mw / 2 + offWid.dx;
     ctx.strokeStyle = 'rgba(0,229,255,0.95)';
     ctx.lineWidth = 1.2;
@@ -8858,8 +8864,13 @@
     ctx.textAlign = 'left';
     const offPul = qcwOff('s_pulse');
     ctx.fillStyle = 'rgba(0,229,255,0.9)';
-    ctx.fillText('脉冲 ' + (pulseOn ? 'ON' : 'OFF'), beamCX + spotR + 4 + offPul.dx, beamTop + 10 + offPul.dy);
-    qcwMark('s_pulse', beamCX + spotR + 4 + offPul.dx, beamTop + 10 + offPul.dy, 60, null, 'sec');
+    ctx.font = '11px sans-serif';
+    const pulTxt = '脉冲 ' + (pulseOn ? 'ON' : 'OFF');
+    const pulW = ctx.measureText(pulTxt).width;
+    let pulX = beamCX + spotR + 4 + offPul.dx;
+    if (pulX + pulW > w - 4) pulX = Math.max(padL + 4, beamCX - spotR - 4 - pulW + offPul.dx);
+    ctx.fillText(pulTxt, pulX, beamTop + 10 + offPul.dy);
+    qcwMark('s_pulse', pulX, beamTop + 10 + offPul.dy, pulW + 4, null, 'sec');
   }
 
   // 焊斑重叠俯视图
@@ -8943,8 +8954,12 @@
       ctx.fillStyle = 'rgba(0,229,255,0.95)';
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('间距 Δx=' + r.dx.toFixed(3) + 'mm', (xa + xb) / 2, dimY - 6);
-      qcwMark('o_dx', (xa + xb) / 2, dimY - 6, 130, null, 'ov');
+      const dxTxt = '间距 Δx=' + r.dx.toFixed(3) + 'mm';
+      let dxTx = (xa + xb) / 2;
+      if (dxTx + 66 > padR) dxTx = padR - 66;
+      if (dxTx - 66 < padL) dxTx = padL + 66;
+      ctx.fillText(dxTxt, dxTx, dimY - 6);
+      qcwMark('o_dx', dxTx, dimY - 6, 132, null, 'ov');
       ctx.textAlign = 'left';
     }
     // 标注
@@ -8952,16 +8967,23 @@
     ctx.fillStyle = 'rgba(200,210,225,0.9)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('焊斑直径 d=' + (r.d * 1000).toFixed(0) + 'μm  焊斑间距 Δx=' + r.dx.toFixed(3) + 'mm', padL + offTop.dx, padT - 8 + offTop.dy);
-    qcwMark('o_top', padL + offTop.dx, padT - 8 + offTop.dy, 260, null, 'ov');
+    const topTxt = '焊斑直径 d=' + (r.d * 1000).toFixed(0) + 'μm  焊斑间距 Δx=' + r.dx.toFixed(3) + 'mm';
+    let topFs = 11;
+    while (topFs > 8.5 && ctx.measureText(topTxt).width > (padR - padL)) { topFs -= 0.5; ctx.font = topFs + 'px sans-serif'; }
+    ctx.fillText(topTxt, padL + offTop.dx, padT - 8 + offTop.dy);
+    qcwMark('o_top', padL + offTop.dx, padT - 8 + offTop.dy, Math.min(ctx.measureText(topTxt).width + 6, padR - padL), null, 'ov');
     const offEta = qcwOff('o_eta');
     ctx.fillStyle = 'rgba(0,229,255,0.95)';
     ctx.fillText('重叠率 η=' + (r.overlap * 100).toFixed(1) + '%', padL + offEta.dx, padB + 20 + offEta.dy);
     qcwMark('o_eta', padL + offEta.dx, padB + 20 + offEta.dy, 130, null, 'ov');
     const offDir = qcwOff('o_dir');
     ctx.fillStyle = 'rgba(200,210,225,0.8)';
-    ctx.fillText('焊接方向 →', startX + (nShow - 1) * gapPx + 34 + offDir.dx, cy + 4 + offDir.dy);
-    qcwMark('o_dir', startX + (nShow - 1) * gapPx + 34 + offDir.dx, cy + 4 + offDir.dy, 70, null, 'ov');
+    ctx.font = '11px sans-serif';
+    const dirTxt = '焊接方向 →';
+    const dirW = ctx.measureText(dirTxt).width;
+    const dirX = Math.min(startX + (nShow - 1) * gapPx + 34 + offDir.dx, padR - dirW - 6);
+    ctx.fillText(dirTxt, dirX, cy + 4 + offDir.dy);
+    qcwMark('o_dir', dirX, cy + 4 + offDir.dy, dirW + 4, null, 'ov');
   }
 
   function qcwLoop() {
