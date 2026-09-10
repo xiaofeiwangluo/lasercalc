@@ -911,6 +911,13 @@
     visibility: hidden;
     pointer-events: none;
   }
+  .splash-logo-wrap {
+    animation: logoIn 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+  }
+  @keyframes logoIn {
+    0% { transform: scale(0.55); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
   .splash-logo {
     width: 108px;
     height: 108px;
@@ -925,7 +932,7 @@
   .splash-logo svg {
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 0 18px var(--laser-glow)) drop-shadow(0 0 40px rgba(0,188,212,0.2));
+    filter: drop-shadow(0 0 14px rgba(0,188,212,0.35));
   }
   .splash-logo::after {
     content: '';
@@ -947,12 +954,13 @@
     position: relative;
     overflow: visible;
     opacity: 0;
+    transform-origin: center;
     animation: beamReveal 1.6s ease forwards;
   }
   @keyframes beamReveal {
-    0% { opacity: 0; width: 0; }
-    40% { opacity: 1; width: 180px; }
-    100% { opacity: 0.9; width: 220px; }
+    0% { opacity: 0; transform: scaleX(0); }
+    40% { opacity: 1; transform: scaleX(0.82); }
+    100% { opacity: 0.9; transform: scaleX(1); }
   }
   .splash-beam .beam-line {
     position: absolute;
@@ -960,7 +968,7 @@
     height: 2px;
     background: linear-gradient(90deg, transparent, var(--laser), var(--laser-2), transparent);
     border-radius: 2px;
-    box-shadow: 0 0 12px var(--laser-glow);
+    box-shadow: 0 0 10px var(--laser-glow);
   }
   .splash-beam .beam-pulse {
     position: absolute;
@@ -968,7 +976,7 @@
     width: 8px; height: 8px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 0 14px 4px var(--laser-glow);
+    box-shadow: 0 0 10px 3px var(--laser-glow);
     animation: beamPulse 1.8s linear infinite;
   }
   @keyframes beamPulse {
@@ -1021,16 +1029,17 @@
   }
   .splash-loader .bar {
     height: 100%;
-    width: 0%;
+    width: 100%;
+    transform-origin: left center;
     background: linear-gradient(90deg, var(--laser), var(--laser-2));
     border-radius: 3px;
     animation: loadBar 2.2s ease-in-out forwards;
-    box-shadow: 0 0 8px var(--laser-glow);
+    box-shadow: 0 0 6px var(--laser-glow);
   }
   @keyframes loadBar {
-    0% { width: 0%; }
-    60% { width: 75%; }
-    100% { width: 100%; }
+    0% { transform: scaleX(0); }
+    60% { transform: scaleX(0.75); }
+    100% { transform: scaleX(1); }
   }
   .splash-version {
     position: absolute;
@@ -1039,6 +1048,15 @@
     color: var(--text-3);
     letter-spacing: 1px;
     font-family: "SF Mono", "Consolas", monospace;
+  }
+  /* 安卓小屏（<380px）启动动画自适应：缩小 Logo/字号/间距，避免溢出 */
+  @media (max-width: 380px) {
+    .splash-logo { width: 90px; height: 90px; margin-bottom: 24px; }
+    .splash-logo::after { inset: -10px; }
+    .splash-beam { width: 180px; margin-bottom: 28px; }
+    .splash-slogan { font-size: 19px; letter-spacing: 3px; margin-bottom: 12px; }
+    .splash-sub { font-size: 11px; letter-spacing: 1.5px; margin-bottom: 34px; }
+    .splash-loader { width: 104px; }
   }
 
   /* ===== 焊接仿真 ===== */
@@ -1950,17 +1968,19 @@
 
   <!-- ===== 启动动画 ===== -->
   <div class="splash" id="splash">
-    <div class="splash-logo">
-      <svg viewBox="0 0 1024 1024" fill="none">
-        <rect width="1024" height="1024" rx="220" fill="#0d1424" stroke="#1f2b45" stroke-width="6"/>
-        <ellipse cx="380" cy="512" rx="60" ry="150" fill="none" stroke="#00bcd4" stroke-width="20"/>
-        <ellipse cx="640" cy="512" rx="60" ry="150" fill="none" stroke="#00bcd4" stroke-width="20"/>
-        <line x1="170" y1="512" x2="330" y2="512" stroke="#ff5722" stroke-width="24" stroke-linecap="round"/>
-        <line x1="420" y1="512" x2="600" y2="512" stroke="#ff9800" stroke-width="15" stroke-linecap="round"/>
-        <line x1="680" y1="512" x2="820" y2="512" stroke="#ffb74d" stroke-width="10" stroke-linecap="round"/>
-        <circle cx="870" cy="512" r="38" fill="#fff3e0"/>
-        <circle cx="870" cy="512" r="60" fill="#ff9800" opacity="0.3"/>
-      </svg>
+    <div class="splash-logo-wrap">
+      <div class="splash-logo">
+        <svg viewBox="0 0 1024 1024" fill="none">
+          <rect width="1024" height="1024" rx="220" fill="#0d1424" stroke="#1f2b45" stroke-width="6"/>
+          <ellipse cx="380" cy="512" rx="60" ry="150" fill="none" stroke="#00bcd4" stroke-width="20"/>
+          <ellipse cx="640" cy="512" rx="60" ry="150" fill="none" stroke="#00bcd4" stroke-width="20"/>
+          <line x1="170" y1="512" x2="330" y2="512" stroke="#ff5722" stroke-width="24" stroke-linecap="round"/>
+          <line x1="420" y1="512" x2="600" y2="512" stroke="#ff9800" stroke-width="15" stroke-linecap="round"/>
+          <line x1="680" y1="512" x2="820" y2="512" stroke="#ffb74d" stroke-width="10" stroke-linecap="round"/>
+          <circle cx="870" cy="512" r="38" fill="#fff3e0"/>
+          <circle cx="870" cy="512" r="60" fill="#ff9800" opacity="0.3"/>
+        </svg>
+      </div>
     </div>
     <div class="splash-beam">
       <div class="beam-line"></div>
@@ -7124,14 +7144,23 @@
     const slogan = $('splashSlogan');
     const chars = slogan.querySelectorAll('.char');
     chars.forEach((c, i) => {
-      setTimeout(() => c.classList.add('show'), 200 + i * 120);
+      setTimeout(() => c.classList.add('show'), 150 + i * 110);
     });
+    // 退出前 Logo 先收缩淡出，增强收尾层次感
+    setTimeout(() => {
+      const wrap = document.querySelector('.splash-logo-wrap');
+      if (wrap) {
+        wrap.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
+        wrap.style.transform = 'scale(0.82)';
+        wrap.style.opacity = '0';
+      }
+    }, 2500);
     setTimeout(() => {
       $('splash').classList.add('hidden');
-    }, 2800);
+    }, 2850);
     setTimeout(() => {
       $('splash').style.display = 'none';
-    }, 3400);
+    }, 3450);
   }
 
   // ===== 首次登录更新说明（只显示一次） =====
