@@ -1216,6 +1216,20 @@
   .qcw-edit-active #qcwOverlapCanvas {
     touch-action: none;
   }
+  /* QCW 图形标题（wc-tag）编辑模式下可拖动：显示拾取框 */
+  .qcw-edit-active .weld-canvas-wrap .wc-tag {
+    outline: 1.5px dashed rgba(255,152,0,0.7);
+    outline-offset: 2px;
+    cursor: move;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+    z-index: 6;
+    background: rgba(10,15,30,0.9);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
   .wc-save-btn {
     position: absolute;
     top: 6px;
@@ -8532,6 +8546,49 @@
   let qcwLabelPos = {};
   try { qcwLabelPos = JSON.parse(localStorage.getItem('fslc_qcw_labels') || '{}') || {}; } catch (e) {}
   function saveQcwLabels() { try { localStorage.setItem('fslc_qcw_labels', JSON.stringify(qcwLabelPos)); } catch (e) {} }
+  // ===== QCW 图形标题（wc-tag）拖动：编辑模式下可移动，自动保存 =====
+  let qcwTagPos = {};
+  try { qcwTagPos = JSON.parse(localStorage.getItem('fslc_qcw_tags') || '{}') || {}; } catch (e) {}
+  function saveQcwTagPos() { try { localStorage.setItem('fslc_qcw_tags', JSON.stringify(qcwTagPos)); } catch (e) {} }
+  function bindQcwTagDrag(tagEl, id) {
+    if (!tagEl) return;
+    const apply = () => {
+      const o = qcwTagPos[id] || {};
+      tagEl.style.transform = 'translate(' + (o.dx || 0) + 'px,' + (o.dy || 0) + 'px)';
+    };
+    apply();
+    let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    tagEl.addEventListener('pointerdown', (e) => {
+      if (!tagEl.closest('.qcw-edit-active')) return;
+      dragging = true;
+      const o = qcwTagPos[id] || {};
+      ox = o.dx || 0; oy = o.dy || 0;
+      sx = e.clientX; sy = e.clientY;
+      try { tagEl.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    });
+    tagEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const o = qcwTagPos[id] || {};
+      o.dx = ox + (e.clientX - sx);
+      o.dy = oy + (e.clientY - sy);
+      qcwTagPos[id] = o;
+      tagEl.style.transform = 'translate(' + o.dx + 'px,' + o.dy + 'px)';
+      saveQcwTagPos();
+    });
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      try { tagEl.releasePointerCapture(e.pointerId); } catch (err) {}
+    };
+    tagEl.addEventListener('pointerup', end);
+    tagEl.addEventListener('pointercancel', end);
+  }
+  (function () {
+    const tags = document.querySelectorAll('#libSimQcw .weld-canvas-wrap .wc-tag');
+    bindQcwTagDrag(tags[0], 'qcwSection');
+    bindQcwTagDrag(tags[1], 'qcwOverlap');
+  })();
   function qcwOff(id) {
     const o = qcwLabelPos[id] || { dx: 0, dy: 0 };
     return { dx: o.dx || 0, dy: o.dy || 0 };
