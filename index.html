@@ -1224,7 +1224,25 @@
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
-    position: relative;
+    pointer-events: auto;
+    z-index: 6;
+    background: rgba(10,15,30,0.9);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  /* 单光斑焊接：编辑模式下拦截触摸、支持拖动 */
+  .weld-edit-active #weldCanvas,
+  .weld-edit-active #weldCanvas3D {
+    touch-action: none;
+  }
+  .weld-edit-active .weld-canvas-wrap .wc-tag {
+    outline: 1.5px dashed rgba(255,152,0,0.7);
+    outline-offset: 2px;
+    cursor: move;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: auto;
     z-index: 6;
     background: rgba(10,15,30,0.9);
     padding: 2px 6px;
@@ -2710,6 +2728,9 @@
         <button class="weld-btn secondary" id="weldSave" title="将当前仿真画面保存为图片">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
         </button>
+        <button class="weld-btn secondary" id="weldEdit" title="拖动文字/标示到任意位置，自动保存">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>标注位置
+        </button>
         <div class="weld-speed-select">
           <span>速度</span>
           <select id="weldSpeed">
@@ -3696,7 +3717,8 @@
     wDefocus: 0,        // mm 离焦量
     weldPlaying: true,
     weldSpeed: 1,
-    weldTime: 0
+    weldTime: 0,
+    weldEditMode: false
   };
 
   // ===== 材料库（1064nm 光纤激光 · 深熔焊接有效吸收率） =====
@@ -6294,6 +6316,136 @@
   const weldCanvas3D = $('weldCanvas3D');
   const wctx3D = weldCanvas3D.getContext('2d');
 
+  // ===== 单光斑焊接：标注位置（可拖动，自动保存） =====
+  let weldLabelPos = {};
+  try { weldLabelPos = JSON.parse(localStorage.getItem('fslc_weld_labels') || '{}') || {}; } catch (e) {}
+  function saveWeldLabels() { try { localStorage.setItem('fslc_weld_labels', JSON.stringify(weldLabelPos)); } catch (e) {} }
+  function weldOff(id) {
+    const o = weldLabelPos[id] || { dx: 0, dy: 0 };
+    return { dx: o.dx || 0, dy: o.dy || 0 };
+  }
+  const weldLabelRects = {};
+  const weldLabelRects3D = {};
+  function weldMark(id, x, y, txtW, ctx, which) {
+    if (!state.weldEditMode) return;
+    const c = ctx || (which === '3d' ? wctx3D : wctx);
+    const rects = which === '3d' ? weldLabelRects3D : weldLabelRects;
+    rects[id] = { x: x, y: y };
+    const bw = Math.max(txtW || 12, 34);
+    c.strokeStyle = 'rgba(255,152,0,0.6)';
+    c.setLineDash([4, 3]);
+    c.lineWidth = 1.2;
+    c.strokeRect(x - bw / 2, y - 11, bw, 16);
+    c.setLineDash([]);
+  }
+  function weldPointerXY(e) {
+    const rect = weldCanvas.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  function weldPointerXY3D(e) {
+    const rect = weldCanvas3D.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  let weldDragLabel = null, weldDragStartX = 0, weldDragStartY = 0, weldDragOffX = 0, weldDragOffY = 0;
+  function bindWeldDrag(canvas, rects, xyFn) {
+    if (!canvas) return;
+    const redraw = () => { drawWeld(); drawWeld3D(); };
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!state.weldEditMode) return;
+      const p = xyFn(e);
+      let best = null, bestD = 1e9;
+      for (const id in rects) {
+        const r2 = rects[id];
+        const d = Math.hypot(p.x - r2.x, p.y - r2.y);
+        if (d < bestD) { bestD = d; best = id; }
+      }
+      if (best && bestD < 46) {
+        weldDragLabel = best;
+        const o = weldLabelPos[best] || { dx: 0, dy: 0 };
+        weldDragOffX = o.dx || 0; weldDragOffY = o.dy || 0;
+        weldDragStartX = p.x; weldDragStartY = p.y;
+        e.preventDefault();
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!weldDragLabel) return;
+      const p = xyFn(e);
+      const o = weldLabelPos[weldDragLabel] || { dx: 0, dy: 0 };
+      o.dx = weldDragOffX + (p.x - weldDragStartX);
+      o.dy = weldDragOffY + (p.y - weldDragStartY);
+      weldLabelPos[weldDragLabel] = o;
+      saveWeldLabels();
+      redraw();
+    });
+    const endDrag = () => { weldDragLabel = null; };
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+  }
+  bindWeldDrag(weldCanvas, weldLabelRects, weldPointerXY);
+  bindWeldDrag(weldCanvas3D, weldLabelRects3D, weldPointerXY3D);
+  // 标注位置编辑模式：进入后暂停动画，可拖动文字/标示；再次点击恢复动画
+  const weldEditBtn = $('weldEdit');
+  if (weldEditBtn) weldEditBtn.addEventListener('click', () => {
+    state.weldEditMode = !state.weldEditMode;
+    weldEditBtn.classList.toggle('edit-on', state.weldEditMode);
+    const weldView = $('view-weld');
+    if (weldView) weldView.classList.toggle('weld-edit-active', state.weldEditMode);
+    if (state.weldEditMode) {
+      state.weldPlaying = false;
+      $('weldPlay').textContent = '播放';
+    } else {
+      state.weldPlaying = true;
+      $('weldPlay').textContent = '暂停';
+    }
+    for (const k in weldLabelRects) delete weldLabelRects[k];
+    for (const k in weldLabelRects3D) delete weldLabelRects3D[k];
+    drawWeld();
+    drawWeld3D();
+  });
+  // 图形标题（wc-tag）拖动：编辑模式下可移动，自动保存
+  let weldTagPos = {};
+  try { weldTagPos = JSON.parse(localStorage.getItem('fslc_weld_tags') || '{}') || {}; } catch (e) {}
+  function saveWeldTagPos() { try { localStorage.setItem('fslc_weld_tags', JSON.stringify(weldTagPos)); } catch (e) {} }
+  function bindWeldTagDrag(tagEl, id) {
+    if (!tagEl) return;
+    const apply = () => {
+      const o = weldTagPos[id] || {};
+      tagEl.style.transform = 'translate(' + (o.dx || 0) + 'px,' + (o.dy || 0) + 'px)';
+    };
+    apply();
+    let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    tagEl.addEventListener('pointerdown', (e) => {
+      if (!tagEl.closest('.weld-edit-active')) return;
+      dragging = true;
+      const o = weldTagPos[id] || {};
+      ox = o.dx || 0; oy = o.dy || 0;
+      sx = e.clientX; sy = e.clientY;
+      try { tagEl.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    });
+    tagEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const o = weldTagPos[id] || {};
+      o.dx = ox + (e.clientX - sx);
+      o.dy = oy + (e.clientY - sy);
+      weldTagPos[id] = o;
+      tagEl.style.transform = 'translate(' + o.dx + 'px,' + o.dy + 'px)';
+      saveWeldTagPos();
+    });
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      try { tagEl.releasePointerCapture(e.pointerId); } catch (err) {}
+    };
+    tagEl.addEventListener('pointerup', end);
+    tagEl.addEventListener('pointercancel', end);
+  }
+  (function () {
+    const tags = document.querySelectorAll('#weldSimSingle .weld-canvas-wrap .wc-tag');
+    bindWeldTagDrag(tags[0], 'weld2D');
+    bindWeldTagDrag(tags[1], 'weld3D');
+  })();
+
   function resizeWeldCanvas() {
     const rect = weldCanvas.parentElement.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -6370,10 +6522,13 @@
     wctx.font = '9px "SF Mono", Consolas, monospace';
     wctx.textAlign = 'left';
     const thickLabel = thickMm.toFixed(1) + ' mm';
+    const offThick = weldOff('w_thick');
     if (workH > 28) {
-      wctx.fillText(thickLabel, dimX + 8, workTop + workH / 2 + 3);
+      wctx.fillText(thickLabel, dimX + 8 + offThick.dx, workTop + workH / 2 + 3 + offThick.dy);
+      weldMark('w_thick', dimX + 8 + offThick.dx, workTop + workH / 2 + 3 + offThick.dy, 52, wctx, '2d');
     } else {
-      wctx.fillText('母材 ' + thickLabel, dimX - 4, Math.min(workBottom + 12, h * 0.95));
+      wctx.fillText('母材 ' + thickLabel, dimX - 4 + offThick.dx, Math.min(workBottom + 12, h * 0.95) + offThick.dy);
+      weldMark('w_thick', dimX - 4 + offThick.dx, Math.min(workBottom + 12, h * 0.95) + offThick.dy, 74, wctx, '2d');
     }
 
     // 时间演化
@@ -6434,7 +6589,15 @@
       wctx.fillStyle = 'rgba(0,188,212,1)';
       wctx.font = '10px "SF Mono", Consolas, monospace';
       wctx.textAlign = 'center';
-      wctx.fillText('熔宽 ' + fmt(r.width, 2) + ' mm', weldX, dimY + 12);
+      const offWidth = weldOff('w_width');
+      const wTxtX = weldX + offWidth.dx, wTxtY = dimY + 12 + offWidth.dy;
+      const wTxt = '熔宽 ' + fmt(r.width, 2) + ' mm';
+      const wTxtW = wctx.measureText(wTxt).width;
+      wctx.fillStyle = 'rgba(10,14,26,0.72)';
+      wctx.fillRect(wTxtX - wTxtW / 2 - 3, wTxtY - 9, wTxtW + 6, 14);
+      wctx.fillStyle = 'rgba(0,188,212,1)';
+      wctx.fillText(wTxt, wTxtX, wTxtY);
+      weldMark('w_width', wTxtX, wTxtY, wTxtW + 6, wctx, '2d');
     }
 
     // 熔穿时：母材底部背面熔池（熔融金属从背面流出）
@@ -6549,14 +6712,16 @@
     wctx.font = 'bold 11px monospace';
     wctx.textAlign = 'left';
     const depW = wctx.measureText(depLabel).width;
+    const offDep = weldOff('w_depth');
     // 熔深文字默认放虚线右侧；若超出画布右缘则放到虚线左侧
-    let depX = weldX + meltWidth + 12;
-    if (depX + depW > w - 4) depX = weldX - meltWidth - depW - 12;
-    const depY = Math.min(workTop + meltDepth / 2 + 4, workBottom - 4);
+    let depX = weldX + meltWidth + 12 + offDep.dx;
+    if (depX + depW > w - 4) depX = weldX - meltWidth - depW - 12 + offDep.dx;
+    const depY = Math.min(workTop + meltDepth / 2 + 4, workBottom - 4) + offDep.dy;
     wctx.fillStyle = 'rgba(10, 14, 26, 0.72)';
     wctx.fillRect(depX - 3, depY - 10, depW + 6, 14);
     wctx.fillStyle = '#ff9800';
     wctx.fillText(depLabel, depX, depY);
+    weldMark('w_depth', depX, depY, depW + 6, wctx, '2d');
 
     // 焊接方向指示（箭头 + 速度）：置于画布左上空气区，避开中央激光束与熔池
     const dirY = h * 0.085;
@@ -6585,17 +6750,23 @@
     wctx.fillStyle = '#ff9800';
     wctx.font = 'bold 10px monospace';
     wctx.textAlign = 'left';
-    wctx.fillText('焊接方向', arrowX0, dirY + 16);
+    const offDir = weldOff('w_dir');
+    wctx.fillText('焊接方向', arrowX0 + offDir.dx, dirY + 16 + offDir.dy);
+    weldMark('w_dir', arrowX0 + offDir.dx, dirY + 16 + offDir.dy, 62, wctx, '2d');
     // 速度标签
     wctx.fillStyle = 'rgba(255,255,255,0.75)';
     wctx.font = '10px monospace';
-    wctx.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowX0, dirY + 29);
+    const offV = weldOff('w_v');
+    wctx.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowX0 + offV.dx, dirY + 29 + offV.dy);
+    weldMark('w_v', arrowX0 + offV.dx, dirY + 29 + offV.dy, 88, wctx, '2d');
 
     // 材料标注
     wctx.fillStyle = 'rgba(138,150,173,0.8)';
     wctx.font = '10px monospace';
     wctx.textAlign = 'right';
-    wctx.fillText(r.matGroup + ' · ' + r.matName, w - 12, h - 10);
+    const offMat = weldOff('w_mat');
+    wctx.fillText(r.matGroup + ' · ' + r.matName, w - 12 + offMat.dx, h - 10 + offMat.dy);
+    weldMark('w_mat', w - 12 + offMat.dx, h - 10 + offMat.dy, 110, wctx, '2d');
 
     // 模式标注
     wctx.font = '10px monospace';
@@ -6813,17 +6984,25 @@
     c.font = '9px monospace';
     c.textAlign = 'left';
     c.fillStyle = 'rgba(0,188,212,0.8)';
-    c.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowStart.x + 6, arrowStart.y - 4);
+    const offV3 = weldOff('w3_v');
+    c.fillText('V = ' + fmt(state.wV, 0) + ' mm/s', arrowStart.x + 6 + offV3.dx, arrowStart.y - 4 + offV3.dy);
+    weldMark('w3_v', arrowStart.x + 6 + offV3.dx, arrowStart.y - 4 + offV3.dy, 88, c, '3d');
 
     // 8) 标注：模式 + 熔深 + 材料
     c.textAlign = 'right';
     c.fillStyle = r.keyhole ? '#ff9800' : '#00bcd4';
     c.font = '10px monospace';
-    c.fillText(r.keyhole ? 'KEYHOLE MODE' : 'CONDUCTION MODE', w - 12, h - 10);
+    const offMode = weldOff('w3_mode');
+    c.fillText(r.keyhole ? 'KEYHOLE MODE' : 'CONDUCTION MODE', w - 12 + offMode.dx, h - 10 + offMode.dy);
+    weldMark('w3_mode', w - 12 + offMode.dx, h - 10 + offMode.dy, 118, c, '3d');
     c.fillStyle = 'rgba(255,255,255,0.75)';
-    c.fillText('熔深 ' + fmt(depthMm, 2) + ' mm', w - 12, h - 24);
+    const offD3 = weldOff('w3_depth');
+    c.fillText('熔深 ' + fmt(depthMm, 2) + ' mm', w - 12 + offD3.dx, h - 24 + offD3.dy);
+    weldMark('w3_depth', w - 12 + offD3.dx, h - 24 + offD3.dy, 106, c, '3d');
     c.fillStyle = 'rgba(138,150,173,0.8)';
-    c.fillText(r.matGroup + ' · ' + r.matName, w - 12, h - 38);
+    const offM3 = weldOff('w3_mat');
+    c.fillText(r.matGroup + ' · ' + r.matName, w - 12 + offM3.dx, h - 38 + offM3.dy);
+    weldMark('w3_mat', w - 12 + offM3.dx, h - 38 + offM3.dy, 110, c, '3d');
   }
 
   let weldSparks = null;
