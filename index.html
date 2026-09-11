@@ -3614,7 +3614,7 @@
   <div class="update-modal" id="updateModal">
     <div class="update-card">
       <h3>版本更新 <span class="vtag">v1.4.14</span></h3>
-      <div class="up-sub">工艺窗口对比 · 无达标窗口修复</div>
+      <div class="up-sub">工艺窗口计算逻辑修复 · 无达标窗口修复</div>
       <div class="up-item">
         <span class="up-num">1</span>
         <span><b style="color:var(--text)">修复校验失败残留</b>：目标区间非法（熔深/熔宽上限≤下限、下限≤0 或为空）时，离焦/功率/速度三个结果区统一显示校验提示，不再残留上一次计算结果。</span>
@@ -3625,6 +3625,10 @@
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
+        <span><b style="color:var(--text)">修复功率窗口断裂误判</b>：传导→深熔 K 值改用 smoothstep 平滑过渡（0.5×IKH~2×IKH 连续），功率扫描熔深曲线不再在阈值处跳变断裂；跨转变点的目标区间（如 0.5~1.5mm）现在可正确给出连续功率窗口。焊接仿真与工艺窗口模型同步更新，结果保持一致。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">4</span>
         <span><b style="color:var(--text)">QCW 模型 v2.2 同步保留</b>：熔深标定收敛（300W 传导焊 1.17→0.94mm）、薄板熔透饱和、「已熔透」标注。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
@@ -3637,10 +3641,12 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
-        <div class="cl-head"><span class="cl-ver">v1.4.14</span><span class="cl-date">2026-09-11 · 工艺窗口无达标修复</span></div>
+        <div class="cl-head"><span class="cl-ver">v1.4.14</span><span class="cl-date">2026-09-11 · 工艺窗口计算逻辑修复</span></div>
         <ul class="cl-list">
+          <li><b>修复功率窗口断裂误判</b>：传导→深熔 K 值 smoothstep 平滑过渡，跨转变点目标区间可给出连续窗口（如 0.5~1.5mm → 450~1200W）。</li>
           <li><b>修复校验失败残留</b>：目标区间非法时三个结果区统一提示，不再残留旧结果。</li>
           <li><b>无达标窗口不带多余单位</b>：显示更清晰。</li>
+          <li><b>焊接仿真与工艺窗口模型同步</b>：K 值过渡逻辑两处一致。</li>
         </ul>
       </div>
       <div class="cl-item">
@@ -6331,10 +6337,12 @@
     };
     const mp = matParams[state.wMaterial] || matParams.steel;
 
-    // 焊接模式判定：材料专属功率密度阈值
-    const keyhole = density > mp.IKH;
-    // 纯理论推演熔深 (mm) — 材料专属K值
-    const K = keyhole ? mp.Kk : mp.Kc;
+    // 焊接模式判定：材料专属功率密度阈值（smoothstep 平滑过渡，避免 K 值跳变导致熔深曲线断裂）
+    const tKH = Math.max(0, Math.min(1, (density - 0.5 * mp.IKH) / (1.5 * mp.IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH);
+    const keyhole = smoothKH > 0.5;
+    // 纯理论推演熔深 (mm) — 材料专属K值（传导→深熔连续过渡）
+    const K = mp.Kc + (mp.Kk - mp.Kc) * smoothKH;
     const theory = K * P * eta / (V * d);
     // 预估熔深（工艺修正）
     const correction = 1 - Math.exp(-V / 25);
@@ -8144,8 +8152,11 @@
     const area = Math.PI * r * r;
     const density = area > 0 ? P / area : 0;
     const mp = WIN_MP[matKey] || WIN_MP.steel;
-    const keyhole = density > mp.IKH;
-    const K = keyhole ? mp.Kk : mp.Kc;
+    // smoothstep 平滑过渡（与焊接仿真一致）：K 值在 0.5×IKH~2×IKH 间连续，功率窗口不再断裂
+    const tKH = Math.max(0, Math.min(1, (density - 0.5 * mp.IKH) / (1.5 * mp.IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH);
+    const keyhole = smoothKH > 0.5;
+    const K = mp.Kc + (mp.Kk - mp.Kc) * smoothKH;
     const theory = K * P * mat.eta / (Math.max(V, 0.5) * d);
     const correction = 1 - Math.exp(-V / 25);
     const est = Math.min(theory * correction, P / 400);
