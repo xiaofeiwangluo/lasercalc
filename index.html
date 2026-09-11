@@ -1995,7 +1995,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.12</div>
+    <div class="splash-version">v1.4.13</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2688,7 +2688,7 @@
             <div class="wd-item2"><span class="wd2-label">脉冲总数</span><span class="wd2-value" id="qcwCount">0</span></div>
           </div>
           <div class="hint" style="margin-top:8px;">
-            模型依据（半经验工程模型，v2.1 文献校准）：QCW（准连续）脉冲激光焊接——①重叠率 η = 1 − v/(f·d)（v 焊接速度、f 脉冲频率、d 焊斑直径）：焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》及激光焊接机行业公式；②单脉冲能量 E_p = P_peak×τ，平均功率 P_avg = P_peak×占空比（准连续激光器等效热输入，laserfair）；③熔深模型 v2.1：平均线能量（P_avg·η/v）为等效热输入、重叠率累积增强 (1+1.2η) 反映脉冲重叠对熔深的叠加（IDC《Analysis of Performance Characteristics of Laser Beam Welding》：脉宽↑→重叠↑→熔深↑）、脉宽增强 τ^0.18（MDPI 2024《Keyhole Shape and Penetration Depth in Laser Spot Welding of Aluminum with Power Wave Modulation》：功率/脉宽/脉冲数↑、光斑半径↓→熔深↑；中国激光：熔深与功率密度近似线性、与点能量近似对数）；④薄板熔透饱和：预估熔深达到母材厚度后熔深饱和为板厚、多余能量按能量守恒扩展熔宽（√(w²+d·Δh)），界面标注「已熔透」；⑤光学链路：放大倍率 M=f_f/f_c、焦点光斑 d₀=纤芯×M、瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。结果供工艺预研参考，请以实测为准。
+            模型依据（半经验工程模型，v2.2 文献校准）：QCW（准连续）脉冲激光焊接——①重叠率 η = 1 − v/(f·d)（v 焊接速度、f 脉冲频率、d 焊斑直径）：焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》及激光焊接机行业公式；②单脉冲能量 E_p = P_peak×τ，平均功率 P_avg = P_peak×占空比（准连续激光器等效热输入，laserfair）；③熔深模型 v2.2：平均线能量（P_avg·η/v）为等效热输入、重叠率累积增强 (1+0.75η) 反映脉冲重叠对熔深的叠加（v2.2 收敛慢速高重叠放大，与能量守恒上限校验一致）（IDC《Analysis of Performance Characteristics of Laser Beam Welding》：脉宽↑→重叠↑→熔深↑）、脉宽增强 τ^0.18（MDPI 2024《Keyhole Shape and Penetration Depth in Laser Spot Welding of Aluminum with Power Wave Modulation》：功率/脉宽/脉冲数↑、光斑半径↓→熔深↑；中国激光：熔深与功率密度近似线性、与点能量近似对数）；④薄板熔透饱和：预估熔深达到母材厚度后熔深饱和为板厚、多余能量按能量守恒扩展熔宽（√(w²+d·Δh)），界面标注「已熔透」；⑤光学链路：放大倍率 M=f_f/f_c、焦点光斑 d₀=纤芯×M、瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。结果供工艺预研参考，请以实测为准。
           </div>
         </div>
       </div><!-- /libSimQcw -->
@@ -3597,7 +3597,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.12</span>
+        <span class="ar-value">v1.4.13</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3610,26 +3610,22 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.12 QCW 模型 v2.1 -->
+  <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.12</span></h3>
-      <div class="up-sub">QCW 准连续脉冲焊接模型 v2.1 · 精度修复</div>
+      <h3>版本更新 <span class="vtag">v1.4.13</span></h3>
+      <div class="up-sub">QCW 准连续脉冲焊接模型 v2.2 · 绝对标定收敛</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">修复慢速高重叠熔深爆炸</b>：重叠率累积增强由 (1+1.6η) 温和化为 (1+1.2η)、脉宽增强指数 0.22→0.18，低功率慢速（如 300W / 20mm/s / 90% 重叠）场景熔深不再虚高 3 倍以上。</span>
+        <span><b style="color:var(--text)">收敛慢速高重叠熔深放大</b>：重叠率累积增强由 (1+1.2η) 收敛为 (1+0.75η)。传导焊（峰值功率密度低于深熔阈值）场景熔深不再高估：钢 300W / 2.4ms / 300Hz / 20mm/s / 0.66mm 光斑（峰值密度仅 0.88 kW/mm²）熔深由 1.17mm 修正至 0.94mm，贴近能量守恒上限。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">新增薄板熔透饱和模型</b>：预估熔深达到母材厚度后熔深饱和为板厚、多余能量按能量守恒扩展熔宽，结果区自动标注「已熔透」，动画与截面图同步。</span>
+        <span><b style="color:var(--text)">薄板熔透保持不变</b>：0.4mm 薄板仍正确判定熔透（熔深饱和 0.40mm + 「已熔透」标注），熔宽随熔透能量扩展至 1.12mm。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">离焦响应增强</b>：引入光束质量 M²（多模光纤典型值 ≈12）修正瑞利长度 + 离焦功率密度因子（熔深∝(d0/d)^1.1），长焦系统离焦熔深变化贴近实际；薄板熔透后离焦改影响熔宽、熔深饱和为板厚并标注「已熔透」。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">4</span>
-        <span><b style="color:var(--text)">示例</b>：钢 200μm/100/330mm、离焦 1mm、300W、2.5ms、300Hz、20mm/s、0.4mm 板 → 熔深 0.40mm（已熔透，原 1.47mm）、熔宽 1.18mm，与薄板 QCW 焊接实测规律相符。</span>
+        <span><b style="color:var(--text)">说明</b>：300W 级 QCW 属传导焊，熔深主要由平均功率（216W）×慢速（20mm/s）×90% 重叠热累积决定；模型与能量守恒上限校验一致，结果供工艺预研参考，请以实测为准。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3640,6 +3636,14 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.13</span><span class="cl-date">2026-09-11 · QCW 模型 v2.2 标定收敛</span></div>
+        <ul class="cl-list">
+          <li><b>收敛慢速高重叠熔深放大</b>：重叠率累积增强 (1+1.2η)→(1+0.75η)；300W 传导焊（峰值密度 0.88 kW/mm² < 深熔阈值）熔深由 1.17mm 收敛至 0.94mm，贴近能量守恒上限。</li>
+          <li><b>薄板熔透判定保持不变</b>：0.4mm 板熔透饱和 0.40mm + 「已熔透」标注，熔宽扩展 1.12mm；默认参数 0.46mm、深熔 3mm 熔透验证正常。</li>
+          <li><b>说明</b>：低功率 QCW 熔深受平均功率 × 速度 × 重叠热累积主导，已与能量守恒校验一致。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.12</span><span class="cl-date">2026-09-11 · QCW 模型 v2.1 精度修复</span></div>
         <ul class="cl-list">
@@ -9301,11 +9305,11 @@
     // Aluminum with Power Wave Modulation》）；④熔深与功率密度近似线性、与作用时间/点能量近似对数
     // （中国激光《纳秒激光工艺参数对铝/镁异种焊缝成形的影响》）。
     // 修正：原模型误用峰值功率算线能量（高估热输入约 1/占空比），改平均线能量；新增重叠率累积项
-    // (1+1.2·η_overlap) 与脉宽增强项 τ^0.18；v2.1 温和化慢速高重叠放大（20mm/s+300Hz 90% 重叠时
+    // (1+0.75·η_overlap) 与脉宽增强项 τ^0.18；v2.2 收敛慢速高重叠放大（20mm/s+300Hz 90% 重叠时
     // 熔深不再爆炸），并新增薄板熔透饱和模型：预估熔深达到母材厚度后熔深饱和、多余能量转熔宽扩展。
     const ElineAvg = pAvg * etaEff / p.v;                  // 平均线能量 J/mm（等效热输入）
     const C1q = (mat.C1 || 0.12) * 1.5;                    // 脉冲焊标定系数（文献半经验）
-    const overlapBoost = 1 + 1.2 * overlap;                // 重叠率累积增强（0→×1，1→×2.2）
+    const overlapBoost = 1 + 0.75 * overlap;                // 重叠率累积增强（0→×1，1→×1.75；v2.2 收敛慢速高重叠放大）
     const tauBoost = Math.pow(Math.max(p.tau, 0.05), 0.18); // 脉宽增强（1ms→×1，10ms→×1.51）
     const hPhys = C1q * Math.pow(Math.max(ElineAvg, 0.001), 0.6) / Math.pow(Math.max(d, 0.01), 0.25)
               * Math.pow(alphaRef / alphaE, 0.4) * overlapBoost * tauBoost * defocusFactor;
