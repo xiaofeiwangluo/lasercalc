@@ -8605,7 +8605,7 @@
     const headW = 54, headH = 30, nozzleLen = 10;
     ctx.save();
     ctx.translate(tipX, tipY);
-    ctx.rotate(thetaRad);   // 局部 -y 方向沿轴线向上
+    ctx.rotate(-thetaRad);  // 局部向下 = 轴线方向（+sinθ, +cosθ），激光束与保护气同轴
     // 准直头（局部坐标系：中心在 (0, -(nozzleLen + headH/2))）
     ctx.fillStyle = 'rgba(58,66,88,0.95)';
     ctx.strokeStyle = 'rgba(160,175,200,0.7)';
@@ -8713,8 +8713,10 @@
       ctx.arc(tipX, tipY, aR, Math.PI / 2, Math.PI / 2 - thetaRad, true);
       ctx.stroke();
       ctx.fillStyle = 'rgba(200,210,225,0.9)';
-      ctx.fillText('θ=' + r.theta.toFixed(0) + '°', tipX + aR * Math.cos(Math.PI / 2 - thetaRad / 2) + offAg.dx, tipY + aR * Math.sin(Math.PI / 2 - thetaRad / 2) + offAg.dy);
-      gasMark('g_angle', tipX + aR * Math.cos(Math.PI / 2 - thetaRad / 2) + offAg.dx, tipY + aR * Math.sin(Math.PI / 2 - thetaRad / 2) + offAg.dy, 50, 14);
+      const midA = Math.PI / 2 - thetaRad / 2;
+      const aLbl = aR + 24;
+      ctx.fillText('θ=' + r.theta.toFixed(0) + '°', tipX + aLbl * Math.cos(midA) + offAg.dx, tipY + aLbl * Math.sin(midA) + offAg.dy);
+      gasMark('g_angle', tipX + aLbl * Math.cos(midA) + offAg.dx, tipY + aLbl * Math.sin(midA) + offAg.dy, 50, 14);
     }
 
     // 氛围占比标注（顶部）
