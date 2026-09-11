@@ -1995,7 +1995,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.11</div>
+    <div class="splash-version">v1.4.12</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2514,7 +2514,7 @@
         <div class="weld-hero">
           <div class="wh-left">
             <div class="wh-label">预估熔深</div>
-            <div class="wh-value"><span id="qcwDepth">0</span><span class="unit"> mm</span></div>
+            <div class="wh-value"><span id="qcwDepth">0</span><span class="unit"> mm</span><span id="qcwMeltTag" style="display:none;font-size:10px;color:#e6a23c;margin-left:6px;background:rgba(230,162,60,0.12);padding:1px 6px;border-radius:4px;">已熔透</span></div>
           </div>
           <div class="wh-right">
             <div class="wh-sub-label">预估熔宽</div>
@@ -2688,7 +2688,7 @@
             <div class="wd-item2"><span class="wd2-label">脉冲总数</span><span class="wd2-value" id="qcwCount">0</span></div>
           </div>
           <div class="hint" style="margin-top:8px;">
-            模型依据（半经验工程模型，v2 文献校准）：QCW（准连续）脉冲激光焊接——①重叠率 η = 1 − v/(f·d)（v 焊接速度、f 脉冲频率、d 焊斑直径）：焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》及激光焊接机行业公式；②单脉冲能量 E_p = P_peak×τ，平均功率 P_avg = P_peak×占空比（准连续激光器等效热输入，laserfair）；③熔深模型 v2：平均线能量（P_avg·η/v）为等效热输入、重叠率累积增强 (1+1.6η) 反映脉冲重叠对熔深的叠加（IDC《Analysis of Performance Characteristics of Laser Beam Welding》：脉宽↑→重叠↑→熔深↑）、脉宽增强 τ^0.22（MDPI 2024《Keyhole Shape and Penetration Depth in Laser Spot Welding of Aluminum with Power Wave Modulation》：功率/脉宽/脉冲数↑、光斑半径↓→熔深↑；中国激光：熔深与功率密度近似线性、与点能量近似对数）；④光学链路：放大倍率 M=f_f/f_c、焦点光斑 d₀=纤芯×M、瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。结果供工艺预研参考，请以实测为准。
+            模型依据（半经验工程模型，v2.1 文献校准）：QCW（准连续）脉冲激光焊接——①重叠率 η = 1 − v/(f·d)（v 焊接速度、f 脉冲频率、d 焊斑直径）：焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》及激光焊接机行业公式；②单脉冲能量 E_p = P_peak×τ，平均功率 P_avg = P_peak×占空比（准连续激光器等效热输入，laserfair）；③熔深模型 v2.1：平均线能量（P_avg·η/v）为等效热输入、重叠率累积增强 (1+1.2η) 反映脉冲重叠对熔深的叠加（IDC《Analysis of Performance Characteristics of Laser Beam Welding》：脉宽↑→重叠↑→熔深↑）、脉宽增强 τ^0.18（MDPI 2024《Keyhole Shape and Penetration Depth in Laser Spot Welding of Aluminum with Power Wave Modulation》：功率/脉宽/脉冲数↑、光斑半径↓→熔深↑；中国激光：熔深与功率密度近似线性、与点能量近似对数）；④薄板熔透饱和：预估熔深达到母材厚度后熔深饱和为板厚、多余能量按能量守恒扩展熔宽（√(w²+d·Δh)），界面标注「已熔透」；⑤光学链路：放大倍率 M=f_f/f_c、焦点光斑 d₀=纤芯×M、瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。结果供工艺预研参考，请以实测为准。
           </div>
         </div>
       </div><!-- /libSimQcw -->
@@ -3597,7 +3597,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.11</span>
+        <span class="ar-value">v1.4.12</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3610,22 +3610,26 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.11 工艺窗口对比 -->
+  <!-- 首次登录：v1.4.12 QCW 模型 v2.1 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.11</span></h3>
-      <div class="up-sub">工具箱 · 工艺窗口对比</div>
+      <h3>版本更新 <span class="vtag">v1.4.12</span></h3>
+      <div class="up-sub">QCW 准连续脉冲焊接模型 v2.1 · 精度修复</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">工艺窗口对比</b>：输入目标熔深区间与熔宽区间，对比两种光学配置（光纤芯径 / 准直镜 / 聚焦镜不同）下的离焦窗口、功率窗口与速度窗口。</span>
+        <span><b style="color:var(--text)">修复慢速高重叠熔深爆炸</b>：重叠率累积增强由 (1+1.6η) 温和化为 (1+1.2η)、脉宽增强指数 0.22→0.18，低功率慢速（如 300W / 20mm/s / 90% 重叠）场景熔深不再虚高 3 倍以上。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">三窗口图形化对比</b>：熔深曲线 + 目标区间带 + 配置 A/B 达标窗口横条（含数值标注），无达标时明确提示。</span>
+        <span><b style="color:var(--text)">新增薄板熔透饱和模型</b>：预估熔深达到母材厚度后熔深饱和为板厚、多余能量按能量守恒扩展熔宽，结果区自动标注「已熔透」，动画与截面图同步。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">模型一致</b>：与焊接仿真共用同一套半经验模型（材料专属 K 值、离焦修正、功率封顶），扫描任意参数自动重算，结果供工艺预研参考。</span>
+        <span><b style="color:var(--text)">离焦响应增强</b>：引入光束质量 M²（多模光纤典型值 ≈12）修正瑞利长度 + 离焦功率密度因子（熔深∝(d0/d)^1.1），长焦系统离焦熔深变化贴近实际；薄板熔透后离焦改影响熔宽、熔深饱和为板厚并标注「已熔透」。</span>
+      </div>
+      <div class="up-item">
+        <span class="up-num">4</span>
+        <span><b style="color:var(--text)">示例</b>：钢 200μm/100/330mm、离焦 1mm、300W、2.5ms、300Hz、20mm/s、0.4mm 板 → 熔深 0.40mm（已熔透，原 1.47mm）、熔宽 1.18mm，与薄板 QCW 焊接实测规律相符。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3636,6 +3640,15 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.12</span><span class="cl-date">2026-09-11 · QCW 模型 v2.1 精度修复</span></div>
+        <ul class="cl-list">
+          <li><b>修复慢速高重叠熔深爆炸</b>：重叠累积增强 (1+1.6η)→(1+1.2η)、脉宽增强 0.22→0.18；300W/20mm/s/90% 重叠场景熔深由 1.47mm 修正至熔透 0.40mm。</li>
+          <li><b>新增薄板熔透饱和模型</b>：预估熔深达母材厚度后饱和为板厚、多余能量按能量守恒扩展熔宽（√(w²+d·Δh)），结果区自动标注「已熔透」。</li>
+          <li><b>离焦响应增强</b>：M²≈12 修正瑞利长度 + 离焦功率密度因子 (d0/d)^1.1，长焦系统（如 330mm 聚焦）离焦 5~20mm 熔深变化贴近实际（示例 1500W/1.5mm 板：离焦 10mm 熔深 0.52→0.37mm）；已熔透薄板离焦改影响熔宽、熔深保持板厚。</li>
+          <li><b>模型依据 v2.1 说明更新</b>（IDC / MDPI 2024 / 焊接学报 / 中国激光文献校准）。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.11</span><span class="cl-date">2026-09-11 · 工具箱工艺窗口对比</span></div>
         <ul class="cl-list">
@@ -9257,9 +9270,15 @@
     const mat = MATERIALS[p.material] || MATERIALS.steel;
     const M = p.ff / p.fc;
     const d0Um = p.core * M;
-    const zR = Math.PI * Math.pow(d0Um / 1000, 2) / (4 * (1080e-6));
+    // 瑞利长度：引入光束质量 M²（多模光纤激光器工程典型值 ≈12），
+    // 使长焦系统离焦响应贴近实际（原 zR 无 M² 修正时 ±mm 离焦光斑几乎不变）
+    const M2 = 12;
+    const zR = Math.PI * Math.pow(d0Um / 1000, 2) / (4 * (1080e-6) * M2);
     const dUm = d0Um * Math.sqrt(1 + Math.pow(p.def / zR, 2));
     const d = dUm / 1000;
+    // 离焦功率密度因子：离焦扩大光斑→功率密度按 (d0/d)² 下降→熔深按 ~(d0/d)^1.1 衰减
+    // （熔深近似正比于功率密度^0.5~0.6；离焦=0 时因子=1，不改变基准校准）
+    const defocusFactor = Math.pow(d0Um / Math.max(dUm, 0.001), 1.1);
     const duty = Math.min(p.tau / 1000 * p.freq, 0.95);
     const pAvg = p.pp * duty;
     const ep = p.pp * p.tau / 1000;
@@ -9282,27 +9301,35 @@
     // Aluminum with Power Wave Modulation》）；④熔深与功率密度近似线性、与作用时间/点能量近似对数
     // （中国激光《纳秒激光工艺参数对铝/镁异种焊缝成形的影响》）。
     // 修正：原模型误用峰值功率算线能量（高估热输入约 1/占空比），改平均线能量；新增重叠率累积项
-    // (1+1.6·η_overlap) 与脉宽增强项 τ^0.22。
+    // (1+1.2·η_overlap) 与脉宽增强项 τ^0.18；v2.1 温和化慢速高重叠放大（20mm/s+300Hz 90% 重叠时
+    // 熔深不再爆炸），并新增薄板熔透饱和模型：预估熔深达到母材厚度后熔深饱和、多余能量转熔宽扩展。
     const ElineAvg = pAvg * etaEff / p.v;                  // 平均线能量 J/mm（等效热输入）
     const C1q = (mat.C1 || 0.12) * 1.5;                    // 脉冲焊标定系数（文献半经验）
-    const overlapBoost = 1 + 1.6 * overlap;                // 重叠率累积增强（0→×1，1→×2.6）
-    const tauBoost = Math.pow(Math.max(p.tau, 0.05), 0.22); // 脉宽增强（1ms→×1，10ms→×1.66）
-    const h = C1q * Math.pow(Math.max(ElineAvg, 0.001), 0.6) / Math.pow(Math.max(d, 0.01), 0.25)
-              * Math.pow(alphaRef / alphaE, 0.4) * overlapBoost * tauBoost;
+    const overlapBoost = 1 + 1.2 * overlap;                // 重叠率累积增强（0→×1，1→×2.2）
+    const tauBoost = Math.pow(Math.max(p.tau, 0.05), 0.18); // 脉宽增强（1ms→×1，10ms→×1.51）
+    const hPhys = C1q * Math.pow(Math.max(ElineAvg, 0.001), 0.6) / Math.pow(Math.max(d, 0.01), 0.25)
+              * Math.pow(alphaRef / alphaE, 0.4) * overlapBoost * tauBoost * defocusFactor;
     // 熔宽：光斑基础直径（含重叠轻微扩展）+ Rosenthal 热导项
     const C3 = mat.C3 || 0.5;
     const wTh = C3 * Math.sqrt(pAvg * etaEff * alphaE / (p.v * p.v)) * 1.2;
-    const w = Math.max(d * 1.15 * (1 + 0.25 * overlap), wTh);
+    const wBase = Math.max(d * 1.15 * (1 + 0.25 * overlap), wTh);
+    // 熔透饱和：hPhys ≥ 母材厚度 → 熔深饱和为板厚，超出能量按能量守恒扩展熔宽
+    const thk = Math.max(p.thickness, 0.05);
+    const melted = hPhys >= thk;
+    const h = melted ? thk : hPhys;
+    const w = melted ? Math.sqrt(wBase * wBase + d * Math.max(hPhys - thk, 0)) : wBase;
     const tWeld = p.len / p.v;
     const nPulse = p.len / dx;
     const heat = pAvg * etaEff / p.v;
     const eTotal = pAvg * tWeld;
-    return { mat, M, d0Um, zR, dUm, d, duty, pAvg, ep, Ipeak, dx, overlap, alphaE, alphaRef, smoothKH, etaEff, kEff, h, w, tWeld, nPulse, heat, eTotal, thickness: p.thickness, freq: p.freq, v: p.v };
+    return { mat, M, d0Um, zR, dUm, d, duty, pAvg, ep, Ipeak, dx, overlap, alphaE, alphaRef, smoothKH, etaEff, kEff, h, hPhys, melted, w, wBase, tWeld, nPulse, heat, eTotal, thickness: p.thickness, freq: p.freq, v: p.v };
   }
 
   function qcwUpdateResults(r) {
     const fmt = (v, d = 2) => Number(v).toFixed(d);
     $('qcwDepth').textContent = fmt(r.h, 2);
+    const meltTag = $('qcwMeltTag');
+    if (meltTag) meltTag.style.display = r.melted ? 'inline' : 'none';
     $('qcwWidthOut').textContent = fmt(r.w, 2);
     $('qcwPavg').textContent = fmt(r.pAvg, 0) + ' W';
     $('qcwEp').textContent = fmt(r.ep, 3) + ' J';
