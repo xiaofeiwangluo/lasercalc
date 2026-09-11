@@ -9686,7 +9686,7 @@
     const padL = w * 0.10, padR = w * 0.86, padT = h * 0.10, padB = h * 0.88;
     const bw = padR - padL;
     const availH = padB - padT;
-    const thk = Math.max(r.thk, 0.1);
+    const thk = Math.max(r.thickness || r.thk || 0.1, 0.1);
     const scale = Math.min(bw / 3.2, availH / (Math.max(r.h * 1.5, thk) * 1.25));
     const baseY = padB;
     const boardW = Math.min(bw * 0.9, 3.2 * scale);
