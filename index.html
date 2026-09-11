@@ -10382,14 +10382,28 @@
       ctx.fill();
     }
 
-    // 激光束（调制频率 ON/OFF；duty=100% 恒亮=连续波）
+    // 激光束（调制频率 ON/OFF；duty=100% 恒亮=连续波）——出光光束分层渲染
     const pulseOn = (fillState.t * r.freq) % 1 < r.duty;
     const beamTop = padT;
     const spotR = Math.max(2, Math.min(r.d / 1000 * scale * 4, w * 0.15));
     if (pulseOn) {
+      const flash = 0.75 + 0.25 * Math.sin(fillState.t * 45);   // 出光闪烁
+      // 外光晕（宽锥）
+      const halo = ctx.createLinearGradient(poolCX, beamTop, poolCX, poolTop);
+      halo.addColorStop(0, 'rgba(0,229,255,0)');
+      halo.addColorStop(1, 'rgba(0,229,255,' + (0.25 * flash).toFixed(3) + ')');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.moveTo(poolCX - spotR * 0.9, beamTop);
+      ctx.lineTo(poolCX + spotR * 0.9, beamTop);
+      ctx.lineTo(poolCX + spotR * 2.0, poolTop);
+      ctx.lineTo(poolCX - spotR * 2.0, poolTop);
+      ctx.closePath();
+      ctx.fill();
+      // 主光束（亮锥）
       const bg = ctx.createLinearGradient(poolCX, beamTop, poolCX, poolTop);
-      bg.addColorStop(0, 'rgba(0,229,255,0)');
-      bg.addColorStop(1, 'rgba(0,229,255,0.55)');
+      bg.addColorStop(0, 'rgba(120,240,255,' + (0.22 * flash).toFixed(3) + ')');
+      bg.addColorStop(1, 'rgba(0,229,255,' + (0.8 * flash).toFixed(3) + ')');
       ctx.fillStyle = bg;
       ctx.beginPath();
       ctx.moveTo(poolCX - spotR * 0.35, beamTop);
@@ -10398,12 +10412,15 @@
       ctx.lineTo(poolCX - spotR, poolTop);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = 'rgba(0,229,255,0.9)';
-      ctx.lineWidth = 1;
+      // 中心亮线
+      ctx.strokeStyle = 'rgba(200,250,255,' + (0.95 * flash).toFixed(3) + ')';
+      ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.moveTo(poolCX, beamTop); ctx.lineTo(poolCX, poolTop); ctx.stroke();
-      const flash = 0.8 + 0.2 * Math.sin(fillState.t * 60);
-      ctx.fillStyle = 'rgba(0,229,255,' + (0.5 * flash) + ')';
-      ctx.beginPath(); ctx.arc(poolCX, poolTop, spotR * (0.6 + 0.2 * flash), 0, Math.PI * 2); ctx.fill();
+      // 出光点光斑（亮白 + 光晕）
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.65 + 0.35 * flash).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(poolCX, poolTop, spotR * (0.55 + 0.28 * flash), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,229,255,' + (0.22 * flash).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(poolCX, poolTop, spotR * (1.25 + 0.45 * flash), 0, Math.PI * 2); ctx.fill();
     } else {
       ctx.strokeStyle = 'rgba(138,150,173,0.35)';
       ctx.setLineDash([3, 3]);
