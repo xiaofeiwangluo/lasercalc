@@ -1238,6 +1238,20 @@
     touch-action: none;
     cursor: move;
   }
+  /* gas 图形标题（wc-tag）编辑模式下可拖动：显示拾取框 */
+  .gas-edit-active .weld-canvas-wrap .wc-tag {
+    outline: 1.5px dashed rgba(255,152,0,0.7);
+    outline-offset: 2px;
+    cursor: move;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: auto;
+    z-index: 6;
+    background: rgba(10,15,30,0.9);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
   .fill-edit-active #fillCanvas {
     touch-action: none;
   }
@@ -8444,9 +8458,15 @@
   let gasLabelRects = {};
   let gasDragLabel = null, gasDragOffX = 0, gasDragOffY = 0, gasDragStartX = 0, gasDragStartY = 0;
   function gasOff(id) { const o = gasLabelPos[id] || {}; return { dx: o.dx || 0, dy: o.dy || 0 }; }
-  function gasMark(id, x, y, w, hgt) {
-    const o = gasLabelPos[id] || {};
-    gasLabelRects[id] = { x: x + (o.dx || 0), y: y + (o.dy || 0), w: w || 60, h: hgt || 14 };
+  function gasMark(id, x, y, txtW) {
+    if (!gasState.editMode) return;
+    const bw = Math.max(txtW || 12, 34);
+    gasLabelRects[id] = { x: x, y: y, w: bw, h: 16 };
+    gasCtx.strokeStyle = 'rgba(255,152,0,0.6)';
+    gasCtx.setLineDash([4, 3]);
+    gasCtx.lineWidth = 1.2;
+    gasCtx.strokeRect(x - bw / 2, y - 11, bw, 16);
+    gasCtx.setLineDash([]);
   }
   function gasPointerXY(e) {
     const rect = gasCanvas.getBoundingClientRect();
@@ -8545,7 +8565,7 @@
     ctx.textAlign = 'center';
     const offMat = gasOff('g_mat');
     ctx.fillText('母材', poolX + offMat.dx, workY + 14 + offMat.dy);
-    gasMark('g_mat', poolX + offMat.dx, workY + 14 + offMat.dy, 40, 14);
+    gasMark('g_mat', poolX + offMat.dx, workY + 14 + offMat.dy, 40);
 
     // 熔池范围（用于判断保护覆盖）
     const poolW = Math.min(30, w * 0.09), poolD = Math.min(16, h * 0.06);
@@ -8580,7 +8600,7 @@
     const offSh = gasOff('g_shield');
     ctx.fillStyle = 'rgba(140,240,255,0.9)';
     ctx.fillText('保护氛围 R=' + r.R.toFixed(1) + 'mm', laserLandX + offSh.dx, workY - shieldR - 6 + offSh.dy);
-    gasMark('g_shield', laserLandX + offSh.dx, workY - shieldR - 6 + offSh.dy, 110, 14);
+    gasMark('g_shield', laserLandX + offSh.dx, workY - shieldR - 6 + offSh.dy, 110);
 
     // 熔池（U形，位于激光落点）
     const grad = ctx.createLinearGradient(laserLandX, workY, laserLandX, workY + poolD);
@@ -8599,7 +8619,7 @@
     const offPool = gasOff('g_pool');
     ctx.fillStyle = 'rgba(255,190,150,0.9)';
     ctx.fillText('熔池', laserLandX + offPool.dx, workY + poolD + 12 + offPool.dy);
-    gasMark('g_pool', laserLandX + offPool.dx, workY + poolD + 12 + offPool.dy, 30, 14);
+    gasMark('g_pool', laserLandX + offPool.dx, workY + poolD + 12 + offPool.dy, 30);
 
     // 同轴单元（准直头 + 激光束 + 同轴喷嘴）：整体绕 tip 旋转 θ，激光束与保护气同轴
     const headW = 54, headH = 30, nozzleLen = 10;
@@ -8654,9 +8674,9 @@
     const headLabelX = tipX - Math.sin(thetaRad) * (nozzleLen + headH + 8);
     const headLabelY = tipY - Math.cos(thetaRad) * (nozzleLen + headH + 8);
     ctx.fillText('准直头/同轴喷嘴', headLabelX + offNz.dx, headLabelY - 8 + offNz.dy);
-    gasMark('g_nozzle', headLabelX + offNz.dx, headLabelY - 8 + offNz.dy, 110, 14);
+    gasMark('g_nozzle', headLabelX + offNz.dx, headLabelY - 8 + offNz.dy, 110);
     ctx.fillText('喷嘴 d=' + r.d.toFixed(1) + 'mm', tipX + offNz.dx, tipY - 12 + offNz.dy);
-    gasMark('g_head', tipX + offNz.dx, tipY - 12 + offNz.dy, 100, 14);
+    gasMark('g_head', tipX + offNz.dx, tipY - 12 + offNz.dy, 100);
 
     // 氮气射流（沿同轴轴线从喷嘴出口到工件面，锥形 + 流动粒子）
     const landY = workY;
@@ -8701,7 +8721,7 @@
     ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(200,210,225,0.9)';
     ctx.fillText('h=' + r.h.toFixed(1) + 'mm', hx + offHt.dx, (tipY + workY) / 2 + offHt.dy);
-    gasMark('g_height', hx + offHt.dx, (tipY + workY) / 2 + offHt.dy, 70, 14);
+    gasMark('g_height', hx + offHt.dx, (tipY + workY) / 2 + offHt.dy, 70);
 
     // 角度标注（同轴轴线与垂直方向的夹角 θ）
     if (r.theta > 0.5) {
@@ -8716,7 +8736,7 @@
       const midA = Math.PI / 2 - thetaRad / 2;
       const aLbl = aR + 24;
       ctx.fillText('θ=' + r.theta.toFixed(0) + '°', tipX + aLbl * Math.cos(midA) + offAg.dx, tipY + aLbl * Math.sin(midA) + offAg.dy);
-      gasMark('g_angle', tipX + aLbl * Math.cos(midA) + offAg.dx, tipY + aLbl * Math.sin(midA) + offAg.dy, 50, 14);
+      gasMark('g_angle', tipX + aLbl * Math.cos(midA) + offAg.dx, tipY + aLbl * Math.sin(midA) + offAg.dy, 50);
     }
 
     // 氛围占比标注（顶部）
@@ -8724,7 +8744,7 @@
     ctx.fillStyle = 'rgba(140,240,255,0.95)';
     ctx.font = '11px sans-serif';
     ctx.fillText('保护气氛围占比 ' + r.pct.toFixed(1) + '%', poolX + offRt.dx, padT - 10 + offRt.dy);
-    gasMark('g_ratio', poolX + offRt.dx, padT - 10 + offRt.dy, 110, 14);
+    gasMark('g_ratio', poolX + offRt.dx, padT - 10 + offRt.dy, 110);
   }
   function gasLoop() {
     if (!gasState.running) { gasAnimId = null; return; }
@@ -8759,10 +8779,19 @@
       let best = null, bestD = 1e9;
       for (const id in gasLabelRects) {
         const r2 = gasLabelRects[id];
-        const d = Math.hypot(p.x - r2.x, p.y - r2.y);
-        if (d < bestD) { bestD = d; best = id; }
+        if (Math.abs(p.x - r2.x) <= (r2.w || 60) / 2 + 10 && Math.abs(p.y - r2.y) <= (r2.h || 14) / 2 + 10) {
+          const d = Math.hypot(p.x - r2.x, p.y - r2.y);
+          if (d < bestD) { bestD = d; best = id; }
+        }
       }
-      if (best && bestD < 46) {
+      if (!best) {
+        for (const id in gasLabelRects) {
+          const r2 = gasLabelRects[id];
+          const d = Math.hypot(p.x - r2.x, p.y - r2.y);
+          if (d < bestD) { bestD = d; best = id; }
+        }
+      }
+      if (best && bestD < 58) {
         gasDragLabel = best;
         const o = gasLabelPos[best] || { dx: 0, dy: 0 };
         gasDragOffX = o.dx || 0; gasDragOffY = o.dy || 0;
@@ -8772,6 +8801,7 @@
     });
     canvas.addEventListener('pointermove', (e) => {
       if (!gasDragLabel) return;
+      if (e.buttons === 0) { gasDragLabel = null; return; }
       const rect = canvas.getBoundingClientRect();
       const p = { x: (e.clientX - rect.left) * (canvas.width / rect.width) / (window.devicePixelRatio || 1), y: (e.clientY - rect.top) * (canvas.height / rect.height) / (window.devicePixelRatio || 1) };
       const o = gasLabelPos[gasDragLabel] || { dx: 0, dy: 0 };
@@ -8785,16 +8815,58 @@
     canvas.addEventListener('pointerup', endDrag);
     canvas.addEventListener('pointercancel', endDrag);
   }
+  // gas wc-tag 标题拖动（编辑模式下可移动，自动保存）
+  let gasTagPos = {};
+  try { gasTagPos = JSON.parse(localStorage.getItem('fslc_gas_tag') || '{}') || {}; } catch (e) {}
+  function saveGasTagPos() { try { localStorage.setItem('fslc_gas_tag', JSON.stringify(gasTagPos)); } catch (e) {} }
+  function bindGasTagDrag(tagEl, id) {
+    if (!tagEl) return;
+    const apply = () => {
+      const o = gasTagPos[id] || {};
+      tagEl.style.transform = 'translate(' + (o.dx || 0) + 'px,' + (o.dy || 0) + 'px)';
+    };
+    apply();
+    let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    tagEl.addEventListener('pointerdown', (e) => {
+      if (!tagEl.closest('.gas-edit-active')) return;
+      dragging = true;
+      const o = gasTagPos[id] || {};
+      ox = o.dx || 0; oy = o.dy || 0;
+      sx = e.clientX; sy = e.clientY;
+      try { tagEl.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    });
+    tagEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const o = gasTagPos[id] || {};
+      o.dx = ox + (e.clientX - sx);
+      o.dy = oy + (e.clientY - sy);
+      gasTagPos[id] = o;
+      tagEl.style.transform = 'translate(' + o.dx + 'px,' + o.dy + 'px)';
+      saveGasTagPos();
+    });
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      try { tagEl.releasePointerCapture(e.pointerId); } catch (err) {}
+    };
+    tagEl.addEventListener('pointerup', end);
+    tagEl.addEventListener('pointercancel', end);
+  }
   // gas 事件绑定
   (function () {
     const gasCanvasEl = $('gasCanvas');
     if (!gasCanvasEl) return;
     bindGasDrag(gasCanvasEl);
+    const tags = document.querySelectorAll('#tool-gas .weld-canvas-wrap .wc-tag');
+    bindGasTagDrag(tags[0], 'gasTag');
     const gasEditBtn = $('gasEdit');
+    const gasView = $('tool-gas');
     if (gasEditBtn) gasEditBtn.addEventListener('click', () => {
       gasState.editMode = !gasState.editMode;
       gasEditBtn.classList.toggle('active', gasState.editMode);
-      gasCanvasEl.classList.toggle('gas-edit-active', gasState.editMode);
+      if (gasView) gasView.classList.toggle('gas-edit-active', gasState.editMode);
+      gasEditBtn.title = gasState.editMode ? '编辑模式：拖动文字/标示调整位置，再次点击退出' : '拖动文字/标示到任意位置，自动保存';
     });
     const gasPlayBtn = $('gasPlay');
     if (gasPlayBtn) gasPlayBtn.addEventListener('click', () => {
