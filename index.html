@@ -8524,10 +8524,13 @@
     const poolX = (padL + padR) / 2;
     const maxDim = Math.max(r.h + 10, 26);
     const pxPerMm = (padB - padT - 24) / maxDim;
-    // 喷嘴出口与射流落点（角度倾斜）
-    const tipY = workY - r.h * pxPerMm;
-    const tipX = Math.max(padL + 16, Math.min(poolX + r.dx * pxPerMm * 0.8, padR - 16));
-    const landX = Math.max(padL + 12, Math.min(poolX + r.dx * pxPerMm, padR - 12));
+    // 同轴轴线：激光束、喷嘴、保护气流共用同一轴线，整体倾斜 θ
+    // 熔池（激光落点）随倾斜偏移：laserLandX = poolX + Δx·k
+    const thetaRad = r.theta * Math.PI / 180;
+    const laserLandX = Math.max(padL + 30, Math.min(poolX + r.dx * pxPerMm * 0.45, padR - 30));
+    // 喷嘴出口：熔池上方沿轴线反向 h 处
+    const tipY = workY - r.h * pxPerMm * Math.cos(thetaRad);
+    const tipX = laserLandX - r.h * pxPerMm * Math.sin(thetaRad);
     const shieldR = Math.max(6, Math.min(r.R * pxPerMm, w * 0.42));
 
     // 母材
@@ -8544,53 +8547,50 @@
     ctx.fillText('母材', poolX + offMat.dx, workY + 14 + offMat.dy);
     gasMark('g_mat', poolX + offMat.dx, workY + 14 + offMat.dy, 40, 14);
 
-    // 保护氛围（以落点为中心，覆盖熔池部分亮青；未覆盖熔池部分为氧化风险区）
-    const poolW = Math.min(30, w * 0.09), poolD = Math.min(16, h * 0.06);
     // 熔池范围（用于判断保护覆盖）
-    const poolLeft = poolX - poolW / 2, poolRight = poolX + poolW / 2;
-    const shieldLeft = landX - shieldR, shieldRight = landX + shieldR;
+    const poolW = Math.min(30, w * 0.09), poolD = Math.min(16, h * 0.06);
+    const poolLeft = laserLandX - poolW / 2, poolRight = laserLandX + poolW / 2;
+    const shieldLeft = laserLandX - shieldR, shieldRight = laserLandX + shieldR;
     const coverOk = shieldLeft <= poolLeft && shieldRight >= poolRight;
+
     // 氧化风险区（熔池未被保护覆盖的部分）
     if (!coverOk) {
-      ctx.fillStyle = 'rgba(255,80,80,0.35)';
-      const riskL = Math.max(poolLeft, shieldRight > poolLeft ? shieldRight : poolLeft);
-      const riskR = poolRight;
-      if (riskR > riskL + 1) {
-        ctx.beginPath();
-        ctx.ellipse(poolX, workY, poolW / 2, poolD / 2, 0, 0, Math.PI);
-        ctx.fill();
-      }
-      ctx.fillStyle = 'rgba(255,80,80,0.55)';
-      ctx.fillRect(riskL, workY - poolD * 0.5, Math.max(riskR - riskL, 0), poolD * 0.5);
+      ctx.fillStyle = 'rgba(255,80,80,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(laserLandX, workY, poolW / 2, poolD / 2, 0, 0, Math.PI);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,80,80,0.5)';
+      if (shieldRight < poolRight) ctx.fillRect(Math.max(shieldRight, poolLeft), workY - poolD * 0.5, Math.max(poolRight - Math.max(shieldRight, poolLeft), 0), poolD * 0.5);
+      if (shieldLeft > poolLeft) ctx.fillRect(poolLeft, workY - poolD * 0.5, Math.max(Math.min(shieldLeft, poolRight) - poolLeft, 0), poolD * 0.5);
     }
-    // 保护氛围（半透明青色圆形，脉动）
+
+    // 保护氛围（以激光落点为中心，覆盖熔池的惰性保护区域）
     const pulse = 0.85 + 0.15 * Math.sin(gasState.t * 3);
-    const halo = ctx.createRadialGradient(landX, workY - 2, 2, landX, workY - 2, shieldR);
+    const halo = ctx.createRadialGradient(laserLandX, workY - 2, 2, laserLandX, workY - 2, shieldR);
     halo.addColorStop(0, 'rgba(0,229,255,' + (0.55 * pulse).toFixed(3) + ')');
     halo.addColorStop(0.7, 'rgba(0,200,230,' + (0.32 * pulse).toFixed(3) + ')');
     halo.addColorStop(1, 'rgba(0,180,220,0.05)');
     ctx.fillStyle = halo;
-    ctx.beginPath(); ctx.arc(landX, workY - 2, shieldR, 0, Math.PI * 2); ctx.fill();
-    // 保护区域边界
+    ctx.beginPath(); ctx.arc(laserLandX, workY - 2, shieldR, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(0,229,255,' + (0.5 * pulse).toFixed(3) + ')';
     ctx.setLineDash([4, 3]);
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(landX, workY - 2, shieldR, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(laserLandX, workY - 2, shieldR, 0, Math.PI * 2); ctx.stroke();
     ctx.setLineDash([]);
     const offSh = gasOff('g_shield');
     ctx.fillStyle = 'rgba(140,240,255,0.9)';
-    ctx.fillText('保护氛围 R=' + r.R.toFixed(1) + 'mm', landX + offSh.dx, workY - shieldR - 6 + offSh.dy);
-    gasMark('g_shield', landX + offSh.dx, workY - shieldR - 6 + offSh.dy, 110, 14);
+    ctx.fillText('保护氛围 R=' + r.R.toFixed(1) + 'mm', laserLandX + offSh.dx, workY - shieldR - 6 + offSh.dy);
+    gasMark('g_shield', laserLandX + offSh.dx, workY - shieldR - 6 + offSh.dy, 110, 14);
 
-    // 熔池（U形）
-    const grad = ctx.createLinearGradient(poolX, workY, poolX, workY + poolD);
+    // 熔池（U形，位于激光落点）
+    const grad = ctx.createLinearGradient(laserLandX, workY, laserLandX, workY + poolD);
     grad.addColorStop(0, 'rgba(255,120,60,0.95)');
     grad.addColorStop(1, 'rgba(255,40,20,0.8)');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.moveTo(poolLeft, workY);
-    ctx.bezierCurveTo(poolLeft, workY + poolD * 0.5, poolX - poolW / 4, workY + poolD, poolX, workY + poolD);
-    ctx.bezierCurveTo(poolX + poolW / 4, workY + poolD, poolRight, workY + poolD * 0.5, poolRight, workY);
+    ctx.bezierCurveTo(poolLeft, workY + poolD * 0.5, laserLandX - poolW / 4, workY + poolD, laserLandX, workY + poolD);
+    ctx.bezierCurveTo(laserLandX + poolW / 4, workY + poolD, poolRight, workY + poolD * 0.5, poolRight, workY);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,110,60,1)';
@@ -8598,70 +8598,81 @@
     ctx.stroke();
     const offPool = gasOff('g_pool');
     ctx.fillStyle = 'rgba(255,190,150,0.9)';
-    ctx.fillText('熔池', poolX + offPool.dx, workY + poolD + 12 + offPool.dy);
-    gasMark('g_pool', poolX + offPool.dx, workY + poolD + 12 + offPool.dy, 30, 14);
+    ctx.fillText('熔池', laserLandX + offPool.dx, workY + poolD + 12 + offPool.dy);
+    gasMark('g_pool', laserLandX + offPool.dx, workY + poolD + 12 + offPool.dy, 30, 14);
 
-    // 准直头（顶部，激光透镜示意）
-    const headW = 52, headH = 30;
-    const headX = poolX - headW / 2, headY = padT;
+    // 同轴单元（准直头 + 激光束 + 同轴喷嘴）：整体绕 tip 旋转 θ，激光束与保护气同轴
+    const headW = 54, headH = 30, nozzleLen = 10;
+    ctx.save();
+    ctx.translate(tipX, tipY);
+    ctx.rotate(thetaRad);   // 局部 -y 方向沿轴线向上
+    // 准直头（局部坐标系：中心在 (0, -(nozzleLen + headH/2))）
     ctx.fillStyle = 'rgba(58,66,88,0.95)';
     ctx.strokeStyle = 'rgba(160,175,200,0.7)';
     ctx.lineWidth = 1.2;
-    ctx.fillRect(headX, headY, headW, headH);
-    ctx.strokeRect(headX, headY, headW, headH);
+    ctx.fillRect(-headW / 2, -(nozzleLen + headH), headW, headH);
+    ctx.strokeRect(-headW / 2, -(nozzleLen + headH), headW, headH);
     // 透镜
     ctx.fillStyle = 'rgba(120,220,255,0.35)';
-    ctx.beginPath(); ctx.ellipse(poolX, headY + headH * 0.55, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(160,175,200,0.6)';
-    ctx.font = '9px sans-serif';
-    ctx.fillText('准直头', poolX, headY - 4);
-    gasMark('g_head', poolX, headY - 4, 40, 12);
-
-    // 激光束（垂直锥形，青色）
-    ctx.fillStyle = 'rgba(0,229,255,0.22)';
+    ctx.beginPath(); ctx.ellipse(0, -(nozzleLen + headH * 0.45), 12, 5, 0, 0, Math.PI * 2); ctx.fill();
+    // 激光束（沿轴线从准直头到 tip 再到工件面）
+    const beamGrad = ctx.createLinearGradient(0, -(nozzleLen + headH), 0, workY - tipY);
+    beamGrad.addColorStop(0, 'rgba(0,229,255,0.05)');
+    beamGrad.addColorStop(0.12, 'rgba(0,229,255,0.3)');
+    beamGrad.addColorStop(1, 'rgba(0,229,255,0.5)');
+    ctx.fillStyle = beamGrad;
     ctx.beginPath();
-    ctx.moveTo(poolX - 3, headY + headH);
-    ctx.lineTo(poolX + 3, headY + headH);
-    ctx.lineTo(poolX + 5, workY - 4);
-    ctx.lineTo(poolX - 5, workY - 4);
+    ctx.moveTo(-3.2, -(nozzleLen + headH));
+    ctx.lineTo(3.2, -(nozzleLen + headH));
+    ctx.lineTo(4.5, workY - tipY);
+    ctx.lineTo(-4.5, workY - tipY);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = 'rgba(0,229,255,0.8)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(poolX, headY + headH); ctx.lineTo(poolX, workY - 4); ctx.stroke();
-
-    // 同轴喷嘴（倾斜管，从准直头底部到 tip）
-    ctx.strokeStyle = 'rgba(120,132,156,0.95)';
-    ctx.lineWidth = 7;
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(poolX, headY + headH); ctx.lineTo(tipX, tipY); ctx.stroke();
     ctx.strokeStyle = 'rgba(0,229,255,0.9)';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(poolX, headY + headH); ctx.lineTo(tipX, tipY); ctx.stroke();
+    ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(0, -(nozzleLen + headH)); ctx.lineTo(0, workY - tipY); ctx.stroke();
+    // 同轴喷嘴（环形出口，紧贴准直头底部，与激光束同轴）
+    ctx.strokeStyle = 'rgba(120,132,156,0.95)';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, -nozzleLen); ctx.lineTo(0, -2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,229,255,0.9)';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(0, -nozzleLen); ctx.lineTo(0, -2); ctx.stroke();
     ctx.lineCap = 'butt';
     // 喷嘴出口环
     ctx.strokeStyle = 'rgba(0,229,255,1)';
     ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(tipX, tipY, Math.max(4, r.d * pxPerMm * 0.4), 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -2, Math.max(4, r.d * pxPerMm * 0.4), 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+
+    // 准直头/喷嘴文字标注（位于头部侧上方，不随旋转）
     const offNz = gasOff('g_nozzle');
     ctx.fillStyle = 'rgba(140,240,255,0.9)';
-    ctx.fillText('喷嘴 d=' + r.d.toFixed(1) + 'mm', tipX + offNz.dx, tipY - 10 + offNz.dy);
-    gasMark('g_nozzle', tipX + offNz.dx, tipY - 10 + offNz.dy, 90, 14);
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const headLabelX = tipX - Math.sin(thetaRad) * (nozzleLen + headH + 8);
+    const headLabelY = tipY - Math.cos(thetaRad) * (nozzleLen + headH + 8);
+    ctx.fillText('准直头/同轴喷嘴', headLabelX + offNz.dx, headLabelY - 8 + offNz.dy);
+    gasMark('g_nozzle', headLabelX + offNz.dx, headLabelY - 8 + offNz.dy, 110, 14);
+    ctx.fillText('喷嘴 d=' + r.d.toFixed(1) + 'mm', tipX + offNz.dx, tipY - 12 + offNz.dy);
+    gasMark('g_head', tipX + offNz.dx, tipY - 12 + offNz.dy, 100, 14);
 
-    // 氮气射流（从喷嘴到落点的锥形，动态流动粒子）
-    const jetLen = Math.hypot(landX - tipX, workY - tipY);
-    const jAng = Math.atan2(workY - tipY, landX - tipX);
+    // 氮气射流（沿同轴轴线从喷嘴出口到工件面，锥形 + 流动粒子）
+    const landY = workY;
+    const jetLen = Math.hypot(laserLandX - tipX, landY - tipY);
+    const jAng = Math.atan2(landY - tipY, laserLandX - tipX);
     const jetW0 = Math.max(4, r.d * pxPerMm * 0.4);
     const jetW1 = Math.min(shieldR * 0.9, w * 0.3);
-    const jg = ctx.createLinearGradient(tipX, tipY, landX, workY);
+    const jg = ctx.createLinearGradient(tipX, tipY, laserLandX, landY);
     jg.addColorStop(0, 'rgba(0,229,255,0.45)');
     jg.addColorStop(1, 'rgba(0,229,255,0.12)');
     ctx.fillStyle = jg;
     ctx.beginPath();
     ctx.moveTo(tipX - jetW0 / 2, tipY);
     ctx.lineTo(tipX + jetW0 / 2, tipY);
-    ctx.lineTo(landX + jetW1 / 2, workY);
-    ctx.lineTo(landX - jetW1 / 2, workY);
+    ctx.lineTo(laserLandX + jetW1 / 2, landY);
+    ctx.lineTo(laserLandX - jetW1 / 2, landY);
     ctx.closePath();
     ctx.fill();
     // 流动粒子（8 条流线，每条 3 个）
@@ -8669,8 +8680,8 @@
       const spread = (li / 7 - 0.5) * 0.8;
       for (let pi = 0; pi < 3; pi++) {
         const t = ((gasState.t * 0.45 + pi / 3 + li * 0.05) % 1);
-        const px = tipX + (landX - tipX) * t;
-        const py = tipY + (workY - tipY) * t;
+        const px = tipX + (laserLandX - tipX) * t;
+        const py = tipY + (landY - tipY) * t;
         const perp = Math.sin(jAng + Math.PI / 2) * spread * jetW1 * t;
         const par = Math.cos(jAng + Math.PI / 2) * spread * jetW1 * t;
         ctx.fillStyle = 'rgba(200,250,255,' + (0.85 * (1 - t * 0.5)).toFixed(3) + ')';
@@ -8680,7 +8691,7 @@
       }
     }
 
-    // 高度标注（tip 到 workY）
+    // 高度标注（tip 垂直投影到工件面）
     const offHt = gasOff('g_height');
     ctx.strokeStyle = 'rgba(200,210,225,0.8)';
     ctx.setLineDash([3, 3]);
@@ -8689,24 +8700,21 @@
     ctx.beginPath(); ctx.moveTo(hx, tipY); ctx.lineTo(hx, workY); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(200,210,225,0.9)';
-    ctx.font = '10px sans-serif';
     ctx.fillText('h=' + r.h.toFixed(1) + 'mm', hx + offHt.dx, (tipY + workY) / 2 + offHt.dy);
     gasMark('g_height', hx + offHt.dx, (tipY + workY) / 2 + offHt.dy, 70, 14);
 
-    // 角度标注（喷嘴倾斜角 θ）
+    // 角度标注（同轴轴线与垂直方向的夹角 θ）
     if (r.theta > 0.5) {
       const offAg = gasOff('g_angle');
       const aR = Math.min(24, jetLen * 0.3);
-      const aCX = tipX, aCY = tipY;
-      const aStart = Math.atan2(workY - tipY, landX - tipX) - Math.PI / 2;
       ctx.strokeStyle = 'rgba(200,210,225,0.8)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(aCX, aCY, aR, Math.PI / 2, aStart + Math.PI / 2, true);
+      ctx.arc(tipX, tipY, aR, Math.PI / 2, Math.PI / 2 - thetaRad, true);
       ctx.stroke();
       ctx.fillStyle = 'rgba(200,210,225,0.9)';
-      ctx.fillText('θ=' + r.theta.toFixed(0) + '°', aCX + Math.cos(aStart) * (aR + 12) + offAg.dx, aCY + Math.sin(aStart) * (aR + 12) + offAg.dy);
-      gasMark('g_angle', aCX + Math.cos(aStart) * (aR + 12) + offAg.dx, aCY + Math.sin(aStart) * (aR + 12) + offAg.dy, 50, 14);
+      ctx.fillText('θ=' + r.theta.toFixed(0) + '°', tipX + aR * Math.cos(Math.PI / 2 - thetaRad / 2) + offAg.dx, tipY + aR * Math.sin(Math.PI / 2 - thetaRad / 2) + offAg.dy);
+      gasMark('g_angle', tipX + aR * Math.cos(Math.PI / 2 - thetaRad / 2) + offAg.dx, tipY + aR * Math.sin(Math.PI / 2 - thetaRad / 2) + offAg.dy, 50, 14);
     }
 
     // 氛围占比标注（顶部）
