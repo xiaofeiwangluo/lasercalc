@@ -3809,7 +3809,6 @@
               <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
               <span class="lg"><span class="dot" style="background:rgba(96,112,138,0.88);"></span>母材</span>
               <span class="lg"><span class="dot" style="background:rgba(255,80,80,0.75);"></span>氧化风险区</span>
-              <span class="lg"><span class="dot" style="background:rgba(190,200,215,0.85);"></span>空气流场（被排开/绕流，湍流时卷吸）</span>
             </div>
           </div>
           <!-- 动画控制 -->
@@ -8558,22 +8557,6 @@
     gasCanvas.height = Math.max(2, Math.round(hCss * d));
     gasCtx.setTransform(d, 0, 0, d, 0, 0);
   }
-  let gasAirParts = null;
-  function initGasAirParts(w, h) {
-    gasAirParts = [];
-    for (let i = 0; i < 26; i++) {
-      const side = i % 2 === 0 ? -1 : 1;
-      gasAirParts.push({
-        x: w / 2 + side * (24 + Math.random() * 110),
-        y: h * (0.34 + Math.random() * 0.40),
-        vx: side * (0.55 + Math.random() * 0.55),
-        vy: 0.30 + Math.random() * 0.30,
-        r: 1.1 + Math.random() * 1.5,
-        ph: Math.random() * Math.PI * 2
-      });
-    }
-    gasAirParts._w = w; gasAirParts._h = h;
-  }
   function drawGasSection(r, prog) {
     if (!gasCtx) return;
     const w = gasCanvas.width / (window.devicePixelRatio || 1);
@@ -8750,59 +8733,6 @@
         ctx.arc(px + perp, py + par, 1.6, 0, Math.PI * 2);
         ctx.fill();
       }
-    }
-
-    // —— 空气粒子流体动画（保护区外围空气被射流排开/绕流；低流量渗入、高流量湍流卷吸）——
-    if (!gasAirParts || gasAirParts._w !== w || gasAirParts._h !== h) initGasAirParts(w, h);
-    const aspd = (gasState.speed || 1) * 0.9;
-    const turb = r.fq <= 0.8;   // Q > 25：湍流卷吸空气
-    const weak = r.fq <= 0.6;   // Q < 8：气量不足，空气渗入
-    const underCover = !coverOk; // 保护氛围未完全覆盖熔池：空气可侵入
-    const weakCover = r.R <= 4.5; // 保护氛围较小（R≤4.5mm）：空气粒子突破保护逼近熔池
-    for (let i = 0; i < gasAirParts.length; i++) {
-      const ap = gasAirParts[i];
-      ap.x += ap.vx * aspd; ap.y += ap.vy * aspd;
-      const dAir = ap.x - laserLandX;
-      if (weakCover) {
-        // 氛围小：部分空气粒子突破保护区边缘，向熔池侵入（显示氧化风险）
-        if (i % 2 === 0 && Math.abs(dAir) < shieldR + 48 && ap.y > workY - 48) {
-          ap.x += (laserLandX - ap.x) * 0.10 * aspd;
-          ap.y += (workY - ap.y) * 0.10 * aspd + 0.08;
-        }
-      } else if (Math.abs(dAir) < shieldR && ap.y > workY - shieldR * 0.55) {
-        // 保护区内部：射流把空气粒子推开（绕流排开）
-        if (dAir > 0) ap.vx = Math.max(ap.vx, 0.9); else ap.vx = Math.min(ap.vx, -0.9);
-        ap.vy = Math.min(ap.vy + 0.08, 1.1);
-        ap.x += ap.vx * aspd * 0.5;
-      }
-      // 覆盖不足（侧吹偏移等极端情况）：保护区边缘外的空气粒子向熔池侵入
-      if (underCover && !weakCover && Math.abs(dAir) >= shieldR && Math.abs(dAir) < shieldR + 24 && ap.y > workY - 28) {
-        ap.x += (laserLandX - ap.x) * 0.05 * aspd;
-        ap.y += (workY - ap.y) * 0.05 * aspd;
-      }
-      // 湍流卷吸：部分粒子被吸向熔池（空气卷入）
-      if (turb && i % 4 === 0 && ap.y > workY - shieldR) {
-        ap.x += (laserLandX - ap.x) * 0.022 * aspd;
-        ap.y += (workY - ap.y) * 0.022 * aspd;
-      }
-      // 低流量渗入：保护区下沿空气缓慢侵入
-      if (weak && i % 3 === 0 && ap.y > workY - 8) {
-        ap.x += Math.sin(ap.ph + gasState.t * 2) * 0.3;
-        ap.y += 0.05;
-      }
-      // 越界重置：从保护区另一侧上方重新飘入
-      if (ap.x < -8 || ap.x > w + 8 || ap.y > h + 8) {
-        const side2 = Math.random() < 0.5 ? -1 : 1;
-        ap.x = laserLandX + side2 * (20 + Math.random() * 110);
-        ap.y = h * (0.06 + Math.random() * 0.20);
-        ap.vx = -side2 * (0.55 + Math.random() * 0.55);
-        ap.vy = 0.30 + Math.random() * 0.30;
-      }
-      const tw = 0.5 + 0.28 * Math.sin(ap.ph + gasState.t * 2);
-      ctx.fillStyle = 'rgba(190,200,215,' + tw.toFixed(3) + ')';
-      ctx.beginPath();
-      ctx.arc(ap.x, ap.y, ap.r, 0, Math.PI * 2);
-      ctx.fill();
     }
 
     // 高度标注（tip 垂直投影到工件面）
