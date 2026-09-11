@@ -3766,7 +3766,7 @@
         <div class="card">
           <div class="card-title">同轴吹保护气 · 氮气保护仿真</div>
           <div class="hint" style="margin-bottom:12px;">
-            准直头激光焊接采用<b>同轴吹氮气保护</b>：氮气从喷嘴环缝沿激光束同轴喷出，在熔池上方形成惰性保护氛围，隔绝空气防止高温熔池氧化。保护效果受<b>喷嘴直径</b>（保护范围）、<b>吹气角度</b>（保护区域偏移）、<b>离工件高度</b>（射流扩散与浓度衰减）共同影响。模型基于气体射流扩散几何（半锥角 6°）+ 中心浓度高度衰减（h_ref=25mm），动态演示保护氛围覆盖熔池的过程。
+            准直头激光焊接采用<b>同轴吹氮气保护</b>：氮气从喷嘴环缝沿激光束同轴喷出，在熔池上方形成惰性保护氛围，隔绝空气防止高温熔池氧化。保护效果受<b>喷嘴直径</b>（保护范围）、<b>吹气角度</b>（保护区域偏移）、<b>离工件高度</b>（射流扩散与浓度衰减）、<b>吹气流量</b>（气量充足度与流态）共同影响。模型基于气体射流扩散几何（半锥角 6°）+ 中心浓度高度衰减（h_ref=25mm）× 流量适配因子：流量过低（&lt;10 L/min）气量不足、空气易卷入；最优 15-25 L/min（TWI 试验 14 L/min 良好）；过高（&gt;25-30 L/min）雷诺数增大、层流→湍流（Re&gt;2300），卷吸空气并扰动熔池。动态演示保护氛围覆盖熔池的过程。
           </div>
           <div class="fit-section">
             <div class="fit-section-title">① 保护气参数</div>
@@ -3789,6 +3789,13 @@
               <div class="input-row">
                 <input type="range" id="gasHeight" min="5" max="60" value="20" step="1">
                 <input type="number" id="gasHeightNum" value="20" min="3" max="120" step="1">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>吹气流量 Q</span><span class="unit">L/min（同轴环缝出口，最优 15-25）</span></div>
+              <div class="input-row">
+                <input type="range" id="gasFlow" min="5" max="50" value="15" step="1">
+                <input type="number" id="gasFlowNum" value="15" min="5" max="50" step="1">
               </div>
             </div>
           </div>
@@ -3828,7 +3835,7 @@
             <div class="wd-item2"><span class="wd2-label">保护覆盖率</span><span class="wd2-value" id="gasCov">0%</span></div>
             <div class="wd-item2"><span class="wd2-label">有效保护半径 R</span><span class="wd2-value" id="gasR">0 mm</span></div>
             <div class="wd-item2"><span class="wd2-label">中心浓度保持率</span><span class="wd2-value" id="gasConc">0%</span></div>
-            <div class="wd-item2"><span class="wd2-label">到达面气速</span><span class="wd2-value" id="gasVel">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">出口气速 v0</span><span class="wd2-value" id="gasVel">0%</span></div>
             <div class="wd-item2"><span class="wd2-label">保护区域偏移 Δx</span><span class="wd2-value" id="gasDx">0 mm</span></div>
             <div class="wd-item2"><span class="wd2-label">熔池半径参考</span><span class="wd2-value" id="gasPool">1.20 mm</span></div>
           </div>
@@ -8477,7 +8484,8 @@
     return {
       nozzle: Math.max(num('gasNozzleNum', 10), 2),
       angle: Math.max(num('gasAngleNum', 0), 0),
-      height: Math.max(num('gasHeightNum', 20), 3)
+      height: Math.max(num('gasHeightNum', 20), 3),
+      flow: Math.max(num('gasFlowNum', 15), 3)
     };
   }
   function gasCircleOverlap(R, dx, r) {
@@ -8501,12 +8509,28 @@
     const rPool = 1.2;                          // 熔池半径参考（mm）
     const cov = gasCircleOverlap(R, dx, rPool) / (Math.PI * rPool * rPool);
     const hRef = 25;                                  // 浓度衰减参考高度（mm）
-    const conc = 1 / (1 + Math.pow(h / hRef, 1.6));  // 中心浓度保持率
+    const concH = 1 / (1 + Math.pow(h / hRef, 1.6)); // 中心浓度高度衰减
     const vel = 1 / (1 + Math.pow(h / hRef, 1.2));   // 到达面气速保持率
+    // —— 吹气流量（流体学校准）——
+    // 同轴环缝：外径 d、内径 0.7d（典型同轴喷嘴环缝结构）
+    const dOut = d / 1000, dIn = d * 0.7 / 1000;
+    const Aring = Math.PI / 4 * (dOut * dOut - dIn * dIn);  // 环缝面积（m²）
+    const v0 = (p.flow / 1000 / 60) / Aring;                // 出口气速（m/s）
+    // 流量适配因子（文献：TWI 14L/min 良好；行业最优 15-25；过高湍流 Re>2300 卷吸）
+    function flowFactor(q) {
+      if (q <= 5) return 0.35;
+      if (q < 10) return 0.35 + (q - 5) / 5 * 0.40;
+      if (q <= 25) return 0.75 + (q - 10) / 15 * 0.25;
+      if (q <= 35) return 1.0 - (q - 25) / 10 * 0.20;
+      return 0.80 - (q - 35) / 15 * 0.20;
+    }
+    const fq = flowFactor(p.flow);
+    const conc = Math.min(1, concH * fq);
     const ratio = Math.max(0, Math.min(1, cov * conc));
     const pct = ratio * 100;
     const grade = pct >= 80 ? '优' : pct >= 60 ? '良' : pct >= 40 ? '中' : '差';
-    return { d, theta, h, R, dx, rPool, cov, conc, vel, ratio, pct, grade };
+    const vScale = Math.max(0.6, Math.min(2.2, v0 / 6));   // 动画粒子速度因子
+    return { d, theta, h, flow: p.flow, R, dx, rPool, cov, conc, fq, vel, v0, ratio, pct, grade, vScale };
   }
   function gasUpdateResults(r) {
     const fmt = (v, d = 2) => Number(v).toFixed(d);
@@ -8515,7 +8539,7 @@
     $('gasCov').textContent = fmt(r.cov * 100, 1) + '%';
     $('gasR').textContent = fmt(r.R, 1) + ' mm';
     $('gasConc').textContent = fmt(r.conc * 100, 1) + '%';
-    $('gasVel').textContent = fmt(r.vel * 100, 1) + '%';
+    $('gasVel').textContent = fmt(r.v0, 1) + ' m/s';
     $('gasDx').textContent = fmt(r.dx, 1) + ' mm';
   }
   function resizeGasCanvas() {
@@ -8699,7 +8723,7 @@
     for (let li = 0; li < 8; li++) {
       const spread = (li / 7 - 0.5) * 0.8;
       for (let pi = 0; pi < 3; pi++) {
-        const t = ((gasState.t * 0.45 + pi / 3 + li * 0.05) % 1);
+        const t = ((gasState.t * 0.45 * r.vScale + pi / 3 + li * 0.05) % 1);
         const px = tipX + (laserLandX - tipX) * t;
         const py = tipY + (landY - tipY) * t;
         const perp = Math.sin(jAng + Math.PI / 2) * spread * jetW1 * t;
@@ -8898,7 +8922,7 @@
       a.click();
     });
     // 输入双向同步
-    [['gasNozzle', 'gasNozzleNum'], ['gasAngle', 'gasAngleNum'], ['gasHeight', 'gasHeightNum']].forEach(([rid, nid]) => {
+    [['gasNozzle', 'gasNozzleNum'], ['gasAngle', 'gasAngleNum'], ['gasHeight', 'gasHeightNum'], ['gasFlow', 'gasFlowNum']].forEach(([rid, nid]) => {
       const rEl = $(rid), nEl = $(nid);
       if (rEl && nEl) {
         rEl.addEventListener('input', () => { nEl.value = rEl.value; gasUpdateResults(gasCalculate(gasRead())); });
