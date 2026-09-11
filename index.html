@@ -3811,6 +3811,18 @@
               <span class="lg"><span class="dot" style="background:rgba(255,80,80,0.75);"></span>氧化风险区</span>
             </div>
           </div>
+          <!-- 保护气切面图（工件表面俯视截面） -->
+          <div class="weld-canvas-wrap" style="margin-top:12px;">
+            <span class="wc-tag">GAS CUTAWAY · 保护气切面图（工件表面覆盖截面）</span>
+            <canvas id="gasSecCanvas"></canvas>
+            <button class="wc-save-btn" data-save="gasSecCanvas">保存</button>
+            <div class="wc-legend">
+              <span class="lg"><span class="dot" style="background:rgba(0,229,255,0.55);"></span>保护氛围</span>
+              <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+              <span class="lg"><span class="dot" style="background:rgba(255,80,80,0.6);"></span>未覆盖/氧化风险区</span>
+              <span class="lg"><span class="dot" style="background:rgba(255,255,255,0.9);"></span>覆盖重叠区</span>
+            </div>
+          </div>
           <!-- 动画控制 -->
           <div class="weld-controls">
             <button class="weld-btn" id="gasPlay">暂停</button>
@@ -8541,6 +8553,95 @@
     $('gasConc').textContent = fmt(r.conc * 100, 1) + '%';
     $('gasVel').textContent = fmt(r.v0, 1) + ' m/s';
     $('gasDx').textContent = fmt(r.dx, 1) + ' mm';
+    try { drawGasSec(r); } catch (e) {}
+  }
+  let gasSecState = { w: 0, h: 0 };
+  function resizeGasSecCanvas() {
+    const cv = $('gasSecCanvas');
+    if (!cv) return;
+    const wrap = cv.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    const wCss = rect.width || 320;
+    const hCss = Math.max(190, Math.round(wCss * 0.46));
+    wrap.style.height = hCss + 'px';
+    cv.style.width = wCss + 'px';
+    cv.style.height = hCss + 'px';
+    cv.width = Math.max(2, Math.round(wCss * d));
+    cv.height = Math.max(2, Math.round(hCss * d));
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    gasSecState.w = wCss; gasSecState.h = hCss;
+  }
+  function drawGasSec(r) {
+    const cv = $('gasSecCanvas');
+    if (!cv || !r || !gasSecState.w) return;
+    const ctx = cv.getContext('2d');
+    const W = gasSecState.w, H = gasSecState.h;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2;
+    const maxR = Math.max(r.R, r.rPool) * 1.45;
+    const scale = (Math.min(W, H) * 0.40) / maxR;
+    const poolR = Math.max(4, r.rPool * scale);
+    const shR = Math.max(4, r.R * scale);
+    const offX = r.dx * scale * 0.9;
+    const sx = cx + offX, sy = cy;
+    // 背景母材（截面底色）
+    ctx.fillStyle = 'rgba(96,112,138,0.32)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(160,175,200,0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(cx, 8); ctx.lineTo(cx, H - 24); ctx.stroke();
+    ctx.setLineDash([]);
+    // 未覆盖/氧化风险区：熔池圆中保护圆未覆盖的部分（evenodd 扣除）
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, poolR, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.beginPath(); ctx.arc(sx, sy, shR, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,80,80,0.55)';
+    ctx.fill('evenodd');
+    ctx.restore();
+    // 保护氛围圆
+    ctx.beginPath(); ctx.arc(sx, sy, shR, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,229,255,0.30)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,229,255,0.85)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    // 熔池圆
+    ctx.beginPath(); ctx.arc(cx, cy, poolR, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,87,34,0.88)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,181,154,0.95)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    // 圆心连线 + Δx（侧吹偏移时显示）
+    if (Math.abs(offX) > 5) {
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(sx, sy); ctx.stroke();
+      ctx.setLineDash([]);
+      const mx = (cx + sx) / 2, my = cy - poolR - 12;
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Δx=' + r.dx.toFixed(1) + 'mm', mx, my);
+    }
+    // 标注：R / 熔池 / 覆盖信息
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(0,229,255,0.95)';
+    ctx.fillText('R=' + r.R.toFixed(1) + 'mm', Math.min(sx + shR * 0.55 + 4, W - 70), sy - 8);
+    ctx.fillStyle = '#ffd0bd';
+    ctx.textAlign = 'center';
+    ctx.fillText('熔池Ø' + (r.rPool * 2).toFixed(1) + 'mm', cx, cy + poolR + 16);
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px sans-serif';
+    const covTxt = '覆盖' + (r.cov * 100).toFixed(1) + '% · 氛围占比' + r.pct.toFixed(1) + '% · ' +
+      (r.pct >= 80 ? '保护优' : r.pct >= 60 ? '保护良' : r.pct >= 40 ? '保护一般' : '氧化风险高');
+    ctx.fillText(covTxt, cx, H - 12);
   }
   function resizeGasCanvas() {
     if (!gasCanvas || !gasCtx) return;
@@ -8783,6 +8884,7 @@
   function startGasSim() {
     if (gasAnimId || !gasCtx) return;
     resizeGasCanvas();
+    resizeGasSecCanvas();
     gasState._lt = 0;
     try { gasUpdateResults(gasCalculate(gasRead())); } catch (e) {}
     gasLoop();
