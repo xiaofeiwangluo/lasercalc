@@ -9610,11 +9610,11 @@
     // 脉宽对熔宽的微弱增强（长脉宽热扩散更充分，1ms→10ms 约 +5%，文献：脉宽↑熔宽缓增）
     const tauW = 1 + 0.10 * (Math.pow(Math.max(p.tau, 0.05), 0.18) - 1);
     const wBase = Math.max(d * 1.15 * (1 + 0.25 * overlap) * tauW, wTh);
-    // 熔透饱和：hPhys ≥ 母材厚度 → 熔深饱和为板厚，超出能量按能量守恒扩展熔宽
+    // 熔深按真实计算值显示（不做熔透饱和），熔宽不随熔透扩展
     const thk = Math.max(p.thickness, 0.05);
-    const melted = hPhys >= thk;
-    const h = melted ? thk : hPhys;
-    const w = melted ? Math.sqrt(wBase * wBase + d * Math.max(hPhys - thk, 0)) : wBase;
+    const melted = hPhys >= thk;                 // 仅供熔透字样判断
+    const h = hPhys;                             // 预估熔深显示真实计算值
+    const w = wBase;                             // 熔宽不随熔透扩展
     const tWeld = p.len / p.v;
     const nPulse = p.len / dx;
     const heat = pAvg * etaEff / p.v;
@@ -9773,7 +9773,7 @@
     ctx.fillStyle = 'rgba(200,210,225,0.9)';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
-    const dimDepth = Math.min(r.h, thk);
+    const dimDepth = r.h;
     const offDep = qcwOff('s_depth');
     const depTxt = '预估熔深 ' + dimDepth.toFixed(2) + 'mm';
     const depX = poolCX + 6 + offDep.dx, depY = poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy;
