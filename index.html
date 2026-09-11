@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -1897,6 +1897,10 @@
   .doe-res-item .dr-value { font-size: 16px; font-weight: 700; color: var(--text); }
   .doe-res-item .dr-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
   .doe-plot-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .win-result { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; font-size: 13px; }
+  .win-result .win-line { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+  .win-result .win-line b { color: var(--text); }
+  .win-result .win-line span { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
   /* DOE 图形统一纵向排布，每张图占满整行 */
   .doe-plot-box:first-child { grid-column: 1 / -1; }
   .doe-plot-title { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
@@ -1991,7 +1995,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.10</div>
+    <div class="splash-version">v1.4.11</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2935,6 +2939,7 @@
           <option value="fit">动力电池壳盖配合公差分析</option>
           <option value="mod">通快功率调制焊接仿真</option>
           <option value="doe">DOE 试验设计 · 数据分析与报告</option>
+          <option value="window">工艺窗口对比 · 光学配置</option>
         </select>
       </div>
 
@@ -3419,6 +3424,100 @@
           <div id="doeOutMsg" style="font-size:12px;color:var(--text-3);margin-top:10px;"></div>
         </div>
       </div>
+
+      <!-- 工具H：工艺窗口对比 · 光学配置 -->
+      <div class="tool-panel" id="tool-window">
+        <div class="card">
+          <div class="card-title">工艺窗口对比 · 光学配置</div>
+          <div class="hint" style="margin-bottom:12px;">
+            输入目标熔深区间与熔宽区间，对比<b>两种光学配置</b>（光纤芯径 / 准直镜 / 聚焦镜不同）下的<b>离焦窗口</b>、<b>功率窗口</b>与<b>速度窗口</b>——扫描对应工艺参数，熔深与熔宽同时落在目标区间内的参数范围即为该配置的工艺窗口。模型与焊接仿真一致（材料专属系数 + 离焦修正 + 功率封顶），结果供工艺预研参考。
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">① 目标区间（熔深 / 熔宽）</div>
+            <div class="input-group">
+              <div class="input-label"><span>目标熔深区间</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="number" id="winHMin" value="0.8" min="0.05" step="0.05" style="flex:1;">
+                <span class="unit" style="padding:0 6px;">~</span>
+                <input type="number" id="winHMax" value="1.6" min="0.05" step="0.05" style="flex:1;">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>目标熔宽区间</span><span class="unit">mm</span></div>
+              <div class="input-row">
+                <input type="number" id="winWMin" value="0.5" min="0.05" step="0.05" style="flex:1;">
+                <span class="unit" style="padding:0 6px;">~</span>
+                <input type="number" id="winWMax" value="1.0" min="0.05" step="0.05" style="flex:1;">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>工件材料</span></div>
+              <div class="input-row">
+                <select id="winMat" style="flex:1;"></select>
+              </div>
+            </div>
+          </div>
+          <div class="fit-section" style="margin-top:14px;">
+            <div class="fit-section-title">② 配置 A（基准）</div>
+            <div class="input-group">
+              <div class="input-label"><span>光学元件</span><span class="unit">芯径 μm / 准直 mm / 聚焦 mm</span></div>
+              <div class="input-row">
+                <span class="sim-param"><span class="sim-lbl">芯径</span><input type="number" id="winACore" value="200" min="10"><span class="unit">μm</span></span>
+                <span class="sim-param"><span class="sim-lbl">准直</span><input type="number" id="winAFc" value="100" min="20"><span class="unit">mm</span></span>
+                <span class="sim-param"><span class="sim-lbl">聚焦</span><input type="number" id="winAFf" value="200" min="50"><span class="unit">mm</span></span>
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>基准工艺</span><span class="unit">功率 W / 速度 mm/s（扫描其他参数时固定）</span></div>
+              <div class="input-row">
+                <span class="sim-param"><span class="sim-lbl">功率</span><input type="number" id="winAP" value="3000" min="100"><span class="unit">W</span></span>
+                <span class="sim-param"><span class="sim-lbl">速度</span><input type="number" id="winAV" value="60" min="1"><span class="unit">mm/s</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="fit-section" style="margin-top:14px;">
+            <div class="fit-section-title">③ 配置 B（对比）</div>
+            <div class="input-group">
+              <div class="input-label"><span>光学元件</span><span class="unit">芯径 μm / 准直 mm / 聚焦 mm</span></div>
+              <div class="input-row">
+                <span class="sim-param"><span class="sim-lbl">芯径</span><input type="number" id="winBCore" value="100" min="10"><span class="unit">μm</span></span>
+                <span class="sim-param"><span class="sim-lbl">准直</span><input type="number" id="winBFc" value="100" min="20"><span class="unit">mm</span></span>
+                <span class="sim-param"><span class="sim-lbl">聚焦</span><input type="number" id="winBFf" value="200" min="50"><span class="unit">mm</span></span>
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>基准工艺</span><span class="unit">功率 W / 速度 mm/s（扫描其他参数时固定）</span></div>
+              <div class="input-row">
+                <span class="sim-param"><span class="sim-lbl">功率</span><input type="number" id="winBP" value="3000" min="100"><span class="unit">W</span></span>
+                <span class="sim-param"><span class="sim-lbl">速度</span><input type="number" id="winBV" value="60" min="1"><span class="unit">mm/s</span></span>
+              </div>
+            </div>
+            <div class="tp-actions" style="margin-top:10px;">
+              <button id="winCalc">计算工艺窗口</button>
+              <button class="secondary" id="winDemo">填入示例数据</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">离焦窗口对比</div>
+          <div class="hint" style="margin-bottom:6px;">固定功率与速度为各自基准值，扫描离焦 -10 ~ +10 mm（负=焦点深入工件）</div>
+          <div class="tp-canvas-wrap"><canvas id="winDefCanvas"></canvas></div>
+          <div class="win-result" id="winDefRes"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">功率窗口对比</div>
+          <div class="hint" style="margin-bottom:6px;">固定速度为各自基准值、离焦 0，扫描功率 200 ~ 10000 W</div>
+          <div class="tp-canvas-wrap"><canvas id="winPwrCanvas"></canvas></div>
+          <div class="win-result" id="winPwrRes"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">速度窗口对比</div>
+          <div class="hint" style="margin-bottom:6px;">固定功率为各自基准值、离焦 0，扫描速度 5 ~ 500 mm/s</div>
+          <div class="tp-canvas-wrap"><canvas id="winVelCanvas"></canvas></div>
+          <div class="win-result" id="winVelRes"></div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -3498,7 +3597,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.10</span>
+        <span class="ar-value">v1.4.11</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3511,26 +3610,22 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.10 QCW 模型校准 -->
+  <!-- 首次登录：v1.4.11 工艺窗口对比 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.10</span></h3>
-      <div class="up-sub">QCW 脉冲焊接模型 · 文献校准</div>
+      <h3>版本更新 <span class="vtag">v1.4.11</span></h3>
+      <div class="up-sub">工具箱 · 工艺窗口对比</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">熔深模型重校准</b>：修正原模型误用峰值功率计算线能量（热输入高估约 1/占空比）的问题，改为平均功率等效热输入（P_avg=P_peak×占空比），脉冲焊熔深预估更贴近实测。</span>
+        <span><b style="color:var(--text)">工艺窗口对比</b>：输入目标熔深区间与熔宽区间，对比两种光学配置（光纤芯径 / 准直镜 / 聚焦镜不同）下的离焦窗口、功率窗口与速度窗口。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">脉冲效应增强</b>：新增重叠率累积项（1+1.6η）与脉宽增强项 τ^0.22，依据 IDC《Analysis of Performance Characteristics of Laser Beam Welding》与 MDPI 2024 激光点焊匙孔研究：重叠率/每毫米脉冲数越高、脉宽越宽、光斑越小，熔深越深。</span>
+        <span><b style="color:var(--text)">三窗口图形化对比</b>：熔深曲线 + 目标区间带 + 配置 A/B 达标窗口横条（含数值标注），无达标时明确提示。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">匙孔阈值单位修正</b>：修复功率密度阈值（IKH，kW/mm²）与峰值功率密度（W/mm²）单位不匹配导致深熔过渡恒开启的问题，低功率密度传导焊与高功率深熔焊自动区分。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">4</span>
-        <span><b style="color:var(--text)">熔宽优化</b>：熔宽在光斑直径基础上加入重叠率轻微扩展，高重叠时焊缝更宽；示例：钢 1500W/1ms/300Hz/80mm/s 预估熔深 0.56mm（原 1.25mm 偏高）。</span>
+        <span><b style="color:var(--text)">模型一致</b>：与焊接仿真共用同一套半经验模型（材料专属 K 值、离焦修正、功率封顶），扫描任意参数自动重算，结果供工艺预研参考。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3541,6 +3636,13 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.11</span><span class="cl-date">2026-09-11 · 工具箱工艺窗口对比</span></div>
+        <ul class="cl-list">
+          <li><b>工具箱 · 工艺窗口对比</b>：输入目标熔深区间与熔宽区间，对比两种光学配置（光纤芯径/准直镜/聚焦镜不同）下的离焦窗口、功率窗口与速度窗口；熔深曲线+目标带+配置 A/B 达标窗口横条图形化对比，窗口数值自动标注，无达标明确提示。</li>
+          <li><b>模型一致</b>：与焊接仿真共用同一套半经验模型（材料专属 K 值、离焦修正、功率封顶），扫描参数变更自动重算，一键填入示例数据。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.10</span><span class="cl-date">2026-09-11 · QCW 模型文献校准</span></div>
         <ul class="cl-list">
@@ -7969,7 +8071,7 @@
   // ===== 工具箱 · 工具下拉切换 =====
   const toolSelect = $('toolSelect');
   function switchTool(name) {
-    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe'].forEach(id => {
+    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe', 'tool-window'].forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('active', id === 'tool-' + name);
     });
@@ -7980,8 +8082,239 @@
     if (name === 'mod') { resizeModCanvas(); startModSim(); }
     else { stopModSim(); }
     if (name === 'doe') { initDoe(); }
+    if (name === 'window') { resizeWinCanvases(); calcWindow(); }
   }
   if (toolSelect) toolSelect.addEventListener('change', () => switchTool(toolSelect.value));
+
+  // ===== 工具H：工艺窗口对比 · 光学配置 =====
+  // 材料专属单光束系数（与焊接仿真 weldCalculate 完全一致）
+  const WIN_MP = {
+    steel:   { Kk: 80,  Kc: 15, IKH: 10,  kRef: 16  },
+    al1060:  { Kk: 48,  Kc: 9,  IKH: 30,  kRef: 235 },
+    al3003:  { Kk: 52,  Kc: 10, IKH: 28,  kRef: 190 },
+    al5052:  { Kk: 58,  Kc: 11, IKH: 24,  kRef: 138 },
+    al5083:  { Kk: 60,  Kc: 11, IKH: 22,  kRef: 125 },
+    al6061:  { Kk: 56,  Kc: 10, IKH: 25,  kRef: 167 },
+    al6063:  { Kk: 50,  Kc: 9,  IKH: 28,  kRef: 200 },
+    al7075:  { Kk: 62,  Kc: 12, IKH: 22,  kRef: 130 },
+    cu_t2:   { Kk: 38,  Kc: 7,  IKH: 500, kRef: 401 },
+    cu_c1020:{ Kk: 38,  Kc: 7,  IKH: 500, kRef: 398 },
+    cu_h62:  { Kk: 50,  Kc: 9,  IKH: 100, kRef: 116 },
+    cu_c5191:{ Kk: 55,  Kc: 10, IKH: 80,  kRef: 62  },
+    cu_qbe2: { Kk: 52,  Kc: 9,  IKH: 90,  kRef: 105 }
+  };
+  const winMatSel = $('winMat');
+  if (winMatSel) {
+    Object.keys(MATERIALS).forEach(k => {
+      const o = document.createElement('option');
+      o.value = k; o.textContent = MATERIALS[k].name;
+      winMatSel.appendChild(o);
+    });
+    winMatSel.value = 'steel';
+  }
+  // 工艺窗口模型：与焊接仿真同款（焦点光斑 d=芯径×f聚焦/f准直，材料专属 K，离焦修正，功率封顶）
+  function winModel(matKey, core, fc, ff, def, P, V) {
+    const mat = MATERIALS[matKey] || MATERIALS.steel;
+    const d = Math.max(core * ff / fc, 5);               // μm
+    const r = (d / 2) / 1000;
+    const area = Math.PI * r * r;
+    const density = area > 0 ? P / area : 0;
+    const mp = WIN_MP[matKey] || WIN_MP.steel;
+    const keyhole = density > mp.IKH;
+    const K = keyhole ? mp.Kk : mp.Kc;
+    const theory = K * P * mat.eta / (Math.max(V, 0.5) * d);
+    const correction = 1 - Math.exp(-V / 25);
+    const est = Math.min(theory * correction, P / 400);
+    const h = est * defocusModel(def);
+    const w = Math.max((d / 1000) * 1.3 + h * 0.18, 0.1);
+    return { h: h, w: w, d: d, density: density, keyhole: keyhole };
+  }
+  // 扫描定义：type=def(离焦) / pwr(功率) / vel(速度)
+  const WIN_SCAN = {
+    def: { x0: -10, x1: 10, step: 0.2, unit: 'mm' },
+    pwr: { x0: 200, x1: 10000, step: 50, unit: 'W' },
+    vel: { x0: 5, x1: 500, step: 5, unit: 'mm/s' }
+  };
+  function scanWin(type, cfg) {
+    const s = WIN_SCAN[type];
+    const pts = [];
+    for (let x = s.x0; x <= s.x1 + s.step * 0.01; x += s.step) {
+      let r;
+      if (type === 'def') r = winModel(cfg.mat, cfg.core, cfg.fc, cfg.ff, x, cfg.P, cfg.V);
+      else if (type === 'pwr') r = winModel(cfg.mat, cfg.core, cfg.fc, cfg.ff, 0, x, cfg.V);
+      else r = winModel(cfg.mat, cfg.core, cfg.fc, cfg.ff, 0, cfg.P, x);
+      pts.push({ x: x, h: r.h, w: r.w, ok: r.h >= cfg.hMin && r.h <= cfg.hMax && r.w >= cfg.wMin && r.w <= cfg.wMax });
+    }
+    return pts;
+  }
+  function longestRun(oks) {
+    let best = [], cur = [];
+    for (let i = 0; i < oks.length; i++) {
+      if (oks[i]) { cur.push(i); if (cur.length > best.length) best = cur.slice(); }
+      else cur = [];
+    }
+    return best;
+  }
+  function winResize(cv) {
+    if (!cv) return;
+    const wrap = cv.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.max(2, Math.round((rect.width || 320) * dpr));
+    cv.height = Math.max(2, Math.round((rect.height || 240) * dpr));
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function resizeWinCanvases() {
+    winResize($('winDefCanvas')); winResize($('winPwrCanvas')); winResize($('winVelCanvas'));
+  }
+  // 绘制：上部熔深曲线 + 目标带；下部 A/B 达标窗口条
+  function drawWinChart(cv, s, ptsA, ptsB, target) {
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const W = cv.width / (window.devicePixelRatio || 1);
+    const H = cv.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, W, H);
+    const padL = 46, padR = 14, padT = 12;
+    const curveH = H * 0.52, barTop = H * 0.60;
+    const cw = W - padL - padR;
+    const x = v => padL + (v - s.x0) / (s.x1 - s.x0) * cw;
+    // 熔深曲线（共用 y 轴 0~hMaxY）
+    let hMaxY = 0;
+    ptsA.concat(ptsB).forEach(p => { if (p.h > hMaxY) hMaxY = p.h; });
+    if (target.hMax > hMaxY) hMaxY = target.hMax;
+    hMaxY = Math.max(hMaxY * 1.15, target.hMax * 1.05, 0.1);
+    const y = v => padT + (1 - v / hMaxY) * curveH;
+    // 目标带
+    ctx.fillStyle = 'rgba(76,175,80,0.10)';
+    ctx.fillRect(padL, y(target.hMax), cw, y(target.hMin) - y(target.hMax));
+    ctx.strokeStyle = 'rgba(76,175,80,0.5)';
+    ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, y(target.hMax)); ctx.lineTo(padL + cw, y(target.hMax));
+    ctx.moveTo(padL, y(target.hMin)); ctx.lineTo(padL + cw, y(target.hMin));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // y 轴刻度（熔深）
+    ctx.fillStyle = 'rgba(140,150,170,0.85)';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 3; i++) {
+      const v = hMaxY * i / 3;
+      ctx.fillText(v.toFixed(1), padL - 5, y(v) + 3);
+      ctx.strokeStyle = 'rgba(120,130,150,0.15)';
+      ctx.beginPath(); ctx.moveTo(padL, y(v)); ctx.lineTo(padL + cw, y(v)); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(140,150,170,0.85)';
+    ctx.textAlign = 'center';
+    ctx.fillText('熔深 (mm)', padL + cw / 2, padT + 8);
+    // 曲线
+    const colors = ['rgba(0,170,255,0.95)', 'rgba(255,140,0,0.95)'];
+    [ptsA, ptsB].forEach((pts, idx) => {
+      ctx.strokeStyle = colors[idx];
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      pts.forEach((p, i) => { i === 0 ? ctx.moveTo(x(p.x), y(p.h)) : ctx.lineTo(x(p.x), y(p.h)); });
+      ctx.stroke();
+    });
+    // 下部：A/B 达标条
+    const barH = 22, gap = 6;
+    ctx.font = '10px sans-serif';
+    [ptsA, ptsB].forEach((pts, idx) => {
+      const by = barTop + idx * (barH + gap);
+      // 背景轴
+      ctx.fillStyle = 'rgba(30,40,60,0.55)';
+      ctx.fillRect(padL, by, cw, barH);
+      ctx.strokeStyle = 'rgba(120,130,150,0.3)';
+      ctx.strokeRect(padL, by, cw, barH);
+      const run = longestRun(pts.map(p => p.ok));
+      if (run.length) {
+        const p0 = pts[run[0]], p1 = pts[run[run.length - 1]];
+        const bx0 = x(p0.x), bw = Math.max(x(p1.x) - x(p0.x), 2);
+        ctx.fillStyle = colors[idx] + 'cc';
+        ctx.fillRect(bx0, by + 2, bw, barH - 4);
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText(p0.x.toFixed(1) + ' ~ ' + p1.x.toFixed(1) + ' ' + s.unit, bx0 + bw / 2, by + barH / 2 + 3);
+      } else {
+        ctx.fillStyle = 'rgba(200,70,70,0.9)';
+        ctx.textAlign = 'center';
+        ctx.fillText('无达标窗口', padL + cw / 2, by + barH / 2 + 3);
+      }
+      // 配置标签
+      ctx.fillStyle = colors[idx];
+      ctx.textAlign = 'right';
+      ctx.fillText(idx === 0 ? '配置A' : '配置B', padL - 6, by + barH / 2 + 3);
+    });
+    // x 轴
+    ctx.fillStyle = 'rgba(140,150,170,0.85)';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 4; i++) {
+      const v = s.x0 + (s.x1 - s.x0) * i / 4;
+      ctx.fillText(Number(v).toFixed(v >= 100 ? 0 : 1), x(v), barTop + 2 * (barH + gap) + 12);
+    }
+    ctx.fillText(s.unit, padL + cw / 2, H - 2);
+  }
+  function fmtWinRange(pts) {
+    const run = longestRun(pts.map(p => p.ok));
+    if (!run.length) return '无达标窗口';
+    const p0 = pts[run[0]], p1 = pts[run[run.length - 1]];
+    return p0.x.toFixed(1) + ' ~ ' + p1.x.toFixed(1);
+  }
+  function calcWindow() {
+    const num = id => parseFloat($(id).value);
+    const cfg = {
+      hMin: num('winHMin'), hMax: num('winHMax'),
+      wMin: num('winWMin'), wMax: num('winWMax'),
+      mat: winMatSel ? winMatSel.value : 'steel',
+      A: { core: num('winACore'), fc: num('winAFc'), ff: num('winAFf'), P: num('winAP'), V: num('winAV') },
+      B: { core: num('winBCore'), fc: num('winBFc'), ff: num('winBFf'), P: num('winBP'), V: num('winBV') }
+    };
+    if (!(cfg.hMin > 0 && cfg.hMax > cfg.hMin && cfg.wMax > cfg.wMin)) {
+      const box = $('winDefRes');
+      if (box) box.innerHTML = '<div class="win-line" style="color:var(--warn, #e6a23c);">请检查目标区间：熔深/熔宽上限需大于下限</div>';
+      return;
+    }
+    const mk = c => ({ mat: cfg.mat, core: c.core, fc: c.fc, ff: c.ff, P: c.P, V: c.V, hMin: cfg.hMin, hMax: cfg.hMax, wMin: cfg.wMin, wMax: cfg.wMax });
+    const defA = scanWin('def', mk(cfg.A)), defB = scanWin('def', mk(cfg.B));
+    const pwrA = scanWin('pwr', mk(cfg.A)), pwrB = scanWin('pwr', mk(cfg.B));
+    const velA = scanWin('vel', mk(cfg.A)), velB = scanWin('vel', mk(cfg.B));
+    drawWinChart($('winDefCanvas'), WIN_SCAN.def, defA, defB, { hMin: cfg.hMin, hMax: cfg.hMax });
+    drawWinChart($('winPwrCanvas'), WIN_SCAN.pwr, pwrA, pwrB, { hMin: cfg.hMin, hMax: cfg.hMax });
+    drawWinChart($('winVelCanvas'), WIN_SCAN.vel, velA, velB, { hMin: cfg.hMin, hMax: cfg.hMax });
+    const resA = {
+      def: fmtWinRange(defA), pwr: fmtWinRange(pwrA), vel: fmtWinRange(velA)
+    };
+    const resB = {
+      def: fmtWinRange(defB), pwr: fmtWinRange(pwrB), vel: fmtWinRange(velB)
+    };
+    $('winDefRes').innerHTML =
+      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 离焦窗口：<b>' + resA.def + ' mm</b></div>' +
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 离焦窗口：<b>' + resB.def + ' mm</b></div>';
+    $('winPwrRes').innerHTML =
+      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 功率窗口：<b>' + resA.pwr + ' W</b></div>' +
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 功率窗口：<b>' + resB.pwr + ' W</b></div>';
+    $('winVelRes').innerHTML =
+      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 速度窗口：<b>' + resA.vel + ' mm/s</b></div>' +
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 速度窗口：<b>' + resB.vel + ' mm/s</b></div>';
+  }
+  const winCalcBtn = $('winCalc');
+  if (winCalcBtn) winCalcBtn.addEventListener('click', calcWindow);
+  const winDemoBtn = $('winDemo');
+  if (winDemoBtn) winDemoBtn.addEventListener('click', () => {
+    const set = (id, v) => { const el = $(id); if (el) el.value = v; };
+    set('winHMin', 0.8); set('winHMax', 1.6);
+    set('winWMin', 0.5); set('winWMax', 1.0);
+    if (winMatSel) winMatSel.value = 'steel';
+    set('winACore', 200); set('winAFc', 100); set('winAFf', 200); set('winAP', 3000); set('winAV', 60);
+    set('winBCore', 100); set('winBFc', 100); set('winBFf', 200); set('winBP', 3000); set('winBV', 60);
+    calcWindow();
+  });
+  ['winHMin','winHMax','winWMin','winWMax','winACore','winAFc','winAFf','winAP','winAV','winBCore','winBFc','winBFf','winBP','winBV'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('change', calcWindow);
+  });
 
   // ===== 工具B：加速距离计算 · 焊接运动分析 =====
   const accCanvas = $('accCanvas');
