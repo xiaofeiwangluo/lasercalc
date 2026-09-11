@@ -1995,7 +1995,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.14</div>
+    <div class="splash-version">v1.4.15</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -3597,7 +3597,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.14</span>
+        <span class="ar-value">v1.4.15</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3613,23 +3613,19 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.14</span></h3>
-      <div class="up-sub">工艺窗口计算逻辑修复 · 无达标窗口修复</div>
+      <h3>版本更新 <span class="vtag">v1.4.15</span></h3>
+      <div class="up-sub">工艺窗口对比 · 新增熔宽窗口</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">修复校验失败残留</b>：目标区间非法（熔深/熔宽上限≤下限、下限≤0 或为空）时，离焦/功率/速度三个结果区统一显示校验提示，不再残留上一次计算结果。</span>
+        <span><b style="color:var(--text)">新增熔宽窗口</b>：离焦/功率/速度三张对比图叠加熔宽虚线曲线与熔宽目标带（青色虚线框），下部新增配置 A/B 熔宽窗口达标条，结果区同步显示熔宽窗口数值。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">优化无达标显示</b>：「无达标窗口」不再带多余单位（如「无达标窗口 mm」），提示更清晰。</span>
+        <span><b style="color:var(--text)">熔宽独立判定</b>：熔宽窗口仅按熔宽 ∈ [目标下限, 目标上限] 判定，与熔深综合窗口互不影响，便于单独分析熔宽工艺窗口。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">修复功率窗口断裂误判</b>：传导→深熔 K 值改用 smoothstep 平滑过渡（0.5×IKH~2×IKH 连续），功率扫描熔深曲线不再在阈值处跳变断裂；跨转变点的目标区间（如 0.5~1.5mm）现在可正确给出连续功率窗口。焊接仿真与工艺窗口模型同步更新，结果保持一致。</span>
-      </div>
-      <div class="up-item">
-        <span class="up-num">4</span>
-        <span><b style="color:var(--text)">QCW 模型 v2.2 同步保留</b>：熔深标定收敛（300W 传导焊 1.17→0.94mm）、薄板熔透饱和、「已熔透」标注。</span>
+        <span><b style="color:var(--text)">同步保留</b>：工艺窗口 K 值平滑过渡（功率窗口不断裂）、无达标窗口修复、QCW 模型 v2.2 标定。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3640,6 +3636,13 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.15</span><span class="cl-date">2026-09-11 · 工艺窗口新增熔宽窗口</span></div>
+        <ul class="cl-list">
+          <li><b>新增熔宽窗口</b>：三张对比图叠加熔宽曲线与目标带，下部新增 A/B 熔宽窗口达标条。</li>
+          <li><b>结果区新增配置A/B 熔宽窗口数值</b>：仅按熔宽目标区间独立判定。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.14</span><span class="cl-date">2026-09-11 · 工艺窗口计算逻辑修复</span></div>
         <ul class="cl-list">
@@ -8178,7 +8181,7 @@
       if (type === 'def') r = winModel(cfg.mat, cfg.core, cfg.fc, cfg.ff, x, cfg.P, cfg.V);
       else if (type === 'pwr') r = winModel(cfg.mat, cfg.core, cfg.fc, cfg.ff, 0, x, cfg.V);
       else r = winModel(cfg.mat, cfg.core, cfg.fc, cfg.ff, 0, cfg.P, x);
-      pts.push({ x: x, h: r.h, w: r.w, ok: r.h >= cfg.hMin && r.h <= cfg.hMax && r.w >= cfg.wMin && r.w <= cfg.wMax });
+      pts.push({ x: x, h: r.h, w: r.w, ok: r.h >= cfg.hMin && r.h <= cfg.hMax && r.w >= cfg.wMin && r.w <= cfg.wMax, okW: r.w >= cfg.wMin && r.w <= cfg.wMax });
     }
     return pts;
   }
@@ -8203,24 +8206,25 @@
   function resizeWinCanvases() {
     winResize($('winDefCanvas')); winResize($('winPwrCanvas')); winResize($('winVelCanvas'));
   }
-  // 绘制：上部熔深曲线 + 目标带；下部 A/B 达标窗口条
+  // 绘制：上部熔深实线 + 熔宽虚线 + 双目标带；下部 A/B 综合窗口条 + A/B 熔宽窗口条
   function drawWinChart(cv, s, ptsA, ptsB, target) {
     if (!cv) return;
     const ctx = cv.getContext('2d');
     const W = cv.width / (window.devicePixelRatio || 1);
     const H = cv.height / (window.devicePixelRatio || 1);
     ctx.clearRect(0, 0, W, H);
-    const padL = 46, padR = 14, padT = 12;
-    const curveH = H * 0.52, barTop = H * 0.60;
+    const padL = 46, padR = 14, padT = 14;
+    const curveH = H * 0.48, barTop = H * 0.56;
     const cw = W - padL - padR;
     const x = v => padL + (v - s.x0) / (s.x1 - s.x0) * cw;
-    // 熔深曲线（共用 y 轴 0~hMaxY）
+    // y 轴范围：熔深与熔宽共用（0~hMaxY）
     let hMaxY = 0;
-    ptsA.concat(ptsB).forEach(p => { if (p.h > hMaxY) hMaxY = p.h; });
+    ptsA.concat(ptsB).forEach(p => { if (p.h > hMaxY) hMaxY = p.h; if (p.w > hMaxY) hMaxY = p.w; });
     if (target.hMax > hMaxY) hMaxY = target.hMax;
-    hMaxY = Math.max(hMaxY * 1.15, target.hMax * 1.05, 0.1);
+    if (target.wMax > hMaxY) hMaxY = target.wMax;
+    hMaxY = Math.max(hMaxY * 1.15, target.hMax * 1.05, target.wMax * 1.05, 0.1);
     const y = v => padT + (1 - v / hMaxY) * curveH;
-    // 目标带
+    // 熔深目标带
     ctx.fillStyle = 'rgba(76,175,80,0.10)';
     ctx.fillRect(padL, y(target.hMax), cw, y(target.hMin) - y(target.hMax));
     ctx.strokeStyle = 'rgba(76,175,80,0.5)';
@@ -8230,7 +8234,12 @@
     ctx.moveTo(padL, y(target.hMin)); ctx.lineTo(padL + cw, y(target.hMin));
     ctx.stroke();
     ctx.setLineDash([]);
-    // y 轴刻度（熔深）
+    // 熔宽目标带（青色虚线边框，不填充）
+    ctx.strokeStyle = 'rgba(0,200,230,0.55)';
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(padL, y(target.wMax), cw, y(target.wMin) - y(target.wMax));
+    ctx.setLineDash([]);
+    // y 轴刻度
     ctx.fillStyle = 'rgba(140,150,170,0.85)';
     ctx.font = '9px sans-serif';
     ctx.textAlign = 'right';
@@ -8242,8 +8251,8 @@
     }
     ctx.fillStyle = 'rgba(140,150,170,0.85)';
     ctx.textAlign = 'center';
-    ctx.fillText('熔深 (mm)', padL + cw / 2, padT + 8);
-    // 曲线
+    ctx.fillText('熔深 / 熔宽 (mm)', padL + cw / 2, padT + 8);
+    // 曲线：熔深实线 + 熔宽虚线
     const colors = ['rgba(0,170,255,0.95)', 'rgba(255,140,0,0.95)'];
     [ptsA, ptsB].forEach((pts, idx) => {
       ctx.strokeStyle = colors[idx];
@@ -8251,13 +8260,34 @@
       ctx.beginPath();
       pts.forEach((p, i) => { i === 0 ? ctx.moveTo(x(p.x), y(p.h)) : ctx.lineTo(x(p.x), y(p.h)); });
       ctx.stroke();
+      ctx.strokeStyle = colors[idx].replace('0.95', '0.6');
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      pts.forEach((p, i) => { i === 0 ? ctx.moveTo(x(p.x), y(p.w)) : ctx.lineTo(x(p.x), y(p.w)); });
+      ctx.stroke();
+      ctx.setLineDash([]);
     });
-    // 下部：A/B 达标条
-    const barH = 22, gap = 6;
+    // 图例（右上角）
+    ctx.fillStyle = 'rgba(6,10,20,0.62)';
+    ctx.fillRect(padL + cw - 132, padT, 128, 22);
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = 'rgba(210,220,235,0.95)';
+    ctx.textAlign = 'left';
+    ctx.strokeStyle = 'rgba(210,220,235,0.9)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL + cw - 124, padT + 15); ctx.lineTo(padL + cw - 112, padT + 15); ctx.stroke();
+    ctx.fillText('熔深', padL + cw - 108, padT + 18);
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(padL + cw - 74, padT + 15); ctx.lineTo(padL + cw - 62, padT + 15); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillText('熔宽', padL + cw - 58, padT + 18);
+    // 下部：4 行达标条（综合窗口 2 行 + 熔宽窗口 2 行）
+    const barH = Math.max(13, Math.min(20, (H - barTop - 34) / 4 - 4));
+    const gap = 4;
     ctx.font = '10px sans-serif';
     [ptsA, ptsB].forEach((pts, idx) => {
-      const by = barTop + idx * (barH + gap);
-      // 背景轴
+      const by = barTop + idx * 2 * (barH + gap);
       ctx.fillStyle = 'rgba(30,40,60,0.55)';
       ctx.fillRect(padL, by, cw, barH);
       ctx.strokeStyle = 'rgba(120,130,150,0.3)';
@@ -8267,7 +8297,7 @@
         const p0 = pts[run[0]], p1 = pts[run[run.length - 1]];
         const bx0 = x(p0.x), bw = Math.max(x(p1.x) - x(p0.x), 2);
         ctx.fillStyle = colors[idx] + 'cc';
-        ctx.fillRect(bx0, by + 2, bw, barH - 4);
+        ctx.fillRect(bx0, by + 1, bw, barH - 2);
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.fillText(p0.x.toFixed(1) + ' ~ ' + p1.x.toFixed(1) + ' ' + s.unit, bx0 + bw / 2, by + barH / 2 + 3);
@@ -8276,23 +8306,49 @@
         ctx.textAlign = 'center';
         ctx.fillText('无达标窗口', padL + cw / 2, by + barH / 2 + 3);
       }
-      // 配置标签
       ctx.fillStyle = colors[idx];
       ctx.textAlign = 'right';
-      ctx.fillText(idx === 0 ? '配置A' : '配置B', padL - 6, by + barH / 2 + 3);
+      ctx.fillText(idx === 0 ? 'A' : 'B', padL - 6, by + barH / 2 + 3);
+      // 熔宽窗口条
+      const byw = barTop + (idx * 2 + 1) * (barH + gap);
+      ctx.fillStyle = 'rgba(14,22,34,0.55)';
+      ctx.fillRect(padL, byw, cw, barH);
+      ctx.strokeStyle = 'rgba(0,200,230,0.4)';
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(padL, byw, cw, barH);
+      ctx.setLineDash([]);
+      const runW = longestRun(pts.map(p => p.okW));
+      if (runW.length) {
+        const p0 = pts[runW[0]], p1 = pts[runW[runW.length - 1]];
+        const bx0 = x(p0.x), bw = Math.max(x(p1.x) - x(p0.x), 2);
+        ctx.fillStyle = 'rgba(0,200,230,0.28)';
+        ctx.fillRect(bx0, byw + 1, bw, barH - 2);
+        ctx.fillStyle = '#d4f3ff';
+        ctx.textAlign = 'center';
+        ctx.fillText(p0.x.toFixed(1) + ' ~ ' + p1.x.toFixed(1) + ' ' + s.unit, bx0 + bw / 2, byw + barH / 2 + 3);
+      } else {
+        ctx.fillStyle = 'rgba(200,70,70,0.9)';
+        ctx.textAlign = 'center';
+        ctx.fillText('无达标窗口', padL + cw / 2, byw + barH / 2 + 3);
+      }
+      ctx.fillStyle = 'rgba(0,200,230,0.9)';
+      ctx.textAlign = 'right';
+      ctx.fillText(idx === 0 ? 'A·宽' : 'B·宽', padL - 6, byw + barH / 2 + 3);
     });
     // x 轴
+    const xTop = barTop + 4 * (barH + gap) + 10;
     ctx.fillStyle = 'rgba(140,150,170,0.85)';
     ctx.font = '9px sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i <= 4; i++) {
       const v = s.x0 + (s.x1 - s.x0) * i / 4;
-      ctx.fillText(Number(v).toFixed(v >= 100 ? 0 : 1), x(v), barTop + 2 * (barH + gap) + 12);
+      ctx.fillText(Number(v).toFixed(v >= 100 ? 0 : 1), x(v), xTop + 9);
     }
     ctx.fillText(s.unit, padL + cw / 2, H - 2);
   }
-  function fmtWinRange(pts) {
-    const run = longestRun(pts.map(p => p.ok));
+  function fmtWinRange(pts, mode) {
+    const key = mode === 'w' ? 'okW' : 'ok';
+    const run = longestRun(pts.map(p => p[key]));
     if (!run.length) return '无达标窗口';
     const p0 = pts[run[0]], p1 = pts[run[run.length - 1]];
     return p0.x.toFixed(1) + ' ~ ' + p1.x.toFixed(1);
@@ -8316,25 +8372,34 @@
     const defA = scanWin('def', mk(cfg.A)), defB = scanWin('def', mk(cfg.B));
     const pwrA = scanWin('pwr', mk(cfg.A)), pwrB = scanWin('pwr', mk(cfg.B));
     const velA = scanWin('vel', mk(cfg.A)), velB = scanWin('vel', mk(cfg.B));
-    drawWinChart($('winDefCanvas'), WIN_SCAN.def, defA, defB, { hMin: cfg.hMin, hMax: cfg.hMax });
-    drawWinChart($('winPwrCanvas'), WIN_SCAN.pwr, pwrA, pwrB, { hMin: cfg.hMin, hMax: cfg.hMax });
-    drawWinChart($('winVelCanvas'), WIN_SCAN.vel, velA, velB, { hMin: cfg.hMin, hMax: cfg.hMax });
+    const tg = { hMin: cfg.hMin, hMax: cfg.hMax, wMin: cfg.wMin, wMax: cfg.wMax };
+    drawWinChart($('winDefCanvas'), WIN_SCAN.def, defA, defB, tg);
+    drawWinChart($('winPwrCanvas'), WIN_SCAN.pwr, pwrA, pwrB, tg);
+    drawWinChart($('winVelCanvas'), WIN_SCAN.vel, velA, velB, tg);
     const resA = {
-      def: fmtWinRange(defA), pwr: fmtWinRange(pwrA), vel: fmtWinRange(velA)
+      def: fmtWinRange(defA), pwr: fmtWinRange(pwrA), vel: fmtWinRange(velA),
+      defW: fmtWinRange(defA, 'w'), pwrW: fmtWinRange(pwrA, 'w'), velW: fmtWinRange(velA, 'w')
     };
     const resB = {
-      def: fmtWinRange(defB), pwr: fmtWinRange(pwrB), vel: fmtWinRange(velB)
+      def: fmtWinRange(defB), pwr: fmtWinRange(pwrB), vel: fmtWinRange(velB),
+      defW: fmtWinRange(defB, 'w'), pwrW: fmtWinRange(pwrB, 'w'), velW: fmtWinRange(velB, 'w')
     };
     const fmtRes = (v, unit) => v === '无达标窗口' ? v : v + ' ' + unit;
     $('winDefRes').innerHTML =
       '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 离焦窗口：<b>' + fmtRes(resA.def, 'mm') + '</b></div>' +
-      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 离焦窗口：<b>' + fmtRes(resB.def, 'mm') + '</b></div>';
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 离焦窗口：<b>' + fmtRes(resB.def, 'mm') + '</b></div>' +
+      '<div class="win-line win-wline"><span style="background:rgba(0,200,230,0.9)"></span>配置A 熔宽窗口：<b>' + fmtRes(resA.defW, 'mm') + '</b></div>' +
+      '<div class="win-line win-wline"><span style="background:rgba(0,200,230,0.45)"></span>配置B 熔宽窗口：<b>' + fmtRes(resB.defW, 'mm') + '</b></div>';
     $('winPwrRes').innerHTML =
       '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 功率窗口：<b>' + fmtRes(resA.pwr, 'W') + '</b></div>' +
-      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 功率窗口：<b>' + fmtRes(resB.pwr, 'W') + '</b></div>';
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 功率窗口：<b>' + fmtRes(resB.pwr, 'W') + '</b></div>' +
+      '<div class="win-line win-wline"><span style="background:rgba(0,200,230,0.9)"></span>配置A 熔宽窗口：<b>' + fmtRes(resA.pwrW, 'W') + '</b></div>' +
+      '<div class="win-line win-wline"><span style="background:rgba(0,200,230,0.45)"></span>配置B 熔宽窗口：<b>' + fmtRes(resB.pwrW, 'W') + '</b></div>';
     $('winVelRes').innerHTML =
       '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 速度窗口：<b>' + fmtRes(resA.vel, 'mm/s') + '</b></div>' +
-      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 速度窗口：<b>' + fmtRes(resB.vel, 'mm/s') + '</b></div>';
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 速度窗口：<b>' + fmtRes(resB.vel, 'mm/s') + '</b></div>' +
+      '<div class="win-line win-wline"><span style="background:rgba(0,200,230,0.9)"></span>配置A 熔宽窗口：<b>' + fmtRes(resA.velW, 'mm/s') + '</b></div>' +
+      '<div class="win-line win-wline"><span style="background:rgba(0,200,230,0.45)"></span>配置B 熔宽窗口：<b>' + fmtRes(resB.velW, 'mm/s') + '</b></div>';
   }
   const winCalcBtn = $('winCalc');
   if (winCalcBtn) winCalcBtn.addEventListener('click', calcWindow);
