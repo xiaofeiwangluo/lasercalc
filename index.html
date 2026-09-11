@@ -1991,7 +1991,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.9</div>
+    <div class="splash-version">v1.4.10</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2684,7 +2684,7 @@
             <div class="wd-item2"><span class="wd2-label">脉冲总数</span><span class="wd2-value" id="qcwCount">0</span></div>
           </div>
           <div class="hint" style="margin-top:8px;">
-            模型依据（半经验工程模型，经文献校准）：QCW（准连续）脉冲激光焊接——①重叠率 η = 1 − v/(f·d)（v 焊接速度、f 脉冲频率、d 焊斑直径）：焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》及激光焊接机行业公式；②单脉冲能量 E_p = P_peak×τ，平均功率 P_avg = P_peak×占空比；③熔深受峰值功率密度、脉冲能量、光斑直径与脉冲作用时间主导（焊接学报《脉冲激光焊接的数学模型》），本模型以匙孔能量平衡为基础并加入脉冲占空比/脉宽修正；④光学链路：放大倍率 M=f_f/f_c、焦点光斑 d₀=纤芯×M、瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。结果供工艺预研参考，请以实测为准。
+            模型依据（半经验工程模型，v2 文献校准）：QCW（准连续）脉冲激光焊接——①重叠率 η = 1 − v/(f·d)（v 焊接速度、f 脉冲频率、d 焊斑直径）：焊接学报《1J79软磁合金薄板脉冲激光焊焊缝成形研究》及激光焊接机行业公式；②单脉冲能量 E_p = P_peak×τ，平均功率 P_avg = P_peak×占空比（准连续激光器等效热输入，laserfair）；③熔深模型 v2：平均线能量（P_avg·η/v）为等效热输入、重叠率累积增强 (1+1.6η) 反映脉冲重叠对熔深的叠加（IDC《Analysis of Performance Characteristics of Laser Beam Welding》：脉宽↑→重叠↑→熔深↑）、脉宽增强 τ^0.22（MDPI 2024《Keyhole Shape and Penetration Depth in Laser Spot Welding of Aluminum with Power Wave Modulation》：功率/脉宽/脉冲数↑、光斑半径↓→熔深↑；中国激光：熔深与功率密度近似线性、与点能量近似对数）；④光学链路：放大倍率 M=f_f/f_c、焦点光斑 d₀=纤芯×M、瑞利长度 z_R=πd₀²/(4λ)，λ=1080nm。结果供工艺预研参考，请以实测为准。
           </div>
         </div>
       </div><!-- /libSimQcw -->
@@ -3498,7 +3498,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.9</span>
+        <span class="ar-value">v1.4.10</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3511,26 +3511,26 @@
     </div>
   </div>
 
-  <!-- 首次登录：v1.4.9 今日更新汇总 -->
+  <!-- 首次登录：v1.4.10 QCW 模型校准 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.9</span></h3>
-      <div class="up-sub">DOE 试验设计 · 多响应增强</div>
+      <h3>版本更新 <span class="vtag">v1.4.10</span></h3>
+      <div class="up-sub">QCW 脉冲焊接模型 · 文献校准</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">响应自定义</b>：响应数量可自定义（1~4 个），每个响应可独立命名（如熔深 mm / 熔宽 mm / 重叠率 %），表格自动生成多列响应数据。</span>
+        <span><b style="color:var(--text)">熔深模型重校准</b>：修正原模型误用峰值功率计算线能量（热输入高估约 1/占空比）的问题，改为平均功率等效热输入（P_avg=P_peak×占空比），脉冲焊熔深预估更贴近实测。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">多响应切换分析</b>：ANOVA / R² / Pareto / 主效应 / 交互作用图按当前选中响应独立分析，一键切换；CSV 导出全部响应列，PPT/Word 报告含响应名称标注。</span>
+        <span><b style="color:var(--text)">脉冲效应增强</b>：新增重叠率累积项（1+1.6η）与脉宽增强项 τ^0.22，依据 IDC《Analysis of Performance Characteristics of Laser Beam Welding》与 MDPI 2024 激光点焊匙孔研究：重叠率/每毫米脉冲数越高、脉宽越宽、光斑越小，熔深越深。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">仿真数据填入增强</b>：按响应名称自动匹配模型输出——含「宽」填熔宽、含「深」填熔深、含「重叠」填重叠率、含「深宽比」填深宽比；因子数量上限提升至 8 个。</span>
+        <span><b style="color:var(--text)">匙孔阈值单位修正</b>：修复功率密度阈值（IKH，kW/mm²）与峰值功率密度（W/mm²）单位不匹配导致深熔过渡恒开启的问题，低功率密度传导焊与高功率深熔焊自动区分。</span>
       </div>
       <div class="up-item">
         <span class="up-num">4</span>
-        <span><b style="color:var(--text)">全面检查与修复</b>：修复 CW 仿真芯径缺失导致的异常、响应切换失效、响应数量变化后数据不同步等问题。</span>
+        <span><b style="color:var(--text)">熔宽优化</b>：熔宽在光斑直径基础上加入重叠率轻微扩展，高重叠时焊缝更宽；示例：钢 1500W/1ms/300Hz/80mm/s 预估熔深 0.56mm（原 1.25mm 偏高）。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3541,6 +3541,12 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.10</span><span class="cl-date">2026-09-11 · QCW 模型文献校准</span></div>
+        <ul class="cl-list">
+          <li><b>QCW 熔深模型重校准</b>：修正误用峰值功率算线能量的问题，改平均功率等效热输入（P_avg=P_peak×占空比）；新增重叠率累积项与脉宽增强项（IDC 激光束焊接性能分析、MDPI 2024 激光点焊匙孔研究）；修复匙孔功率密度阈值单位不匹配，传导/深熔自动区分；熔宽加入重叠率扩展。示例：钢 1500W/1ms/300Hz/80mm/s 预估熔深 0.56mm（原 1.25mm 偏高）。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.9</span><span class="cl-date">2026-09-10 · DOE 多响应增强</span></div>
         <ul class="cl-list">
@@ -8928,20 +8934,32 @@
     const dx = p.v / p.freq;
     const overlap = Math.max(0, Math.min(1, 1 - dx / Math.max(d, 0.001)));
     const IKH = mat.IKH || 10;
-    const tKH = Math.max(0, Math.min(1, (Ipeak - 0.5 * IKH) / (1.5 * IKH)));
+    // IKH 材料库阈值为 kW/mm²（如钢 10、铜 500），Ipeak 为 W/mm²，先除 1000 对齐单位
+    const tKH = Math.max(0, Math.min(1, (Ipeak / 1000 - 0.5 * IKH) / (1.5 * IKH)));
     const smoothKH = tKH * tKH * (3 - 2 * tKH);
     const etaEff = mat.eta + (mat.etaKH - mat.eta) * smoothKH;
     const kEff = mat.k + (mat.kWeld - mat.k) * smoothKH;
     const alphaE = kEff / (mat.rho * mat.c) * 1e6;
     const alphaRef = 4.08;
-    // 熔深：匙孔能量平衡 + 脉冲修正（占空比^0.25、脉宽^0.15）
-    const C1p = (mat.C1 || 0.12) * 2.6;
-    const h = C1p * Math.pow(Math.max(p.pp * etaEff / p.v, 0.001), 0.7) / Math.pow(Math.max(d, 0.01), 0.3)
-              * Math.pow(alphaRef / alphaE, 0.4) * Math.pow(duty, 0.25) * Math.pow(p.tau, 0.15);
-    // 熔宽：光斑基础直径 + Rosenthal 热导项
+    // ===== 熔深模型（文献校准 v2） =====
+    // 依据：①脉冲激光焊接中熔深受脉冲重叠率/每毫米脉冲数累积主导（IDC《ANALYSIS OF PERFORMANCE
+    // CHARACTERISTICS OF LASER BEAM WELDING》：脉宽↑→重叠↑→熔深↑）；②平均功率为等效热输入
+    // （P_avg=P_peak×占空比，laserfair 准连续激光器）；③熔深随功率密度/脉冲能量增大而增、随光斑
+    // 半径减小而增（MDPI 2024《Keyhole Shape and Penetration Depth in Laser Spot Welding of
+    // Aluminum with Power Wave Modulation》）；④熔深与功率密度近似线性、与作用时间/点能量近似对数
+    // （中国激光《纳秒激光工艺参数对铝/镁异种焊缝成形的影响》）。
+    // 修正：原模型误用峰值功率算线能量（高估热输入约 1/占空比），改平均线能量；新增重叠率累积项
+    // (1+1.6·η_overlap) 与脉宽增强项 τ^0.22。
+    const ElineAvg = pAvg * etaEff / p.v;                  // 平均线能量 J/mm（等效热输入）
+    const C1q = (mat.C1 || 0.12) * 1.5;                    // 脉冲焊标定系数（文献半经验）
+    const overlapBoost = 1 + 1.6 * overlap;                // 重叠率累积增强（0→×1，1→×2.6）
+    const tauBoost = Math.pow(Math.max(p.tau, 0.05), 0.22); // 脉宽增强（1ms→×1，10ms→×1.66）
+    const h = C1q * Math.pow(Math.max(ElineAvg, 0.001), 0.6) / Math.pow(Math.max(d, 0.01), 0.25)
+              * Math.pow(alphaRef / alphaE, 0.4) * overlapBoost * tauBoost;
+    // 熔宽：光斑基础直径（含重叠轻微扩展）+ Rosenthal 热导项
     const C3 = mat.C3 || 0.5;
     const wTh = C3 * Math.sqrt(pAvg * etaEff * alphaE / (p.v * p.v)) * 1.2;
-    const w = Math.max(d * 1.15, wTh);
+    const w = Math.max(d * 1.15 * (1 + 0.25 * overlap), wTh);
     const tWeld = p.len / p.v;
     const nPulse = p.len / dx;
     const heat = pAvg * etaEff / p.v;
