@@ -1234,6 +1234,10 @@
   .qcw-edit-active #qcwOverlapCanvas {
     touch-action: none;
   }
+  .gas-edit-active #gasCanvas {
+    touch-action: none;
+    cursor: move;
+  }
   .fill-edit-active #fillCanvas {
     touch-action: none;
   }
@@ -3160,6 +3164,7 @@
           <option value="mod">通快功率调制焊接仿真</option>
           <option value="doe">DOE 试验设计 · 数据分析与报告</option>
           <option value="window">工艺窗口对比 · 光学配置</option>
+          <option value="gas">同轴吹保护气 · 氮气保护仿真</option>
         </select>
       </div>
 
@@ -3739,6 +3744,80 @@
           <div class="tp-canvas-wrap"><canvas id="winVelCanvas"></canvas></div>
           <div class="tp-canvas-wrap" style="margin-top:4px;"><canvas id="winVelWCanvas"></canvas></div>
           <div class="win-result" id="winVelRes"></div>
+        </div>
+      </div>
+
+      <!-- 工具I：同轴吹保护气（氮气）仿真 -->
+      <div class="tool-panel" id="tool-gas">
+        <div class="card">
+          <div class="card-title">同轴吹保护气 · 氮气保护仿真</div>
+          <div class="hint" style="margin-bottom:12px;">
+            准直头激光焊接采用<b>同轴吹氮气保护</b>：氮气从喷嘴环缝沿激光束同轴喷出，在熔池上方形成惰性保护氛围，隔绝空气防止高温熔池氧化。保护效果受<b>喷嘴直径</b>（保护范围）、<b>吹气角度</b>（保护区域偏移）、<b>离工件高度</b>（射流扩散与浓度衰减）共同影响。模型基于气体射流扩散几何（半锥角 6°）+ 中心浓度高度衰减（h_ref=25mm），动态演示保护氛围覆盖熔池的过程。
+          </div>
+          <div class="fit-section">
+            <div class="fit-section-title">① 保护气参数</div>
+            <div class="input-group">
+              <div class="input-label"><span>喷嘴直径 d</span><span class="unit">mm（同轴环缝出口）</span></div>
+              <div class="input-row">
+                <input type="range" id="gasNozzle" min="2" max="30" value="10" step="0.5">
+                <input type="number" id="gasNozzleNum" value="10" min="2" max="60" step="0.5">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>吹气角度 θ</span><span class="unit">°（与激光轴夹角，0=同轴正吹）</span></div>
+              <div class="input-row">
+                <input type="range" id="gasAngle" min="0" max="60" value="0" step="1">
+                <input type="number" id="gasAngleNum" value="0" min="0" max="80" step="1">
+              </div>
+            </div>
+            <div class="input-group">
+              <div class="input-label"><span>离工件高度 h</span><span class="unit">mm（喷嘴出口到工件面）</span></div>
+              <div class="input-row">
+                <input type="range" id="gasHeight" min="5" max="60" value="20" step="1">
+                <input type="number" id="gasHeightNum" value="20" min="3" max="120" step="1">
+              </div>
+            </div>
+          </div>
+          <!-- 保护氛围动态演示 -->
+          <div class="weld-canvas-wrap" style="margin-top:12px;">
+            <span class="wc-tag">COAXIAL GAS SHIELDING · 同轴吹保护气动态演示</span>
+            <canvas id="gasCanvas"></canvas>
+            <button class="wc-save-btn" data-save="gasCanvas">保存</button>
+            <div class="wc-legend">
+              <span class="lg"><span class="dot" style="background:rgba(0,229,255,0.65);"></span>氮气保护氛围</span>
+              <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+              <span class="lg"><span class="dot" style="background:rgba(96,112,138,0.88);"></span>母材</span>
+              <span class="lg"><span class="dot" style="background:rgba(255,80,80,0.75);"></span>氧化风险区</span>
+            </div>
+          </div>
+          <!-- 动画控制 -->
+          <div class="weld-controls">
+            <button class="weld-btn" id="gasPlay">暂停</button>
+            <button class="weld-btn secondary" id="gasReset">重置</button>
+            <button class="weld-btn secondary" id="gasEdit" title="拖动文字/标示到任意位置，自动保存">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>标注位置
+            </button>
+            <div class="weld-speed-select">
+              <span>速度</span>
+              <select id="gasSpeed">
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="2">2×</option>
+                <option value="4">4×</option>
+              </select>
+            </div>
+          </div>
+          <!-- 计算结果 -->
+          <div class="weld-defocus-grid" style="margin-top:14px;">
+            <div class="wd-item2"><span class="wd2-label">保护气氛围占比</span><span class="wd2-value" id="gasRatio">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">保护效果评级</span><span class="wd2-value" id="gasGrade">—</span></div>
+            <div class="wd-item2"><span class="wd2-label">保护覆盖率</span><span class="wd2-value" id="gasCov">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">有效保护半径 R</span><span class="wd2-value" id="gasR">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">中心浓度保持率</span><span class="wd2-value" id="gasConc">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">到达面气速</span><span class="wd2-value" id="gasVel">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">保护区域偏移 Δx</span><span class="wd2-value" id="gasDx">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">熔池半径参考</span><span class="wd2-value" id="gasPool">1.20 mm</span></div>
+          </div>
         </div>
       </div>
     </section>
@@ -8348,11 +8427,410 @@
 
   // ===== 工具箱 · 工具下拉切换 =====
   const toolSelect = $('toolSelect');
+
+  // ===== 工具I：同轴吹保护气（氮气）仿真 =====
+  const gasCanvas = $('gasCanvas');
+  const gasCtx = gasCanvas ? gasCanvas.getContext('2d') : null;
+  // 模型依据（半经验工程模型）：激光焊接同轴吹保护气——①保护气从环形喷嘴沿激光束同轴喷出，
+  // 在熔池上方形成惰性保护氛围隔绝空气防氧化（喷嘴直径决定初始覆盖宽度）；②气体射流以半锥角
+  // （氮气典型 6°）扩散，到达工件面时保护半径 R = d/2 + h·tan(6°)；③吹气角度 θ 使射流中心
+  // 偏移 Δx = h·tan(θ)，保护圆偏离熔池→覆盖率下降；④中心浓度/气速随高度衰减（经验
+  // h_ref=25mm：C/C0 = 1/(1+(h/h_ref)^1.6)）。氛围占比 = 覆盖率 × 浓度保持率。
+  let gasState = { t: 0, running: true, speed: 1, _lt: 0, editMode: false };
+  let gasAnimId = null;
+  let gasLabelPos = {};
+  try { gasLabelPos = JSON.parse(localStorage.getItem('fslc_gas_labels') || '{}') || {}; } catch (e) {}
+  function saveGasLabels() { try { localStorage.setItem('fslc_gas_labels', JSON.stringify(gasLabelPos)); } catch (e) {} }
+  let gasLabelRects = {};
+  let gasDragLabel = null, gasDragOffX = 0, gasDragOffY = 0, gasDragStartX = 0, gasDragStartY = 0;
+  function gasOff(id) { const o = gasLabelPos[id] || {}; return { dx: o.dx || 0, dy: o.dy || 0 }; }
+  function gasMark(id, x, y, w, hgt) {
+    const o = gasLabelPos[id] || {};
+    gasLabelRects[id] = { x: x + (o.dx || 0), y: y + (o.dy || 0), w: w || 60, h: hgt || 14 };
+  }
+  function gasPointerXY(e) {
+    const rect = gasCanvas.getBoundingClientRect();
+    return { x: (e.clientX - rect.left) / (rect.width / gasCanvas.width) * (window.devicePixelRatio || 1) * 0 + ((e.clientX - rect.left) * (gasCanvas.width / rect.width)), y: (e.clientY - rect.top) * (gasCanvas.height / rect.height) };
+  }
+  function gasRead() {
+    const num = (id, def) => { const el = $(id); const v = parseFloat(el ? el.value : NaN); return isNaN(v) ? def : v; };
+    return {
+      nozzle: Math.max(num('gasNozzleNum', 10), 2),
+      angle: Math.max(num('gasAngleNum', 0), 0),
+      height: Math.max(num('gasHeightNum', 20), 3)
+    };
+  }
+  function gasCircleOverlap(R, dx, r) {
+    const dist = Math.max(dx, 0.0001);
+    if (dist >= R + r) return 0;
+    if (dist <= Math.abs(R - r)) return Math.PI * Math.min(R, r) * Math.min(R, r);
+    const d1 = (R * R - r * r + dist * dist) / (2 * dist);
+    const d2 = dist - d1;
+    const a1 = R * R * Math.acos(d1 / R) - d1 * Math.sqrt(Math.max(R * R - d1 * d1, 0));
+    const a2 = r * r * Math.acos(d2 / r) - d2 * Math.sqrt(Math.max(r * r - d2 * d2, 0));
+    return a1 + a2;
+  }
+  function gasCalculate(p) {
+    const d = p.nozzle;
+    const theta = p.angle;
+    const h = p.height;
+    const thetaRad = theta * Math.PI / 180;
+    const jetHalf = 6 * Math.PI / 180;          // 射流扩散半锥角（氮气典型 6°）
+    const R = d / 2 + h * Math.tan(jetHalf);    // 到达工件面保护半径（mm）
+    const dx = h * Math.tan(thetaRad);          // 倾斜偏移（mm）
+    const rPool = 1.2;                          // 熔池半径参考（mm）
+    const cov = gasCircleOverlap(R, dx, rPool) / (Math.PI * rPool * rPool);
+    const hRef = 25;                                  // 浓度衰减参考高度（mm）
+    const conc = 1 / (1 + Math.pow(h / hRef, 1.6));  // 中心浓度保持率
+    const vel = 1 / (1 + Math.pow(h / hRef, 1.2));   // 到达面气速保持率
+    const ratio = Math.max(0, Math.min(1, cov * conc));
+    const pct = ratio * 100;
+    const grade = pct >= 80 ? '优' : pct >= 60 ? '良' : pct >= 40 ? '中' : '差';
+    return { d, theta, h, R, dx, rPool, cov, conc, vel, ratio, pct, grade };
+  }
+  function gasUpdateResults(r) {
+    const fmt = (v, d = 2) => Number(v).toFixed(d);
+    $('gasRatio').textContent = fmt(r.pct, 1) + '%';
+    $('gasGrade').textContent = r.grade;
+    $('gasCov').textContent = fmt(r.cov * 100, 1) + '%';
+    $('gasR').textContent = fmt(r.R, 1) + ' mm';
+    $('gasConc').textContent = fmt(r.conc * 100, 1) + '%';
+    $('gasVel').textContent = fmt(r.vel * 100, 1) + '%';
+    $('gasDx').textContent = fmt(r.dx, 1) + ' mm';
+  }
+  function resizeGasCanvas() {
+    if (!gasCanvas || !gasCtx) return;
+    const wrap = gasCanvas.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    let wCss = rect.width || 320, hCss = rect.height;
+    const wantH = wCss * 0.62;
+    if (!hCss || hCss < wCss * 0.3 || hCss > wCss * 1.6) hCss = wantH;
+    wrap.style.height = hCss + 'px';
+    gasCanvas.style.width = wCss + 'px';
+    gasCanvas.style.height = hCss + 'px';
+    gasCanvas.width = Math.max(2, Math.round(wCss * d));
+    gasCanvas.height = Math.max(2, Math.round(hCss * d));
+    gasCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  function drawGasSection(r, prog) {
+    if (!gasCtx) return;
+    const w = gasCanvas.width / (window.devicePixelRatio || 1);
+    const h = gasCanvas.height / (window.devicePixelRatio || 1);
+    const ctx = gasCtx;
+    ctx.clearRect(0, 0, w, h);
+    const padL = w * 0.10, padR = w * 0.90, padT = h * 0.14, padB = h * 0.86;
+    const workY = padB - 6;
+    const poolX = (padL + padR) / 2;
+    const maxDim = Math.max(r.h + 10, 26);
+    const pxPerMm = (padB - padT - 24) / maxDim;
+    // 喷嘴出口与射流落点（角度倾斜）
+    const tipY = workY - r.h * pxPerMm;
+    const tipX = Math.max(padL + 16, Math.min(poolX + r.dx * pxPerMm * 0.8, padR - 16));
+    const landX = Math.max(padL + 12, Math.min(poolX + r.dx * pxPerMm, padR - 12));
+    const shieldR = Math.max(6, Math.min(r.R * pxPerMm, w * 0.42));
+
+    // 母材
+    const boardX = padL, boardW = padR - padL;
+    ctx.fillStyle = 'rgba(96,112,138,0.88)';
+    ctx.strokeStyle = 'rgba(138,150,173,0.8)';
+    ctx.lineWidth = 1.2;
+    ctx.fillRect(boardX, workY, boardW, padB - workY);
+    ctx.strokeRect(boardX, workY, boardW, padB - workY);
+    ctx.fillStyle = 'rgba(160,175,200,0.55)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const offMat = gasOff('g_mat');
+    ctx.fillText('母材', poolX + offMat.dx, workY + 14 + offMat.dy);
+    gasMark('g_mat', poolX + offMat.dx, workY + 14 + offMat.dy, 40, 14);
+
+    // 保护氛围（以落点为中心，覆盖熔池部分亮青；未覆盖熔池部分为氧化风险区）
+    const poolW = Math.min(30, w * 0.09), poolD = Math.min(16, h * 0.06);
+    // 熔池范围（用于判断保护覆盖）
+    const poolLeft = poolX - poolW / 2, poolRight = poolX + poolW / 2;
+    const shieldLeft = landX - shieldR, shieldRight = landX + shieldR;
+    const coverOk = shieldLeft <= poolLeft && shieldRight >= poolRight;
+    // 氧化风险区（熔池未被保护覆盖的部分）
+    if (!coverOk) {
+      ctx.fillStyle = 'rgba(255,80,80,0.35)';
+      const riskL = Math.max(poolLeft, shieldRight > poolLeft ? shieldRight : poolLeft);
+      const riskR = poolRight;
+      if (riskR > riskL + 1) {
+        ctx.beginPath();
+        ctx.ellipse(poolX, workY, poolW / 2, poolD / 2, 0, 0, Math.PI);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(255,80,80,0.55)';
+      ctx.fillRect(riskL, workY - poolD * 0.5, Math.max(riskR - riskL, 0), poolD * 0.5);
+    }
+    // 保护氛围（半透明青色圆形，脉动）
+    const pulse = 0.85 + 0.15 * Math.sin(gasState.t * 3);
+    const halo = ctx.createRadialGradient(landX, workY - 2, 2, landX, workY - 2, shieldR);
+    halo.addColorStop(0, 'rgba(0,229,255,' + (0.55 * pulse).toFixed(3) + ')');
+    halo.addColorStop(0.7, 'rgba(0,200,230,' + (0.32 * pulse).toFixed(3) + ')');
+    halo.addColorStop(1, 'rgba(0,180,220,0.05)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(landX, workY - 2, shieldR, 0, Math.PI * 2); ctx.fill();
+    // 保护区域边界
+    ctx.strokeStyle = 'rgba(0,229,255,' + (0.5 * pulse).toFixed(3) + ')';
+    ctx.setLineDash([4, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(landX, workY - 2, shieldR, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    const offSh = gasOff('g_shield');
+    ctx.fillStyle = 'rgba(140,240,255,0.9)';
+    ctx.fillText('保护氛围 R=' + r.R.toFixed(1) + 'mm', landX + offSh.dx, workY - shieldR - 6 + offSh.dy);
+    gasMark('g_shield', landX + offSh.dx, workY - shieldR - 6 + offSh.dy, 110, 14);
+
+    // 熔池（U形）
+    const grad = ctx.createLinearGradient(poolX, workY, poolX, workY + poolD);
+    grad.addColorStop(0, 'rgba(255,120,60,0.95)');
+    grad.addColorStop(1, 'rgba(255,40,20,0.8)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(poolLeft, workY);
+    ctx.bezierCurveTo(poolLeft, workY + poolD * 0.5, poolX - poolW / 4, workY + poolD, poolX, workY + poolD);
+    ctx.bezierCurveTo(poolX + poolW / 4, workY + poolD, poolRight, workY + poolD * 0.5, poolRight, workY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,110,60,1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    const offPool = gasOff('g_pool');
+    ctx.fillStyle = 'rgba(255,190,150,0.9)';
+    ctx.fillText('熔池', poolX + offPool.dx, workY + poolD + 12 + offPool.dy);
+    gasMark('g_pool', poolX + offPool.dx, workY + poolD + 12 + offPool.dy, 30, 14);
+
+    // 准直头（顶部，激光透镜示意）
+    const headW = 52, headH = 30;
+    const headX = poolX - headW / 2, headY = padT;
+    ctx.fillStyle = 'rgba(58,66,88,0.95)';
+    ctx.strokeStyle = 'rgba(160,175,200,0.7)';
+    ctx.lineWidth = 1.2;
+    ctx.fillRect(headX, headY, headW, headH);
+    ctx.strokeRect(headX, headY, headW, headH);
+    // 透镜
+    ctx.fillStyle = 'rgba(120,220,255,0.35)';
+    ctx.beginPath(); ctx.ellipse(poolX, headY + headH * 0.55, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(160,175,200,0.6)';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('准直头', poolX, headY - 4);
+    gasMark('g_head', poolX, headY - 4, 40, 12);
+
+    // 激光束（垂直锥形，青色）
+    ctx.fillStyle = 'rgba(0,229,255,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(poolX - 3, headY + headH);
+    ctx.lineTo(poolX + 3, headY + headH);
+    ctx.lineTo(poolX + 5, workY - 4);
+    ctx.lineTo(poolX - 5, workY - 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,229,255,0.8)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(poolX, headY + headH); ctx.lineTo(poolX, workY - 4); ctx.stroke();
+
+    // 同轴喷嘴（倾斜管，从准直头底部到 tip）
+    ctx.strokeStyle = 'rgba(120,132,156,0.95)';
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(poolX, headY + headH); ctx.lineTo(tipX, tipY); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,229,255,0.9)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(poolX, headY + headH); ctx.lineTo(tipX, tipY); ctx.stroke();
+    ctx.lineCap = 'butt';
+    // 喷嘴出口环
+    ctx.strokeStyle = 'rgba(0,229,255,1)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(tipX, tipY, Math.max(4, r.d * pxPerMm * 0.4), 0, Math.PI * 2); ctx.stroke();
+    const offNz = gasOff('g_nozzle');
+    ctx.fillStyle = 'rgba(140,240,255,0.9)';
+    ctx.fillText('喷嘴 d=' + r.d.toFixed(1) + 'mm', tipX + offNz.dx, tipY - 10 + offNz.dy);
+    gasMark('g_nozzle', tipX + offNz.dx, tipY - 10 + offNz.dy, 90, 14);
+
+    // 氮气射流（从喷嘴到落点的锥形，动态流动粒子）
+    const jetLen = Math.hypot(landX - tipX, workY - tipY);
+    const jAng = Math.atan2(workY - tipY, landX - tipX);
+    const jetW0 = Math.max(4, r.d * pxPerMm * 0.4);
+    const jetW1 = Math.min(shieldR * 0.9, w * 0.3);
+    const jg = ctx.createLinearGradient(tipX, tipY, landX, workY);
+    jg.addColorStop(0, 'rgba(0,229,255,0.45)');
+    jg.addColorStop(1, 'rgba(0,229,255,0.12)');
+    ctx.fillStyle = jg;
+    ctx.beginPath();
+    ctx.moveTo(tipX - jetW0 / 2, tipY);
+    ctx.lineTo(tipX + jetW0 / 2, tipY);
+    ctx.lineTo(landX + jetW1 / 2, workY);
+    ctx.lineTo(landX - jetW1 / 2, workY);
+    ctx.closePath();
+    ctx.fill();
+    // 流动粒子（8 条流线，每条 3 个）
+    for (let li = 0; li < 8; li++) {
+      const spread = (li / 7 - 0.5) * 0.8;
+      for (let pi = 0; pi < 3; pi++) {
+        const t = ((gasState.t * 0.45 + pi / 3 + li * 0.05) % 1);
+        const px = tipX + (landX - tipX) * t;
+        const py = tipY + (workY - tipY) * t;
+        const perp = Math.sin(jAng + Math.PI / 2) * spread * jetW1 * t;
+        const par = Math.cos(jAng + Math.PI / 2) * spread * jetW1 * t;
+        ctx.fillStyle = 'rgba(200,250,255,' + (0.85 * (1 - t * 0.5)).toFixed(3) + ')';
+        ctx.beginPath();
+        ctx.arc(px + perp, py + par, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 高度标注（tip 到 workY）
+    const offHt = gasOff('g_height');
+    ctx.strokeStyle = 'rgba(200,210,225,0.8)';
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    const hx = Math.max(padL + 8, tipX - 26);
+    ctx.beginPath(); ctx.moveTo(hx, tipY); ctx.lineTo(hx, workY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(200,210,225,0.9)';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('h=' + r.h.toFixed(1) + 'mm', hx + offHt.dx, (tipY + workY) / 2 + offHt.dy);
+    gasMark('g_height', hx + offHt.dx, (tipY + workY) / 2 + offHt.dy, 70, 14);
+
+    // 角度标注（喷嘴倾斜角 θ）
+    if (r.theta > 0.5) {
+      const offAg = gasOff('g_angle');
+      const aR = Math.min(24, jetLen * 0.3);
+      const aCX = tipX, aCY = tipY;
+      const aStart = Math.atan2(workY - tipY, landX - tipX) - Math.PI / 2;
+      ctx.strokeStyle = 'rgba(200,210,225,0.8)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(aCX, aCY, aR, Math.PI / 2, aStart + Math.PI / 2, true);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(200,210,225,0.9)';
+      ctx.fillText('θ=' + r.theta.toFixed(0) + '°', aCX + Math.cos(aStart) * (aR + 12) + offAg.dx, aCY + Math.sin(aStart) * (aR + 12) + offAg.dy);
+      gasMark('g_angle', aCX + Math.cos(aStart) * (aR + 12) + offAg.dx, aCY + Math.sin(aStart) * (aR + 12) + offAg.dy, 50, 14);
+    }
+
+    // 氛围占比标注（顶部）
+    const offRt = gasOff('g_ratio');
+    ctx.fillStyle = 'rgba(140,240,255,0.95)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('保护气氛围占比 ' + r.pct.toFixed(1) + '%', poolX + offRt.dx, padT - 10 + offRt.dy);
+    gasMark('g_ratio', poolX + offRt.dx, padT - 10 + offRt.dy, 110, 14);
+  }
+  function gasLoop() {
+    if (!gasState.running) { gasAnimId = null; return; }
+    const now = performance.now();
+    const dt = gasState._lt ? (now - gasState._lt) / 1000 : 0.016;
+    gasState._lt = now;
+    gasState.t += dt * gasState.speed;
+    const r = gasCalculate(gasRead());
+    drawGasSection(r, 0);
+    gasAnimId = requestAnimationFrame(gasLoop);
+  }
+  function startGasSim() {
+    if (gasAnimId || !gasCtx) return;
+    resizeGasCanvas();
+    gasState._lt = 0;
+    try { gasUpdateResults(gasCalculate(gasRead())); } catch (e) {}
+    gasLoop();
+  }
+  function stopGasSim() {
+    if (gasAnimId) { cancelAnimationFrame(gasAnimId); gasAnimId = null; }
+  }
+  function bindGasDrag(canvas) {
+    if (!canvas) return;
+    const redraw = () => {
+      const r = gasCalculate(gasRead());
+      drawGasSection(r, 0);
+    };
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!gasState.editMode) return;
+      const rect = canvas.getBoundingClientRect();
+      const p = { x: (e.clientX - rect.left) * (canvas.width / rect.width) / (window.devicePixelRatio || 1), y: (e.clientY - rect.top) * (canvas.height / rect.height) / (window.devicePixelRatio || 1) };
+      let best = null, bestD = 1e9;
+      for (const id in gasLabelRects) {
+        const r2 = gasLabelRects[id];
+        const d = Math.hypot(p.x - r2.x, p.y - r2.y);
+        if (d < bestD) { bestD = d; best = id; }
+      }
+      if (best && bestD < 46) {
+        gasDragLabel = best;
+        const o = gasLabelPos[best] || { dx: 0, dy: 0 };
+        gasDragOffX = o.dx || 0; gasDragOffY = o.dy || 0;
+        gasDragStartX = p.x; gasDragStartY = p.y;
+        e.preventDefault();
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!gasDragLabel) return;
+      const rect = canvas.getBoundingClientRect();
+      const p = { x: (e.clientX - rect.left) * (canvas.width / rect.width) / (window.devicePixelRatio || 1), y: (e.clientY - rect.top) * (canvas.height / rect.height) / (window.devicePixelRatio || 1) };
+      const o = gasLabelPos[gasDragLabel] || { dx: 0, dy: 0 };
+      o.dx = gasDragOffX + (p.x - gasDragStartX);
+      o.dy = gasDragOffY + (p.y - gasDragStartY);
+      gasLabelPos[gasDragLabel] = o;
+      saveGasLabels();
+      redraw();
+    });
+    const endDrag = () => { gasDragLabel = null; };
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+  }
+  // gas 事件绑定
+  (function () {
+    const gasCanvasEl = $('gasCanvas');
+    if (!gasCanvasEl) return;
+    bindGasDrag(gasCanvasEl);
+    const gasEditBtn = $('gasEdit');
+    if (gasEditBtn) gasEditBtn.addEventListener('click', () => {
+      gasState.editMode = !gasState.editMode;
+      gasEditBtn.classList.toggle('active', gasState.editMode);
+      gasCanvasEl.classList.toggle('gas-edit-active', gasState.editMode);
+    });
+    const gasPlayBtn = $('gasPlay');
+    if (gasPlayBtn) gasPlayBtn.addEventListener('click', () => {
+      gasState.running = !gasState.running;
+      gasPlayBtn.textContent = gasState.running ? '暂停' : '播放';
+      if (gasState.running && !gasAnimId) { gasState._lt = 0; gasLoop(); }
+    });
+    const gasResetBtn = $('gasReset');
+    if (gasResetBtn) gasResetBtn.addEventListener('click', () => {
+      gasState.t = 0; gasState._lt = 0;
+      const r = gasCalculate(gasRead());
+      drawGasSection(r, 0);
+    });
+    const gasSpeedSel = $('gasSpeed');
+    if (gasSpeedSel) gasSpeedSel.addEventListener('change', () => {
+      gasState.speed = parseFloat(gasSpeedSel.value) || 1;
+    });
+    const gasSaveBtn = $('gasSave');
+    if (gasSaveBtn) gasSaveBtn.addEventListener('click', () => {
+      try {
+        if (window.AndroidBridge && AndroidBridge.savePng) {
+          AndroidBridge.savePng(gasCanvasEl.toDataURL('image/png'));
+          return;
+        }
+      } catch (e) {}
+      const a = document.createElement('a');
+      a.href = gasCanvasEl.toDataURL('image/png');
+      a.download = '同轴吹保护气仿真.png';
+      a.click();
+    });
+    // 输入双向同步
+    [['gasNozzle', 'gasNozzleNum'], ['gasAngle', 'gasAngleNum'], ['gasHeight', 'gasHeightNum']].forEach(([rid, nid]) => {
+      const rEl = $(rid), nEl = $(nid);
+      if (rEl && nEl) {
+        rEl.addEventListener('input', () => { nEl.value = rEl.value; gasUpdateResults(gasCalculate(gasRead())); });
+        nEl.addEventListener('input', () => { rEl.value = nEl.value; gasUpdateResults(gasCalculate(gasRead())); });
+      }
+    });
+  })();
+
   function switchTool(name) {
-    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe', 'tool-window'].forEach(id => {
+    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe', 'tool-window', 'tool-gas'].forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('active', id === 'tool-' + name);
     });
+    if (name === 'gas') { resizeGasCanvas(); startGasSim(); } else { stopGasSim(); }
     if (name === 'focus') { resizeTpCanvas(); drawTpFit(); }
     if (name === 'accel') { resizeAccCanvas(); calcAccel(); }
     if (name === 'spacing') { resizeSpCanvas(); calcSpacing(); }
