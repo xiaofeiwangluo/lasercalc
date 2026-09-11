@@ -1234,6 +1234,9 @@
   .qcw-edit-active #qcwOverlapCanvas {
     touch-action: none;
   }
+  .fill-edit-active #fillCanvas {
+    touch-action: none;
+  }
   /* QCW 图形标题（wc-tag）编辑模式下可拖动：显示拾取框 */
   .qcw-edit-active .weld-canvas-wrap .wc-tag {
     outline: 1.5px dashed rgba(255,152,0,0.7);
@@ -2001,7 +2004,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.16</div>
+    <div class="splash-version">v1.4.17</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -2253,6 +2256,7 @@
         <select id="libSimSelect" class="wss-select">
           <option value="ring">环形光斑摆动焊接仿真</option>
           <option value="qcw">QCW 脉冲焊接模拟</option>
+          <option value="fill">激光填丝补焊模拟</option>
         </select>
       </div>
 
@@ -2698,6 +2702,216 @@
           </div>
         </div>
       </div><!-- /libSimQcw -->
+      <!-- ===== 激光填丝补焊模拟 ===== -->
+      <div id="libSimFill" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span class="weld-mode-badge keyhole">激光填丝 · 连续波频率焊接</span>
+          <span style="font-size:11px; color:var(--text-3);">填丝熔深 · 熔宽 · 余高仿真</span>
+        </div>
+
+        <div class="weld-hero">
+          <div class="wh-left">
+            <div class="wh-label">预估熔深</div>
+            <div class="wh-value"><span id="fillDepth">0</span><span class="unit"> mm</span><span id="fillMeltTag" style="display:none;font-size:10px;color:#e6a23c;margin-left:6px;background:rgba(230,162,60,0.12);padding:1px 6px;border-radius:4px;">已熔透</span></div>
+          </div>
+          <div class="wh-right">
+            <div class="wh-sub-label">预估熔宽 / 余高</div>
+            <div class="wh-sub"><span id="fillWidthOut">0</span><span class="unit"> mm</span> / <span id="fillReinf">0</span><span class="unit"> mm</span></div>
+          </div>
+        </div>
+
+        <!-- 光学系统参数 -->
+        <div class="card">
+          <div class="card-title">光学系统</div>
+          <div class="input-group">
+            <div class="input-label"><span>光纤芯径 D_core</span><span class="unit">μm</span></div>
+            <div class="input-row">
+              <input type="range" id="fillCore" min="20" max="600" value="100" step="10">
+              <input type="number" id="fillCoreNum" value="100" min="10" max="2000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>准直镜焦距 f_c</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="fillFc" min="50" max="300" value="100" step="5">
+              <input type="number" id="fillFcNum" value="100" min="20" max="500">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>聚焦镜焦距 f_f</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="fillFf" min="100" max="600" value="200" step="5">
+              <input type="number" id="fillFfNum" value="200" min="50" max="1000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>离焦量 Δf</span><span class="unit">mm（负=焦点深入工件）</span></div>
+            <div class="input-row">
+              <input type="range" id="fillDefocus" min="-5" max="5" value="0" step="0.5">
+              <input type="number" id="fillDefocusNum" value="0" min="-10" max="10" step="0.5">
+            </div>
+          </div>
+        </div>
+
+        <!-- 连续波频率焊接参数 -->
+        <div class="card">
+          <div class="card-title">连续波频率焊接参数</div>
+          <div class="input-group">
+            <div class="input-label"><span>峰值功率 P_peak</span><span class="unit">W</span></div>
+            <div class="input-row">
+              <input type="range" id="fillPp" min="100" max="6000" value="1500" step="50">
+              <input type="number" id="fillPpNum" value="1500" min="10" max="20000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>调制频率 f</span><span class="unit">Hz</span></div>
+            <div class="input-row">
+              <input type="range" id="fillFreq" min="100" max="20000" value="5000" step="100">
+              <input type="number" id="fillFreqNum" value="5000" min="50" max="100000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>占空比 duty</span><span class="unit">%（100=连续波）</span></div>
+            <div class="input-row">
+              <input type="range" id="fillDuty" min="5" max="100" value="100" step="5">
+              <input type="number" id="fillDutyNum" value="100" min="5" max="100" step="5">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接速度 V</span><span class="unit">mm/s</span></div>
+            <div class="input-row">
+              <input type="range" id="fillV" min="1" max="300" value="20" step="5">
+              <input type="number" id="fillVNum" value="20" min="0.5" max="2000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>焊接长度 L</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="fillLen" min="5" max="500" value="100" step="5">
+              <input type="number" id="fillLenNum" value="100" min="1" max="5000">
+            </div>
+          </div>
+        </div>
+
+        <!-- 焊丝参数 -->
+        <div class="card">
+          <div class="card-title">焊丝参数</div>
+          <div class="input-group">
+            <div class="input-label"><span>焊丝直径 d_w</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="fillWireDia" min="0.3" max="3.0" value="1.0" step="0.1">
+              <input type="number" id="fillWireDiaNum" value="1.0" min="0.2" max="5.0" step="0.1">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>送丝速度 V_f</span><span class="unit">mm/s</span></div>
+            <div class="input-row">
+              <input type="range" id="fillWfs" min="5" max="200" value="40" step="5">
+              <input type="number" id="fillWfsNum" value="40" min="1" max="1000">
+            </div>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>送丝-焊接速度比 V_f/V</span><span class="unit">—（1~3 常见）</span></div>
+            <div class="input-row">
+              <span id="fillRatioPreview" style="font-size:13px;color:var(--laser);font-weight:600;">2.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 材料与板厚 -->
+        <div class="card">
+          <div class="input-group">
+            <div class="input-label"><span>工件 / 焊丝材料</span><span class="unit" id="fillMatSpec">钢/不锈钢 · k=16 W/m·K</span></div>
+            <select class="weld-material-select" id="fillMaterial">
+              <optgroup label="—— 钢/不锈钢 ——">
+                <option value="steel" selected>碳钢 / 不锈钢</option>
+              </optgroup>
+              <optgroup label="—— 铝合金 ——">
+                <option value="al1060">铝合金 1060（工业纯铝）</option>
+                <option value="al3003">铝合金 3003（Al-Mn）</option>
+                <option value="al5052">铝合金 5052（Al-Mg）</option>
+                <option value="al5083">铝合金 5083（Al-Mg）</option>
+                <option value="al6061">铝合金 6061（Al-Mg-Si）</option>
+                <option value="al6063">铝合金 6063（Al-Mg-Si）</option>
+                <option value="al7075">铝合金 7075（Al-Zn）</option>
+              </optgroup>
+              <optgroup label="—— 铜及铜合金 ——">
+                <option value="cu_t2">T2 紫铜 / C1100（纯铜）</option>
+                <option value="cu_c1020">C1020 无氧铜</option>
+                <option value="cu_h62">H62 黄铜（Cu-Zn）</option>
+                <option value="cu_c5191">C5191 磷青铜</option>
+                <option value="cu_qbe2">QBe2 铍铜</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>母材厚度</span><span class="unit">mm</span></div>
+            <div class="input-row">
+              <input type="range" id="fillThickness" min="0.1" max="10" value="1.5" step="0.1">
+              <input type="number" id="fillThicknessNum" value="1.5" min="0.05" max="30" step="0.05">
+            </div>
+          </div>
+        </div>
+
+        <!-- 填丝熔深动态演化 -->
+        <div class="weld-canvas-wrap">
+          <span class="wc-tag">LASER FILLER WELDING · 填丝熔深动态演化</span>
+          <canvas id="fillCanvas"></canvas>
+          <button class="wc-save-btn" data-save="fillCanvas">保存</button>
+          <div class="wc-legend">
+            <span class="lg"><span class="dot" style="background:#ff5722;"></span>熔池</span>
+            <span class="lg"><span class="dot" style="background:#ffb74d;"></span>匙孔</span>
+            <span class="lg"><span class="dot" style="background:#1a2340;"></span>母材</span>
+            <span class="lg"><span class="dot" style="background:#c0a86a;"></span>焊丝</span>
+            <span class="lg"><span class="dot" style="background:#00e5ff;"></span>激光束</span>
+          </div>
+        </div>
+
+        <!-- 动画控制 -->
+        <div class="weld-controls">
+          <button class="weld-btn" id="fillPlay">暂停</button>
+          <button class="weld-btn secondary" id="fillReset">重置</button>
+          <button class="weld-btn secondary" id="fillEdit" title="拖动文字/标示到任意位置，自动保存">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>标注位置
+          </button>
+          <button class="weld-btn secondary" id="fillSave" title="将当前仿真画面保存为图片">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>保存图片
+          </button>
+          <div class="weld-speed-select">
+            <span>速度</span>
+            <select id="fillSpeed">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 填丝计算结果 -->
+        <div class="card">
+          <div class="card-title">计算结果</div>
+          <div class="weld-defocus-grid">
+            <div class="wd-item2"><span class="wd2-label">平均功率 P_avg</span><span class="wd2-value" id="fillPavg">0 W</span></div>
+            <div class="wd-item2"><span class="wd2-label">焦点光斑 d₀</span><span class="wd2-value" id="fillSpot">0 μm</span></div>
+            <div class="wd-item2"><span class="wd2-label">焊斑间距 Δx</span><span class="wd2-value" id="fillDx">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">重叠率 η</span><span class="wd2-value" id="fillOverlap">0%</span></div>
+            <div class="wd-item2"><span class="wd2-label">焊丝熔化耗能 P_melt</span><span class="wd2-value" id="fillPmelt">0 W</span></div>
+            <div class="wd-item2"><span class="wd2-label">母材有效功率 P_base</span><span class="wd2-value" id="fillPbase">0 W</span></div>
+            <div class="wd-item2"><span class="wd2-label">能量分配（焊丝/母材）</span><span class="wd2-value" id="fillSplit">—</span></div>
+            <div class="wd-item2"><span class="wd2-label">熔敷面积 A_fill</span><span class="wd2-value" id="fillAreaOut">0 mm²</span></div>
+            <div class="wd-item2"><span class="wd2-label">余高 h_r</span><span class="wd2-value" id="fillReinfOut">0 mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">送丝-焊接速度比</span><span class="wd2-value" id="fillRatioOut">—</span></div>
+            <div class="wd-item2"><span class="wd2-label">线能量 E_line</span><span class="wd2-value" id="fillHeat">0 J/mm</span></div>
+            <div class="wd-item2"><span class="wd2-label">深宽比 h/W</span><span class="wd2-value" id="fillRatioHW">—</span></div>
+            <div class="wd-item2"><span class="wd2-label">焊接时长 t</span><span class="wd2-value" id="fillTime">0 s</span></div>
+            <div class="wd-item2"><span class="wd2-label">焊丝总消耗</span><span class="wd2-value" id="fillWireTotal">0 g</span></div>
+          </div>
+          <div class="hint" style="margin-top:8px;">
+            模型依据（半经验工程模型，文献校准）：激光填丝焊接——①能量分流核心：激光吸收功率先满足焊丝熔化（焊丝熔化耗能 P_melt = 送丝体积率 × ρ × (c·ΔT+L_f)，钢约 1.0 J/g、铝约 1.2 J/g、铜约 0.7 J/g，含熔化潜热），送丝速度↑→焊丝耗能↑→母材有效功率↓→熔深↓、余高↑（江苏省造船工程学会《送丝速度对窄间隙光纤激光填丝焊焊缝成形的影响》、焊接学报 TC4 钛合金摆动激光填丝研究）；②母材熔深基于有效线能量（P_base/v）^0.6、光斑直径 ^-0.25、材料热导修正，高频调制重叠 (1+0.35η) 弱增强（连续波频率焊接，f 高→焊斑密集≈连续）；③熔宽 = max(光束热导熔宽, 焊丝熔敷宽度 √(d_w·V_f/V))；④余高弓形近似 h_r = 1.5·A_fill/w，A_fill = π(d_w/2)²·V_f/V（熔敷截面守恒），上限 3mm；⑤薄板熔透饱和：熔深达板厚后饱和、多余能量扩展熔宽；⑥光学链路 M=f_f/f_c、瑞利长度含 M²=12。工艺趋势与文献一致：功率↑→熔深熔宽↑；速度↑→熔深熔宽↓；送丝↑→熔深↓余高↑；焊丝直径↑→需更多能量、余高↑。结果供工艺预研参考，请以实测为准。
+          </div>
+        </div>
+      </div><!-- /libSimFill -->
     </section>
 
     <!-- ===== 视图4：高能激光焊接仿真 ===== -->
@@ -3606,7 +3820,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.16</span>
+        <span class="ar-value">v1.4.17</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3622,19 +3836,19 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.16</span></h3>
-      <div class="up-sub">QCW 模型 · 脉宽-熔宽校准</div>
+      <h3>版本更新 <span class="vtag">v1.4.17</span></h3>
+      <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">QCW 脉宽-熔深校验通过</b>：脉宽↑→占空比↑→平均功率↑（线能量 ^0.6）+ 脉宽直接增强 τ^0.18，熔深随脉宽单调递增并饱和，方向与幅度符合文献（长脉宽熔深更深、增量递减）。</span>
+        <span><b style="color:var(--text)">激光填丝补焊模拟</b>：测试专区下拉菜单新增「激光填丝补焊模拟」，支持焊丝大小自定义（直径 0.3~3.0mm、送丝速度 5~200mm/s）、光学配置设置（光纤芯径/准直镜/聚焦镜/离焦量）、焊接参数设置（峰值功率/调制频率/占空比/焊接速度/焊接长度）。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">修复熔宽对脉宽不敏感</b>：新增脉宽弱增强项，长脉宽热扩散更充分，1ms→10ms 熔宽约 +5%（文献：脉宽↑熔宽缓增）。</span>
+        <span><b style="color:var(--text)">连续波频率焊接模型（文献校准）</b>：能量分流模型——焊丝熔化耗能优先分配（送丝↑→母材熔深/熔宽↓、余高↑），自动计算熔深、熔宽、余高、能量分配、送丝比、线能量等 14 项结果。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">同步保留</b>：工艺窗口熔宽独立成图、K 值平滑过渡、QCW 薄板熔透饱和。</span>
+        <span><b style="color:var(--text)">填丝熔深动态演化动画</b>：激光束移动 + 焊丝斜向送入（前端熔滴）+ U 形熔池 + 匙孔 + 余高生长，标注可拖动，支持保存图片。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3645,6 +3859,14 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.17</span><span class="cl-date">2026-09-11 · 测试专区新增激光填丝补焊模拟</span></div>
+        <ul class="cl-list">
+          <li><b>新增激光填丝补焊模拟</b>：测试专区下拉菜单新增填丝熔深/熔宽/余高仿真，焊丝大小自定义 + 光学配置 + 焊接参数（连续波频率焊接）。</li>
+          <li><b>模型文献校准</b>：能量分流——送丝↑→母材熔深/熔宽↓、余高↑；功率↑→熔深熔宽↑；速度↑→熔深熔宽↓。</li>
+          <li><b>填丝熔深动态演化动画</b>：激光束/焊丝/熔池/匙孔/余高动态演示，标注可拖动，支持保存图片。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.16</span><span class="cl-date">2026-09-11 · QCW 脉宽-熔宽校准</span></div>
         <ul class="cl-list">
@@ -4262,11 +4484,16 @@
     if (view === 'lib') {
       const ls = $('libSimSelect');
       const cur = ls ? ls.value : 'ring';
-      const ring = $('libSimRing'), qcw = $('libSimQcw');
+      const ring = $('libSimRing'), qcw = $('libSimQcw'), fill = $('libSimFill');
       if (ring) ring.style.display = cur === 'ring' ? '' : 'none';
       if (qcw) qcw.style.display = cur === 'qcw' ? '' : 'none';
+      if (fill) fill.style.display = cur === 'fill' ? '' : 'none';
       if (cur === 'qcw') {
         startQcwSim();
+      } else if (cur === 'fill') {
+        if (wobAnimId) { cancelAnimationFrame(wobAnimId); wobAnimId = null; }
+        resizeFillCanvas();
+        startFillSim();
       } else {
         resizeWobCanvas();
         if (!wobAnimId) startWobSim();
@@ -9459,7 +9686,7 @@
     const padL = w * 0.10, padR = w * 0.86, padT = h * 0.10, padB = h * 0.88;
     const bw = padR - padL;
     const availH = padB - padT;
-    const thk = Math.max(r.thickness, 0.1);
+    const thk = Math.max(r.thk, 0.1);
     const scale = Math.min(bw / 3.2, availH / (Math.max(r.h * 1.5, thk) * 1.25));
     const baseY = padB;
     const boardW = Math.min(bw * 0.9, 3.2 * scale);
@@ -9779,18 +10006,517 @@
   if (libSimSelect) {
     libSimSelect.addEventListener('change', () => {
       const v = libSimSelect.value;
-      const ring = $('libSimRing'), qcw = $('libSimQcw');
+      const ring = $('libSimRing'), qcw = $('libSimQcw'), fill = $('libSimFill');
       if (ring) ring.style.display = v === 'ring' ? '' : 'none';
       if (qcw) qcw.style.display = v === 'qcw' ? '' : 'none';
+      if (fill) fill.style.display = v === 'fill' ? '' : 'none';
       if (v === 'ring') {
-        stopQcwSim();
+        stopQcwSim(); stopFillSim();
         if (!wobAnimId) startWobSim();
+      } else if (v === 'fill') {
+        stopQcwSim();
+        if (wobAnimId) { cancelAnimationFrame(wobAnimId); wobAnimId = null; }
+        resizeFillCanvas();
+        startFillSim();
       } else {
+        stopFillSim();
         if (wobAnimId) { cancelAnimationFrame(wobAnimId); wobAnimId = null; }
         startQcwSim();
       }
     });
   }
+
+  // ===== 激光填丝补焊模拟（连续波频率焊接） =====
+  const fillCanvas = $('fillCanvas');
+  const fillCtx = fillCanvas ? fillCanvas.getContext('2d') : null;
+  const fillState = { t: 0, running: true, speed: 1, _lt: 0, editMode: false, _prevRunning: true };
+  let fillAnimId = null;
+  // 标注位置（可拖动，自动保存）
+  let fillLabelPos = {};
+  try { fillLabelPos = JSON.parse(localStorage.getItem('fslc_fill_labels') || '{}') || {}; } catch (e) {}
+  function saveFillLabels() { try { localStorage.setItem('fslc_fill_labels', JSON.stringify(fillLabelPos)); } catch (e) {} }
+  const fillLabelRects = {};
+  function fillOff(id) { const o = fillLabelPos[id] || {}; return { dx: o.dx || 0, dy: o.dy || 0 }; }
+  function fillMark(id, x, y, txtW) {
+    if (!fillState.editMode) return;
+    fillLabelRects[id] = { x: x, y: y };
+    const bw = Math.max(txtW || 12, 34);
+    fillCtx.strokeStyle = 'rgba(255,152,0,0.6)';
+    fillCtx.setLineDash([4, 3]);
+    fillCtx.lineWidth = 1.2;
+    fillCtx.strokeRect(x - bw / 2, y - 11, bw, 16);
+    fillCtx.setLineDash([]);
+  }
+  function fillPointerXY(e) {
+    const rect = fillCanvas.parentElement.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  let fillDragLabel = null, fillDragStartX = 0, fillDragStartY = 0, fillDragOffX = 0, fillDragOffY = 0;
+  function bindFillDrag(canvas) {
+    if (!canvas) return;
+    const redraw = () => {
+      const p = fillRead(); const r = fillCalculate(p);
+      drawFillSection(r, (fillState.t / Math.max(r.tWeld, 4)) % 1);
+    };
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!fillState.editMode) return;
+      const p = fillPointerXY(e);
+      let best = null, bestD = 1e9;
+      for (const id in fillLabelRects) {
+        const r2 = fillLabelRects[id];
+        const d = Math.hypot(p.x - r2.x, p.y - r2.y);
+        if (d < bestD) { bestD = d; best = id; }
+      }
+      if (best && bestD < 46) {
+        fillDragLabel = best;
+        const o = fillLabelPos[best] || { dx: 0, dy: 0 };
+        fillDragOffX = o.dx || 0; fillDragOffY = o.dy || 0;
+        fillDragStartX = p.x; fillDragStartY = p.y;
+        e.preventDefault();
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!fillDragLabel) return;
+      const p = fillPointerXY(e);
+      const o = fillLabelPos[fillDragLabel] || { dx: 0, dy: 0 };
+      o.dx = fillDragOffX + (p.x - fillDragStartX);
+      o.dy = fillDragOffY + (p.y - fillDragStartY);
+      fillLabelPos[fillDragLabel] = o;
+      saveFillLabels();
+      redraw();
+    });
+    const endDrag = () => { fillDragLabel = null; };
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+  }
+  bindFillDrag(fillCanvas);
+
+  const fillEditBtn = $('fillEdit');
+  if (fillEditBtn) fillEditBtn.addEventListener('click', () => {
+    fillState.editMode = !fillState.editMode;
+    fillEditBtn.classList.toggle('edit-on', fillState.editMode);
+    const libView = $('view-lib');
+    if (libView) libView.classList.toggle('fill-edit-active', fillState.editMode);
+    if (fillState.editMode) {
+      fillState._prevRunning = fillState.running;
+      fillState.running = false;
+      const p0 = $('fillPlay'); if (p0) p0.textContent = '播放';
+    } else {
+      fillState.running = fillState._prevRunning !== false;
+      const p0 = $('fillPlay'); if (p0) p0.textContent = fillState.running ? '暂停' : '播放';
+      if (fillState.running && !fillAnimId) { fillState._lt = 0; fillLoop(); }
+    }
+    for (const k in fillLabelRects) delete fillLabelRects[k];
+    const p = fillRead(); const r = fillCalculate(p);
+    drawFillSection(r, (fillState.t / Math.max(r.tWeld, 4)) % 1);
+  });
+
+  function fillRead() {
+    const num = (id, def) => { const el = $(id); const v = parseFloat(el ? el.value : NaN); return isNaN(v) ? def : v; };
+    return {
+      core: Math.max(num('fillCoreNum', 100), 1),
+      fc: Math.max(num('fillFcNum', 100), 10),
+      ff: Math.max(num('fillFfNum', 200), 10),
+      def: num('fillDefocusNum', 0),
+      pp: Math.max(num('fillPpNum', 1500), 0),
+      freq: Math.max(num('fillFreqNum', 5000), 50),
+      duty: Math.min(Math.max(num('fillDutyNum', 100), 5), 100),
+      v: Math.max(num('fillVNum', 20), 0.1),
+      len: Math.max(num('fillLenNum', 100), 0.5),
+      wireDia: Math.max(num('fillWireDiaNum', 1.0), 0.2),
+      wfs: Math.max(num('fillWfsNum', 40), 1),
+      material: $('fillMaterial') ? $('fillMaterial').value : 'steel',
+      thickness: Math.max(num('fillThicknessNum', 1.5), 0.05)
+    };
+  }
+
+  // 激光填丝焊接模型（半经验，文献校准）
+  // [1] 江苏省造船工程学会《送丝速度对窄间隙光纤激光填丝焊焊缝成形的影响》：送丝↑→焊丝耗能↑→母材熔深/熔宽↓、余高↑
+  // [2] 焊接学报《TC4钛合金摆动激光填丝焊接工艺对焊缝成形的影响》：功率↑→熔深熔宽↑；速度↑→熔深熔宽↓
+  // [3] GWEIKE/Arcus 行业参数表：焊丝直径 0.8~1.6mm 对应板厚 1~2.5mm；送丝-焊接速度比 1~3
+  // [4] Rosenthal 热传导 + 匙孔能量平衡（与焊接仿真同一基准）；焊丝熔化耗能 = 体积率×ρ×(c·ΔT+Lf)
+  function fillCalculate(p) {
+    const mat = MATERIALS[p.material] || MATERIALS.steel;
+    const M = p.ff / p.fc;
+    const d0Um = p.core * M;
+    const M2 = 12;
+    const zR = Math.PI * Math.pow(d0Um / 1000, 2) / (4 * (1080e-6) * M2);
+    const dUm = d0Um * Math.sqrt(1 + Math.pow(p.def / zR, 2));
+    const d = dUm / 1000;
+    const defocusFactor = Math.pow(d0Um / Math.max(dUm, 0.001), 1.1);
+    // 连续波频率焊接：平均功率 = 峰值 × 占空比；调制频率决定焊斑间距/重叠（高频≈连续）
+    const duty = p.duty / 100;
+    const pAvg = p.pp * duty;
+    const dx = p.v / p.freq;
+    const overlap = Math.max(0, Math.min(1, 1 - dx / Math.max(d, 0.001)));
+    // 匙孔/传导模式（同焊接仿真基准）
+    const Ipeak = d > 0 ? 4 * p.pp * mat.eta / (Math.PI * d * d) : 0;
+    const IKH = mat.IKH || 10;
+    const tKH = Math.max(0, Math.min(1, (Ipeak / 1000 - 0.5 * IKH) / (1.5 * IKH)));
+    const smoothKH = tKH * tKH * (3 - 2 * tKH);
+    const etaEff = mat.eta + (mat.etaKH - mat.eta) * smoothKH;
+    const kEff = mat.k + (mat.kWeld - mat.k) * smoothKH;
+    const alphaE = kEff / (mat.rho * mat.c) * 1e6;
+    const alphaRef = 4.08;
+
+    // ===== 焊丝熔化耗能（能量分流核心） =====
+    // 熔化热函 q_m = c·ΔT_m + L_f（J/g）：钢≈1020、铝≈984、铜≈622
+    const meltTempMap = { steel: 1500, al1060: 660, al3003: 655, al5052: 650, al5083: 640, al6061: 655, al6063: 660, al7075: 640, cu_t2: 1085, cu_c1020: 1085, cu_h62: 950, cu_c5191: 950, cu_qbe2: 960 };
+    const lfMap = { steel: 270, al1060: 390, al3003: 390, al5052: 390, al5083: 390, al6061: 390, al6063: 390, al7075: 390, cu_t2: 205, cu_c1020: 205, cu_h62: 205, cu_c5191: 205, cu_qbe2: 205 };
+    const tm = meltTempMap[p.material] || 1500;
+    const lf = lfMap[p.material] || 270;
+    const qMelt = mat.c * tm / 1000 + lf;                 // J/g
+    const wireArea = Math.PI * Math.pow(p.wireDia, 2) / 4; // mm²
+    const wireVolRate = wireArea * p.wfs;                 // mm³/s
+    const wireMassRate = wireVolRate * mat.rho / 1e6;     // g/s（ρ kg/m³→g/mm³ = /1e6）
+    const pMelt = wireMassRate * qMelt;                   // W（焊丝完全熔化所需功率）
+    // 焊丝吸收比例：激光总吸收功率中先满足焊丝熔化（上限 85%，避免负值/锁死）
+    const pAbs = pAvg * etaEff;
+    const fWire = Math.min(pMelt / Math.max(pAbs, 0.001), 0.85);
+    const pWire = pAbs * fWire;
+    const pBase = Math.max(pAbs - pWire, 0);              // 母材有效功率
+
+    // ===== 熔深（母材有效线能量） =====
+    const ElineBase = pBase / p.v;
+    const C1f = (mat.C1 || 0.12) * 1.5 * 0.92;            // 填丝焊熔深效率略低于自熔焊（焊丝分流+熔池扰动）
+    const overlapBoost = 1 + 0.35 * overlap;              // 高频调制重叠弱增强（接近连续）
+    const hPhys = C1f * Math.pow(Math.max(ElineBase, 0.001), 0.6) / Math.pow(Math.max(d, 0.01), 0.25)
+              * Math.pow(alphaRef / alphaE, 0.4) * overlapBoost * defocusFactor;
+
+    // ===== 熔宽 =====
+    const C3 = mat.C3 || 0.5;
+    const wTh = C3 * Math.sqrt(pAvg * etaEff * alphaE / (p.v * p.v)) * 1.2;
+    const wBeam = Math.max(d * 1.15 * (1 + 0.25 * overlap), wTh);
+    // 焊丝熔敷宽度（熔敷截面守恒：焊丝体积率/焊接速度 = 单位长度熔敷面积）
+    const fillArea = wireArea * p.wfs / p.v;              // mm²/毫米焊缝
+    const wWire = Math.min(Math.max(p.wireDia * Math.sqrt(p.wfs / p.v), d * 0.9), d * 2.2);
+    const w = Math.max(wBeam, wWire);
+
+    // ===== 余高（熔敷金属堆积，弓形近似） =====
+    let reinf = fillArea > 0 ? 1.5 * fillArea / Math.max(w, 0.01) : 0;
+    reinf = Math.min(reinf, 3.0);                         // 工艺上限 3mm
+
+    // ===== 熔透饱和 =====
+    const thk = Math.max(p.thickness, 0.05);
+    const melted = hPhys >= thk;
+    const h = melted ? thk : hPhys;
+    const wFinal = melted ? Math.sqrt(w * w + d * Math.max(hPhys - thk, 0)) : w;
+
+    const tWeld = p.len / p.v;
+    const wireTotal = wireMassRate * tWeld;               // g
+    const heat = pAvg * etaEff / p.v;
+    const ratio = p.wfs / p.v;                            // 送丝/焊接速度比
+    return { mat, M, d0Um, zR, dUm, d, duty, pAvg, Ipeak, dx, overlap, etaEff, kEff, alphaE,
+             pMelt, pWire, pBase, fWire, fillArea, reinf, w, wFinal, h, hPhys, melted, thk,
+             tWeld, wireTotal, heat, ratio, freq: p.freq, v: p.v, wireDia: p.wireDia, wfs: p.wfs };
+  }
+
+  function fillUpdateResults(r) {
+    const fmt = (v, d = 2) => Number(v).toFixed(d);
+    $('fillDepth').textContent = fmt(r.h, 2);
+    const mt = $('fillMeltTag');
+    if (mt) mt.style.display = r.melted ? 'inline' : 'none';
+    $('fillWidthOut').textContent = fmt(r.wFinal, 2);
+    $('fillReinf').textContent = fmt(r.reinf, 2);
+    $('fillPavg').textContent = fmt(r.pAvg, 0) + ' W';
+    $('fillSpot').textContent = fmt(r.dUm, 1) + ' μm';
+    $('fillDx').textContent = fmt(r.dx, 4) + ' mm';
+    $('fillOverlap').textContent = fmt(r.overlap * 100, 1) + '%';
+    $('fillPmelt').textContent = fmt(r.pMelt, 0) + ' W';
+    $('fillPbase').textContent = fmt(r.pBase, 0) + ' W';
+    $('fillSplit').textContent = fmt(r.fWire * 100, 0) + '% / ' + fmt((1 - r.fWire) * 100, 0) + '%';
+    $('fillAreaOut').textContent = fmt(r.fillArea, 3) + ' mm²';
+    $('fillReinfOut').textContent = fmt(r.reinf, 2) + ' mm';
+    $('fillRatioOut').textContent = fmt(r.ratio, 2);
+    $('fillHeat').textContent = fmt(r.heat, 3) + ' J/mm';
+    $('fillRatioHW').textContent = r.wFinal > 0 ? fmt(r.h / r.wFinal, 2) : '—';
+    $('fillTime').textContent = fmt(r.tWeld, 2) + ' s';
+    $('fillWireTotal').textContent = fmt(r.wireTotal, 2) + ' g';
+    $('fillRatioPreview').textContent = fmt(r.ratio, 2);
+    const ms = $('fillMatSpec');
+    if (ms) ms.textContent = r.mat.name + ' · k=' + r.mat.k + ' W/m·K';
+  }
+
+  function resizeFillCanvas() {
+    if (!fillCanvas || !fillCtx) return;
+    const wrap = fillCanvas.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    let wCss = rect.width || 320, hCss = rect.height;
+    const wantH = wCss * 0.66;
+    if (!hCss || hCss < wCss * 0.3 || hCss > wCss * 1.6) hCss = wantH;
+    wrap.style.height = hCss + 'px';
+    fillCanvas.style.width = wCss + 'px';
+    fillCanvas.style.height = hCss + 'px';
+    fillCanvas.width = Math.max(2, Math.round(wCss * d));
+    fillCanvas.height = Math.max(2, Math.round(hCss * d));
+    fillCtx.setTransform(d, 0, 0, d, 0, 0);
+  }
+
+  // 截面：填丝熔深动态演化（激光束移动 + 焊丝送入 + 熔池 + 余高）
+  function drawFillSection(r, prog) {
+    if (!fillCtx) return;
+    const w = fillCanvas.width / (window.devicePixelRatio || 1);
+    const h = fillCanvas.height / (window.devicePixelRatio || 1);
+    const ctx = fillCtx;
+    ctx.clearRect(0, 0, w, h);
+    const padL = w * 0.10, padR = w * 0.86, padT = h * 0.16, padB = h * 0.84;
+    const bw = padR - padL;
+    const availH = padB - padT;
+    const thk = Math.max(r.thk, 0.1);
+    const scale = Math.min(bw / 3.4, availH / (Math.max(r.h * 1.5, thk) * 1.35));
+    const baseY = padB;
+    const boardW = Math.min(bw * 0.92, 3.4 * scale);
+    const boardX = padL + (bw - boardW) / 2;
+    const thkPx = Math.max(thk * scale, 4);
+    const topY = baseY - thkPx;
+    // 光束/熔池沿焊接方向移动
+    const beamX = boardX + boardW * (0.16 + 0.66 * prog);
+
+    // 母材（按材料着色）
+    const matColor = /铝/.test(r.mat.name) ? 'rgba(96,112,138,0.88)' : (/铜/.test(r.mat.name) ? 'rgba(128,84,58,0.88)' : 'rgba(26,35,64,0.88)');
+    ctx.fillStyle = matColor;
+    ctx.strokeStyle = 'rgba(138,150,173,0.8)';
+    ctx.lineWidth = 1.2;
+    ctx.fillRect(boardX, topY, boardW, thkPx);
+    ctx.strokeRect(boardX, topY, boardW, thkPx);
+
+    // 已凝固焊缝（熔池后方余高，末端过渡到 0）
+    const reinfPx = Math.min(r.reinf * scale, 26);
+    const weldStart = boardX + 4;
+    const weldEnd = beamX - Math.max(r.w * scale * 0.5, 2);
+    if (reinfPx > 0.5 && weldEnd > weldStart + 8) {
+      ctx.fillStyle = 'rgba(152,164,184,0.92)';
+      ctx.beginPath();
+      ctx.moveTo(weldStart, topY);
+      ctx.lineTo(weldEnd, topY);
+      const segs = 20;
+      for (let i = 0; i <= segs; i++) {
+        const t = i / segs;                      // 0=熔池侧, 1=起点
+        const xx = weldEnd + (weldStart - weldEnd) * t;
+        const trans = Math.min(t / 0.25, 1);     // 近熔池 1/4 段余高从 0 升起
+        ctx.lineTo(xx, topY - reinfPx * trans);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(176,188,204,0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // 熔池（U形，深度随焊接推进生长）
+    const depth = Math.min(r.h, thk) * scale * (1 - Math.exp(-4 * prog));
+    const mw = Math.min(r.wFinal * scale, boardW * 0.9);
+    const poolCX = beamX;
+    const poolTop = topY;
+    const poolBot = Math.min(poolTop + depth, baseY - 2);
+    if (depth > 0.5) {
+      const rBot = Math.min(mw / 2, Math.max(depth / 2, 0.5));
+      const grad = ctx.createLinearGradient(poolCX, poolTop, poolCX, poolBot);
+      grad.addColorStop(0, 'rgba(255,120,60,0.95)');
+      grad.addColorStop(1, 'rgba(255,40,20,0.8)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(poolCX - mw / 2, poolTop);
+      ctx.bezierCurveTo(poolCX - mw / 2, poolBot - rBot * 0.5, poolCX - rBot, poolBot - rBot * 0.5, poolCX, poolBot);
+      ctx.bezierCurveTo(poolCX + rBot, poolBot - rBot * 0.5, poolCX + mw / 2, poolBot - rBot * 0.5, poolCX + mw / 2, poolTop);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,110,60,1)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // 匙孔（连续波深熔时稳定）
+    if (depth > 1.5) {
+      const khW = Math.max(2, mw * 0.15);
+      const khD = Math.min(depth, thk * scale);
+      ctx.fillStyle = 'rgba(255,230,150,0.95)';
+      ctx.beginPath();
+      ctx.moveTo(poolCX - khW / 2, poolTop + 1);
+      ctx.lineTo(poolCX + khW / 2, poolTop + 1);
+      ctx.lineTo(poolCX, poolTop + khD);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 激光束（调制频率 ON/OFF；duty=100% 恒亮=连续波）
+    const pulseOn = (fillState.t * r.freq) % 1 < r.duty;
+    const beamTop = padT;
+    const spotR = Math.max(2, Math.min(r.d / 1000 * scale * 4, w * 0.15));
+    if (pulseOn) {
+      const bg = ctx.createLinearGradient(poolCX, beamTop, poolCX, poolTop);
+      bg.addColorStop(0, 'rgba(0,229,255,0)');
+      bg.addColorStop(1, 'rgba(0,229,255,0.55)');
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.moveTo(poolCX - spotR * 0.35, beamTop);
+      ctx.lineTo(poolCX + spotR * 0.35, beamTop);
+      ctx.lineTo(poolCX + spotR, poolTop);
+      ctx.lineTo(poolCX - spotR, poolTop);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,229,255,0.9)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(poolCX, beamTop); ctx.lineTo(poolCX, poolTop); ctx.stroke();
+      const flash = 0.8 + 0.2 * Math.sin(fillState.t * 60);
+      ctx.fillStyle = 'rgba(0,229,255,' + (0.5 * flash) + ')';
+      ctx.beginPath(); ctx.arc(poolCX, poolTop, spotR * (0.6 + 0.2 * flash), 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.strokeStyle = 'rgba(138,150,173,0.35)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(poolCX, beamTop); ctx.lineTo(poolCX, poolTop); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 焊丝（从左上斜向送入熔池，直径按输入绘制）
+    const wireDiaPx = Math.max(2, Math.min(r.wireDia * scale, 11));
+    const tipX = poolCX - mw * 0.30;
+    const tipY = poolTop + 2;
+    const wInX = Math.max(padL + 6, tipX - boardW * 0.52);
+    const wInY = padT - 8;
+    const ang = Math.atan2(tipY - wInY, tipX - wInX);
+    // 焊丝杆
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#c0a86a';
+    ctx.lineWidth = wireDiaPx;
+    ctx.beginPath(); ctx.moveTo(wInX, wInY); ctx.lineTo(tipX, tipY); ctx.stroke();
+    // 高光
+    ctx.strokeStyle = 'rgba(255,240,200,0.35)';
+    ctx.lineWidth = Math.max(1, wireDiaPx * 0.28);
+    ctx.beginPath(); ctx.moveTo(wInX, wInY - wireDiaPx * 0.25); ctx.lineTo(tipX, tipY - wireDiaPx * 0.25); ctx.stroke();
+    // 前端熔滴（脉动）
+    const dropR = wireDiaPx * (0.55 + 0.18 * Math.sin(fillState.t * 8));
+    ctx.fillStyle = 'rgba(255,150,80,0.95)';
+    ctx.beginPath(); ctx.arc(tipX, tipY, dropR, 0, Math.PI * 2); ctx.fill();
+    // 送丝方向箭头
+    const midX = (wInX + tipX) / 2, midY = (wInY + tipY) / 2;
+    ctx.fillStyle = '#c0a86a';
+    ctx.beginPath();
+    ctx.moveTo(midX + Math.cos(ang) * 9, midY + Math.sin(ang) * 9);
+    ctx.lineTo(midX + Math.cos(ang + 2.5) * 6, midY + Math.sin(ang + 2.5) * 6);
+    ctx.lineTo(midX + Math.cos(ang - 2.5) * 6, midY + Math.sin(ang - 2.5) * 6);
+    ctx.closePath(); ctx.fill();
+
+    // 标注
+    ctx.font = '11px sans-serif';
+    // 母材厚度
+    const offMat = fillOff('f_mat');
+    ctx.fillStyle = 'rgba(160,175,200,0.55)';
+    ctx.textAlign = 'center';
+    ctx.fillText('母材 ' + thk.toFixed(2) + 'mm', boardX + boardW / 2 + offMat.dx, topY - 8 + offMat.dy);
+    fillMark('f_mat', boardX + boardW / 2 + offMat.dx, topY - 8 + offMat.dy, 96);
+    // 熔深
+    const offDep = fillOff('f_depth');
+    const depTxt = '预估熔深 ' + Math.min(r.h, thk).toFixed(2) + 'mm';
+    const depX = poolCX + 6 + offDep.dx, depY = poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy;
+    const depW = ctx.measureText(depTxt).width;
+    ctx.fillStyle = 'rgba(10,15,30,0.72)';
+    ctx.fillRect(depX - 3, depY - 9, depW + 6, 14);
+    ctx.fillStyle = 'rgba(200,210,225,0.95)';
+    ctx.fillText(depTxt, depX, depY);
+    fillMark('f_depth', depX, depY, depW + 6);
+    // 熔宽双箭头（母材底部下方）
+    const offWid = fillOff('f_width');
+    const dimY = Math.min(baseY + 20 + offWid.dy, h - 14);
+    const dimL = poolCX - mw / 2 + offWid.dx, dimR = poolCX + mw / 2 + offWid.dx;
+    ctx.strokeStyle = 'rgba(0,229,255,0.95)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(dimL, dimY); ctx.lineTo(dimR, dimY); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,229,255,0.95)';
+    ctx.beginPath(); ctx.moveTo(dimL - 4, dimY); ctx.lineTo(dimL + 5, dimY - 4); ctx.lineTo(dimL + 5, dimY + 4); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(dimR + 4, dimY); ctx.lineTo(dimR - 5, dimY - 4); ctx.lineTo(dimR - 5, dimY + 4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,229,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(dimL, dimY - 6); ctx.lineTo(dimL, dimY + 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dimR, dimY - 6); ctx.lineTo(dimR, dimY + 6); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,229,255,0.95)';
+    ctx.textAlign = 'center';
+    ctx.fillText('熔宽 ' + r.wFinal.toFixed(2) + 'mm', (dimL + dimR) / 2, dimY - 7);
+    fillMark('f_width', (dimL + dimR) / 2, dimY - 7, Math.max(mw, 50));
+    ctx.textAlign = 'left';
+    // 余高
+    const offRf = fillOff('f_reinf');
+    const rfX = weldStart + (weldEnd - weldStart) * 0.5 + offRf.dx;
+    const rfY = topY - reinfPx - 8 + offRf.dy;
+    ctx.fillStyle = 'rgba(200,210,225,0.9)';
+    ctx.fillText('余高 ' + r.reinf.toFixed(2) + 'mm', rfX, rfY);
+    fillMark('f_reinf', rfX, rfY, 60);
+    // 焊丝标注
+    const offWire = fillOff('f_wire');
+    const wireTxt = '焊丝 ' + r.wireDia.toFixed(1) + 'mm · Vf ' + r.wfs + 'mm/s';
+    const wx2 = Math.min(wInX + 46 + offWire.dx, w - 90);
+    const wy2 = wInY + 14 + offWire.dy;
+    ctx.fillStyle = 'rgba(200,210,225,0.9)';
+    ctx.fillText(wireTxt, wx2, wy2);
+    fillMark('f_wire', wx2, wy2, 120);
+    // 焊接方向箭头
+    const arY = baseY + 16;
+    ctx.strokeStyle = 'rgba(200,210,225,0.8)';
+    ctx.beginPath(); ctx.moveTo(boardX + 10, arY); ctx.lineTo(boardX + boardW * 0.4, arY); ctx.stroke();
+    ctx.fillStyle = 'rgba(200,210,225,0.8)';
+    ctx.beginPath(); ctx.moveTo(boardX + boardW * 0.4 + 6, arY); ctx.lineTo(boardX + boardW * 0.4 - 2, arY - 5); ctx.lineTo(boardX + boardW * 0.4 - 2, arY + 5); ctx.closePath(); ctx.fill();
+    ctx.fillText('焊接方向 V=' + r.v + 'mm/s', boardX + 10, arY + 16);
+  }
+
+  function fillLoop() {
+    fillAnimId = requestAnimationFrame(fillLoop);
+    const p = fillRead(); const r = fillCalculate(p);
+    fillUpdateResults(r);
+    if (fillState.running) {
+      const now = performance.now();
+      if (fillState._lt) fillState.t += (now - fillState._lt) / 1000 * fillState.speed;
+      fillState._lt = now;
+    } else fillState._lt = performance.now();
+    drawFillSection(r, (fillState.t / Math.max(r.tWeld, 4)) % 1);
+  }
+  function startFillSim() { if (!fillAnimId) { fillState._lt = 0; fillLoop(); } }
+  function stopFillSim() { if (fillAnimId) { cancelAnimationFrame(fillAnimId); fillAnimId = null; } }
+
+  const fillPlayBtn = $('fillPlay');
+  if (fillPlayBtn) fillPlayBtn.addEventListener('click', () => {
+    fillState.running = !fillState.running;
+    fillPlayBtn.textContent = fillState.running ? '暂停' : '播放';
+    if (fillState.running && !fillAnimId) { fillState._lt = 0; fillLoop(); }
+  });
+  const fillResetBtn = $('fillReset');
+  if (fillResetBtn) fillResetBtn.addEventListener('click', () => {
+    fillState.t = 0; fillState._lt = 0;
+    const p = fillRead(); const r = fillCalculate(p);
+    drawFillSection(r, 0);
+  });
+  const fillSaveBtn = $('fillSave');
+  if (fillSaveBtn) fillSaveBtn.addEventListener('click', () => {
+    if (window.AndroidBridge && AndroidBridge.savePng) {
+      AndroidBridge.savePng(fillCanvas.toDataURL('image/png'), '激光填丝补焊仿真_' + new Date().toISOString().slice(0, 10) + '.png');
+    } else {
+      const a = document.createElement('a');
+      a.href = fillCanvas.toDataURL('image/png');
+      a.download = '激光填丝补焊仿真_' + new Date().toISOString().slice(0, 10) + '.png';
+      a.click();
+    }
+  });
+  const fillSpeedSel = $('fillSpeed');
+  if (fillSpeedSel) fillSpeedSel.addEventListener('change', () => { fillState.speed = parseFloat(fillSpeedSel.value) || 1; });
+  ['fillCore', 'fillCoreNum', 'fillFc', 'fillFcNum', 'fillFf', 'fillFfNum', 'fillDefocus', 'fillDefocusNum',
+   'fillPp', 'fillPpNum', 'fillFreq', 'fillFreqNum', 'fillDuty', 'fillDutyNum', 'fillV', 'fillVNum',
+   'fillLen', 'fillLenNum', 'fillWireDia', 'fillWireDiaNum', 'fillWfs', 'fillWfsNum', 'fillThickness', 'fillThicknessNum'].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const numId = id.endsWith('Num') ? id : id + 'Num';
+      const rangeId = id.endsWith('Num') ? id.slice(0, -3) : id;
+      const rEl = $(rangeId), nEl = $(numId);
+      if (el.type === 'range' && nEl) nEl.value = el.value;
+      else if (el.type !== 'range' && rEl && rEl.type === 'range') rEl.value = nEl.value;
+      const p = fillRead(); const r = fillCalculate(p);
+      fillUpdateResults(r);
+    });
+  });
+  const fillMatSel = $('fillMaterial');
+  if (fillMatSel) fillMatSel.addEventListener('change', () => {
+    const p = fillRead(); const r = fillCalculate(p);
+    fillUpdateResults(r);
+  });
 
   // 初始
   if (fitCtx) { resizeFitCanvas(); calcFit(); }
