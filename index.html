@@ -10239,11 +10239,11 @@
     let reinf = fillArea > 0 ? 1.5 * fillArea / Math.max(w, 0.01) : 0;
     reinf = Math.min(reinf, 3.0);                         // 工艺上限 3mm
 
-    // ===== 熔透饱和 =====
+    // ===== 熔深按真实计算值显示（不做熔透饱和，不显示熔透字样）=====
     const thk = Math.max(p.thickness, 0.05);
-    const melted = hPhys >= thk;
-    const h = melted ? thk : hPhys;
-    const wFinal = melted ? Math.sqrt(w * w + d * Math.max(hPhys - thk, 0)) : w;
+    const melted = hPhys >= thk;                 // 仅供内部参考，不再用于标注
+    const h = hPhys;                             // 预估熔深显示真实计算值
+    const wFinal = w;                            // 熔宽不随熔透扩展
 
     const tWeld = p.len / p.v;
     const wireTotal = wireMassRate * tWeld;               // g
@@ -10488,7 +10488,7 @@
     fillMark('f_mat', boardX + boardW / 2 + offMat.dx, topY - 8 + offMat.dy, 96);
     // 熔深
     const offDep = fillOff('f_depth');
-    const depTxt = '预估熔深 ' + Math.min(r.h, thk).toFixed(2) + 'mm';
+    const depTxt = '预估熔深 ' + r.h.toFixed(2) + 'mm';
     const depX = poolCX + 6 + offDep.dx, depY = poolTop + Math.min(depth, thkPx) / 2 + 4 + offDep.dy;
     const depW = ctx.measureText(depTxt).width;
     ctx.fillStyle = 'rgba(10,15,30,0.72)';
