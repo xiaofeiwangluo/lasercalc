@@ -2001,7 +2001,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.15</div>
+    <div class="splash-version">v1.4.16</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -3606,7 +3606,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.15</span>
+        <span class="ar-value">v1.4.16</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3622,19 +3622,19 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.15</span></h3>
-      <div class="up-sub">工艺窗口对比 · 新增熔宽窗口</div>
+      <h3>版本更新 <span class="vtag">v1.4.16</span></h3>
+      <div class="up-sub">QCW 模型 · 脉宽-熔宽校准</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">熔宽窗口独立成图</b>：离焦/功率/速度三区各新增独立「熔宽窗口」画布（熔宽虚线曲线 + 青色目标带 + A/B 达标条），与熔深图分离显示，查看更清晰。</span>
+        <span><b style="color:var(--text)">QCW 脉宽-熔深校验通过</b>：脉宽↑→占空比↑→平均功率↑（线能量 ^0.6）+ 脉宽直接增强 τ^0.18，熔深随脉宽单调递增并饱和，方向与幅度符合文献（长脉宽熔深更深、增量递减）。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">熔宽独立判定</b>：熔宽窗口仅按熔宽 ∈ [目标下限, 目标上限] 判定，结果区同步显示配置 A/B 熔宽窗口数值。</span>
+        <span><b style="color:var(--text)">修复熔宽对脉宽不敏感</b>：新增脉宽弱增强项，长脉宽热扩散更充分，1ms→10ms 熔宽约 +5%（文献：脉宽↑熔宽缓增）。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">同步保留</b>：工艺窗口 K 值平滑过渡（功率窗口不断裂）、无达标窗口修复、QCW 模型 v2.2 标定。</span>
+        <span><b style="color:var(--text)">同步保留</b>：工艺窗口熔宽独立成图、K 值平滑过渡、QCW 薄板熔透饱和。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3645,6 +3645,13 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.16</span><span class="cl-date">2026-09-11 · QCW 脉宽-熔宽校准</span></div>
+        <ul class="cl-list">
+          <li><b>QCW 脉宽-熔深校验通过</b>：模型单调递增+饱和，与文献一致（长脉宽熔深更深）。</li>
+          <li><b>修复熔宽对脉宽不敏感</b>：新增脉宽弱增强项，1ms→10ms 熔宽约 +5%。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.15</span><span class="cl-date">2026-09-11 · 工艺窗口新增熔宽窗口</span></div>
         <ul class="cl-list">
@@ -9373,7 +9380,9 @@
     // 熔宽：光斑基础直径（含重叠轻微扩展）+ Rosenthal 热导项
     const C3 = mat.C3 || 0.5;
     const wTh = C3 * Math.sqrt(pAvg * etaEff * alphaE / (p.v * p.v)) * 1.2;
-    const wBase = Math.max(d * 1.15 * (1 + 0.25 * overlap), wTh);
+    // 脉宽对熔宽的微弱增强（长脉宽热扩散更充分，1ms→10ms 约 +5%，文献：脉宽↑熔宽缓增）
+    const tauW = 1 + 0.10 * (Math.pow(Math.max(p.tau, 0.05), 0.18) - 1);
+    const wBase = Math.max(d * 1.15 * (1 + 0.25 * overlap) * tauW, wTh);
     // 熔透饱和：hPhys ≥ 母材厚度 → 熔深饱和为板厚，超出能量按能量守恒扩展熔宽
     const thk = Math.max(p.thickness, 0.05);
     const melted = hPhys >= thk;
