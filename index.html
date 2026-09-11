@@ -3509,7 +3509,6 @@
           <div class="card-title">离焦窗口对比</div>
           <div class="hint" style="margin-bottom:6px;">固定功率与速度为各自基准值，扫描离焦 -10 ~ +10 mm（负=焦点深入工件）</div>
           <div class="tp-canvas-wrap"><canvas id="winDefCanvas"></canvas></div>
-          <div class="win-sub-title">熔宽窗口</div>
           <div class="tp-canvas-wrap" style="margin-top:4px;"><canvas id="winDefWCanvas"></canvas></div>
           <div class="win-result" id="winDefRes"></div>
         </div>
@@ -3517,7 +3516,6 @@
           <div class="card-title">功率窗口对比</div>
           <div class="hint" style="margin-bottom:6px;">固定速度为各自基准值、离焦 0，扫描功率 200 ~ 10000 W</div>
           <div class="tp-canvas-wrap"><canvas id="winPwrCanvas"></canvas></div>
-          <div class="win-sub-title">熔宽窗口</div>
           <div class="tp-canvas-wrap" style="margin-top:4px;"><canvas id="winPwrWCanvas"></canvas></div>
           <div class="win-result" id="winPwrRes"></div>
         </div>
@@ -3525,7 +3523,6 @@
           <div class="card-title">速度窗口对比</div>
           <div class="hint" style="margin-bottom:6px;">固定功率为各自基准值、离焦 0，扫描速度 5 ~ 500 mm/s</div>
           <div class="tp-canvas-wrap"><canvas id="winVelCanvas"></canvas></div>
-          <div class="win-sub-title">熔宽窗口</div>
           <div class="tp-canvas-wrap" style="margin-top:4px;"><canvas id="winVelWCanvas"></canvas></div>
           <div class="win-result" id="winVelRes"></div>
         </div>
@@ -8262,9 +8259,9 @@
       ctx.strokeStyle = 'rgba(120,130,150,0.15)';
       ctx.beginPath(); ctx.moveTo(padL, y(v)); ctx.lineTo(padL + cw, y(v)); ctx.stroke();
     }
-    ctx.fillStyle = isW ? 'rgba(0,200,230,0.95)' : 'rgba(140,150,170,0.85)';
+    ctx.fillStyle = isW ? 'rgba(0,200,230,0.95)' : 'rgba(76,175,80,0.95)';
     ctx.textAlign = 'center';
-    ctx.fillText(isW ? '熔宽 (mm)' : '熔深 (mm)', padL + cw / 2, padT + 8);
+    ctx.fillText(isW ? '熔宽窗口 (mm)' : '熔深窗口 (mm)', padL + cw / 2, padT + 8);
     // 曲线：熔深实线 / 熔宽虚线
     const colors = ['rgba(0,170,255,0.95)', 'rgba(255,140,0,0.95)'];
     [ptsA, ptsB].forEach((pts, idx) => {
