@@ -1995,7 +1995,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.13</div>
+    <div class="splash-version">v1.4.14</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -3597,7 +3597,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.13</span>
+        <span class="ar-value">v1.4.14</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -3613,19 +3613,19 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.13</span></h3>
-      <div class="up-sub">QCW 准连续脉冲焊接模型 v2.2 · 绝对标定收敛</div>
+      <h3>版本更新 <span class="vtag">v1.4.14</span></h3>
+      <div class="up-sub">工艺窗口对比 · 无达标窗口修复</div>
       <div class="up-item">
         <span class="up-num">1</span>
-        <span><b style="color:var(--text)">收敛慢速高重叠熔深放大</b>：重叠率累积增强由 (1+1.2η) 收敛为 (1+0.75η)。传导焊（峰值功率密度低于深熔阈值）场景熔深不再高估：钢 300W / 2.4ms / 300Hz / 20mm/s / 0.66mm 光斑（峰值密度仅 0.88 kW/mm²）熔深由 1.17mm 修正至 0.94mm，贴近能量守恒上限。</span>
+        <span><b style="color:var(--text)">修复校验失败残留</b>：目标区间非法（熔深/熔宽上限≤下限、下限≤0 或为空）时，离焦/功率/速度三个结果区统一显示校验提示，不再残留上一次计算结果。</span>
       </div>
       <div class="up-item">
         <span class="up-num">2</span>
-        <span><b style="color:var(--text)">薄板熔透保持不变</b>：0.4mm 薄板仍正确判定熔透（熔深饱和 0.40mm + 「已熔透」标注），熔宽随熔透能量扩展至 1.12mm。</span>
+        <span><b style="color:var(--text)">优化无达标显示</b>：「无达标窗口」不再带多余单位（如「无达标窗口 mm」），提示更清晰。</span>
       </div>
       <div class="up-item">
         <span class="up-num">3</span>
-        <span><b style="color:var(--text)">说明</b>：300W 级 QCW 属传导焊，熔深主要由平均功率（216W）×慢速（20mm/s）×90% 重叠热累积决定；模型与能量守恒上限校验一致，结果供工艺预研参考，请以实测为准。</span>
+        <span><b style="color:var(--text)">QCW 模型 v2.2 同步保留</b>：熔深标定收敛（300W 传导焊 1.17→0.94mm）、薄板熔透饱和、「已熔透」标注。</span>
       </div>
       <button class="up-btn" id="updateClose">开始使用</button>
     </div>
@@ -3636,6 +3636,13 @@
     <div class="update-card changelog-card">
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
+      <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.14</span><span class="cl-date">2026-09-11 · 工艺窗口无达标修复</span></div>
+        <ul class="cl-list">
+          <li><b>修复校验失败残留</b>：目标区间非法时三个结果区统一提示，不再残留旧结果。</li>
+          <li><b>无达标窗口不带多余单位</b>：显示更清晰。</li>
+        </ul>
+      </div>
       <div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.13</span><span class="cl-date">2026-09-11 · QCW 模型 v2.2 标定收敛</span></div>
         <ul class="cl-list">
@@ -8289,8 +8296,9 @@
       B: { core: num('winBCore'), fc: num('winBFc'), ff: num('winBFf'), P: num('winBP'), V: num('winBV') }
     };
     if (!(cfg.hMin > 0 && cfg.hMax > cfg.hMin && cfg.wMax > cfg.wMin)) {
-      const box = $('winDefRes');
-      if (box) box.innerHTML = '<div class="win-line" style="color:var(--warn, #e6a23c);">请检查目标区间：熔深/熔宽上限需大于下限</div>';
+      // 校验失败：三个结果区统一提示，避免旧结果残留导致界面不一致
+      const msg = '<div class="win-line" style="color:var(--warn, #e6a23c);">请检查目标区间：熔深/熔宽上限需大于下限</div>';
+      ['winDefRes', 'winPwrRes', 'winVelRes'].forEach(id => { const box = $(id); if (box) box.innerHTML = msg; });
       return;
     }
     const mk = c => ({ mat: cfg.mat, core: c.core, fc: c.fc, ff: c.ff, P: c.P, V: c.V, hMin: cfg.hMin, hMax: cfg.hMax, wMin: cfg.wMin, wMax: cfg.wMax });
@@ -8306,15 +8314,16 @@
     const resB = {
       def: fmtWinRange(defB), pwr: fmtWinRange(pwrB), vel: fmtWinRange(velB)
     };
+    const fmtRes = (v, unit) => v === '无达标窗口' ? v : v + ' ' + unit;
     $('winDefRes').innerHTML =
-      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 离焦窗口：<b>' + resA.def + ' mm</b></div>' +
-      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 离焦窗口：<b>' + resB.def + ' mm</b></div>';
+      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 离焦窗口：<b>' + fmtRes(resA.def, 'mm') + '</b></div>' +
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 离焦窗口：<b>' + fmtRes(resB.def, 'mm') + '</b></div>';
     $('winPwrRes').innerHTML =
-      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 功率窗口：<b>' + resA.pwr + ' W</b></div>' +
-      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 功率窗口：<b>' + resB.pwr + ' W</b></div>';
+      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 功率窗口：<b>' + fmtRes(resA.pwr, 'W') + '</b></div>' +
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 功率窗口：<b>' + fmtRes(resB.pwr, 'W') + '</b></div>';
     $('winVelRes').innerHTML =
-      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 速度窗口：<b>' + resA.vel + ' mm/s</b></div>' +
-      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 速度窗口：<b>' + resB.vel + ' mm/s</b></div>';
+      '<div class="win-line"><span class="win-ca" style="background:rgba(0,170,255,0.9)"></span>配置A 速度窗口：<b>' + fmtRes(resA.vel, 'mm/s') + '</b></div>' +
+      '<div class="win-line"><span class="win-cb" style="background:rgba(255,140,0,0.9)"></span>配置B 速度窗口：<b>' + fmtRes(resB.vel, 'mm/s') + '</b></div>';
   }
   const winCalcBtn = $('winCalc');
   if (winCalcBtn) winCalcBtn.addEventListener('click', calcWindow);
