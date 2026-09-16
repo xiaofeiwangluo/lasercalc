@@ -1992,39 +1992,52 @@
     .doe-plot-row { gap: 12px; }
     .doe-plot-box .tp-canvas-wrap { min-height: 240px; }
   }
+  /* ===== AI 焊接诊断主题变量（深/浅） ===== */
+  :root {
+    --warn: #ffd27a; --ok: #7ee0a3; --info: #9db8ff;
+    --wfig-bg: rgba(8,16,28,0.55); --wfig-mat: rgba(120,135,160,0.5); --wfig-mat2: rgba(100,115,140,0.55);
+    --wfig-mat-stroke: rgba(160,175,200,0.6); --wfig-txt: #cfe3f5; --wfig-dot: #ffffff; --wfig-dim: #5a6a80;
+  }
+  [data-theme="light"] {
+    --warn: #b26a00; --ok: #1e8e5a; --info: #3d5fc0;
+    --wfig-bg: rgba(230,235,244,0.9); --wfig-mat: rgba(120,135,160,0.35); --wfig-mat2: rgba(100,115,140,0.42);
+    --wfig-mat-stroke: rgba(85,100,125,0.8); --wfig-txt: #3a4a5e; --wfig-dot: #16202e; --wfig-dim: #7d8ca0;
+  }
   /* ===== AI 焊接诊断（动力电池工序异常） ===== */
   .weldai-search input {
     width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.16); background: rgba(0,0,0,0.28); color: #e6edf3;
+    border: 1px solid var(--border); background: var(--card-2); color: var(--text);
     font-size: 13px; outline: none; margin-bottom: 4px;
   }
-  .weldai-search input:focus { border-color: rgba(64,158,255,0.6); }
+  .weldai-search input:focus { border-color: var(--cyan); }
   .weldai-section { margin-top: 10px; }
-  .weldai-label { font-size: 12px; color: rgba(230,237,243,0.72); margin-bottom: 6px; letter-spacing: 1px; }
+  .weldai-label { font-size: 12px; color: var(--text-3); margin-bottom: 6px; letter-spacing: 1px; }
   .weldai-chips { display: flex; flex-wrap: wrap; gap: 7px; }
   .weldai-chip {
     padding: 6px 12px; border-radius: 16px; font-size: 12.5px; cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.18); color: #d8e1ea; background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border); color: var(--text-2); background: var(--card-2);
     transition: all .15s; user-select: none;
   }
-  .weldai-chip:hover { border-color: rgba(64,158,255,0.55); color: #fff; }
+  .weldai-chip:hover { border-color: var(--cyan); color: var(--text); }
   .weldai-chip.on {
     background: linear-gradient(135deg, rgba(64,158,255,0.85), rgba(0,168,255,0.75));
     border-color: rgba(64,158,255,0.9); color: #fff; font-weight: 600;
   }
-  .weldai-tip { margin-top: 12px; font-size: 12.5px; color: rgba(230,237,243,0.55); }
+  .weldai-tip { margin-top: 12px; font-size: 12.5px; color: var(--text-3); }
   .weldai-card {
-    margin-top: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
-    background: rgba(255,255,255,0.045); padding: 13px 15px;
+    margin-top: 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--card-2); padding: 13px 15px;
   }
-  .weldai-card-title { font-size: 14px; font-weight: 700; color: #5ec8ff; margin-bottom: 4px; }
-  .weldai-card-sub { font-size: 11.5px; color: rgba(230,237,243,0.55); margin-bottom: 8px; }
+  .weldai-card-title { font-size: 14px; font-weight: 700; color: var(--cyan); margin-bottom: 4px; }
+  .weldai-card-sub { font-size: 11.5px; color: var(--text-3); margin-bottom: 8px; }
   .weldai-block { margin-top: 8px; }
-  .weldai-h { font-size: 12px; font-weight: 700; color: #ffd27a; margin-bottom: 4px; }
+  .weldai-h { font-size: 12px; font-weight: 700; color: var(--warn); margin-bottom: 4px; }
   .weldai-block ul { margin: 0; padding-left: 18px; }
-  .weldai-block li { font-size: 12.5px; line-height: 1.75; color: #dbe4ec; }
-  .weldai-fig { margin-bottom: 8px; border-radius: 8px; overflow: hidden; background: rgba(8,16,28,0.35); }
-  .weldai-h.sol { color: #7ee0a3; }
+  .weldai-block li { font-size: 12.5px; line-height: 1.75; color: var(--text-2); }
+  .weldai-ref { color: var(--info); }
+  .weldai-h.sol { color: var(--ok); }
+  .weldai-h.prev { color: var(--info); }
+  .weldai-fig { margin-bottom: 8px; border-radius: 8px; overflow: hidden; background: var(--wfig-bg); }
   .weldai-h.prev { color: #9db8ff; }
 </style>
 </head>
@@ -3905,7 +3918,7 @@
         <div class="card">
           <div class="card-title">AI 焊接诊断 · 动力电池工序异常处理</div>
           <div class="hint" style="margin-bottom:12px;">
-            覆盖极耳 / 顶盖 / 壳体 / 防爆阀 / 汇流排等动力电池激光焊接工序。选择工序与异常现象（或直接输入关键词），给出可能原因、处理办法与预防措施。
+            覆盖 FTT 焊接 / 壳盖焊接 / 壳体焊接 / 防爆阀焊接 / 汇流排焊接 / 连接片焊接等动力电池激光焊接工序。选择工序与异常现象（或直接输入关键词），给出可能原因、处理办法与预防措施。
           </div>
           <div class="weldai-search">
             <input type="text" id="weldAiSearch" placeholder="输入关键词检索，如：气孔 / 飞溅 / 焊漏 / 虚焊 / 氧化" />
@@ -8701,14 +8714,15 @@
   ];
   // 焊接缺陷示意图（SVG，统一 220×96 剖面示意）
   function weldAiFig(sym) {
-    const base = '<rect x="0" y="0" width="220" height="96" rx="8" fill="rgba(8,16,28,0.55)"/>';
-    const mat = '<rect x="12" y="50" width="196" height="34" rx="4" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>';
-    const lab = (t, x) => '<text x="' + (x || 110) + '" y="26" text-anchor="middle" font-size="11.5" fill="#cfe3f5" font-weight="600">' + t + '</text>';
+    const base = '<rect x="0" y="0" width="220" height="96" rx="8" style="fill:var(--wfig-bg)"/>';
+    const mat = '<rect x="12" y="50" width="196" height="34" rx="4" style="fill:var(--wfig-mat);stroke:var(--wfig-mat-stroke)"/>';
+    const mat2 = '<rect x="12" y="72" width="196" height="14" rx="3" style="fill:var(--wfig-mat2);stroke:var(--wfig-mat-stroke)"/>';
+    const lab = (t, x) => '<text x="' + (x || 110) + '" y="26" text-anchor="middle" font-size="11.5" style="fill:var(--wfig-txt)" font-weight="600">' + t + '</text>';
     let g = '';
     switch (sym) {
       case '气孔/针孔':
         g = mat + '<ellipse cx="62" cy="50" rx="26" ry="9" fill="#ff5722" opacity="0.92"/>' +
-          '<circle cx="54" cy="60" r="3" fill="#fff" opacity="0.95"/><circle cx="64" cy="56" r="2.4" fill="#fff"/><circle cx="72" cy="62" r="3.2" fill="#fff"/>' +
+          '<circle cx="54" cy="60" r="3" style="fill:var(--wfig-dot)" opacity="0.95"/><circle cx="64" cy="56" r="2.4" style="fill:var(--wfig-dot)"/><circle cx="72" cy="62" r="3.2" style="fill:var(--wfig-dot)"/>' +
           '<path d="M40 50 l18 2" stroke="#ffb59a" stroke-width="1.2"/>' + lab('气孔/针孔（熔池内白色气泡）');
         break;
       case '裂纹':
@@ -8721,19 +8735,19 @@
           '<path d="M40 46 L36 30 M50 44 L47 20 M74 44 L78 22 M84 46 L90 32" stroke="rgba(255,107,74,0.65)" stroke-width="1.4"/>' + lab('飞溅/喷溅');
         break;
       case '未熔合/虚焊':
-        g = '<rect x="12" y="52" width="196" height="20" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
-          '<rect x="12" y="72" width="196" height="14" rx="3" fill="rgba(100,115,140,0.55)" stroke="rgba(160,175,200,0.6)"/>' +
+        g = '<rect x="12" y="52" width="196" height="20" rx="3" style="fill:var(--wfig-mat);stroke:var(--wfig-mat-stroke)"/>' +
+          mat2 +
           '<ellipse cx="62" cy="52" rx="26" ry="7" fill="#ff5722" opacity="0.9"/>' +
           '<line x1="20" y1="72" x2="200" y2="72" stroke="#ff3b3b" stroke-width="2.2" stroke-dasharray="6 3"/>' +
-          '<path d="M30 58 l3 6 M44 56 l3 8" stroke="#fff" stroke-width="1.2" opacity="0.7"/>' + lab('未熔合（界面缝隙）');
+          '<path d="M30 58 l3 6 M44 56 l3 8" style="stroke:var(--wfig-dot)" stroke-width="1.2" opacity="0.7"/>' + lab('未熔合（界面缝隙）');
         break;
       case '烧穿/焊漏':
-        g = '<rect x="12" y="50" width="196" height="20" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+        g = '<rect x="12" y="50" width="196" height="20" rx="3" style="fill:var(--wfig-mat);stroke:var(--wfig-mat-stroke)"/>' +
           '<circle cx="62" cy="60" r="7" fill="#1b0a05" stroke="#ff3b3b" stroke-width="2.2"/>' +
           '<path d="M62 67 q2 8 0 14" stroke="#ff3b3b" stroke-width="2" fill="none"/><circle cx="62" cy="84" r="3.4" fill="#ff6b4a"/>' + lab('烧穿/焊漏（击穿）');
         break;
       case '焊偏/偏移':
-        g = mat + '<line x1="110" y1="44" x2="110" y2="86" stroke="rgba(255,255,255,0.55)" stroke-width="1.4" stroke-dasharray="4 3"/>' +
+        g = mat + '<line x1="110" y1="44" x2="110" y2="86" style="stroke:var(--wfig-txt)" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.55"/>' +
           '<rect x="92" y="46" width="16" height="34" rx="3" fill="#ff8a3c" opacity="0.92"/>' +
           '<line x1="110" y1="54" x2="100" y2="54" stroke="#ffd27a" stroke-width="1.4"/><text x="118" y="57" font-size="9.5" fill="#ffd27a">偏</text>' + lab('焊偏/偏移');
         break;
@@ -8747,7 +8761,7 @@
         break;
       case '断焊/不连续':
         g = mat + '<rect x="24" y="47" width="52" height="6" rx="3" fill="#ff8a3c"/>' +
-          '<rect x="88" y="47" width="36" height="6" rx="3" fill="#5a6a80" opacity="0.5"/>' +
+          '<rect x="88" y="47" width="36" height="6" rx="3" style="fill:var(--wfig-dim)" opacity="0.5"/>' +
           '<rect x="136" y="47" width="52" height="6" rx="3" fill="#ff8a3c"/>' + lab('断焊/不连续');
         break;
       case '熔深波动':
@@ -8762,18 +8776,18 @@
           '<circle cx="70" cy="32" r="2" fill="#ffd27a"/><circle cx="54" cy="30" r="2" fill="#ffd27a"/>' + lab('爆点/炸点（内部气化爆喷）');
         break;
       case '强度不足':
-        g = '<rect x="20" y="28" width="76" height="16" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
-          '<rect x="124" y="52" width="76" height="16" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+        g = '<rect x="20" y="28" width="76" height="16" rx="3" style="fill:var(--wfig-mat);stroke:var(--wfig-mat-stroke)"/>' +
+          '<rect x="124" y="52" width="76" height="16" rx="3" style="fill:var(--wfig-mat);stroke:var(--wfig-mat-stroke)"/>' +
           '<path d="M96 30 L104 42 L96 54 L104 66" stroke="#ff3b3b" stroke-width="2.2" fill="none"/>' +
           '<text x="118" y="88" text-anchor="middle" font-size="10" fill="#ff9d9d">断裂</text>' + lab('强度不足（拉断）');
         break;
       case '气密泄漏':
-        g = '<rect x="12" y="50" width="196" height="16" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+        g = '<rect x="12" y="50" width="196" height="16" rx="3" style="fill:var(--wfig-mat);stroke:var(--wfig-mat-stroke)"/>' +
           '<rect x="40" y="48" width="76" height="4" rx="2" fill="#ff8a3c"/>' +
-          '<circle cx="70" cy="72" r="2.6" fill="#9adcff" opacity="0.9"/><circle cx="64" cy="79" r="2" fill="#9adcff" opacity="0.7"/><circle cx="58" cy="85" r="1.6" fill="#9adcff" opacity="0.5"/>' + lab('气密泄漏（漏气）');
+          '<circle cx="70" cy="72" r="2.6" style="fill:var(--cyan)" opacity="0.9"/><circle cx="64" cy="79" r="2" style="fill:var(--cyan)" opacity="0.7"/><circle cx="58" cy="85" r="1.6" style="fill:var(--cyan)" opacity="0.5"/>' + lab('气密泄漏（漏气）');
         break;
       case '成型不良':
-        g = mat + '<path d="M20 48 q8 -5 16 0 q8 5 16 0 q8 -5 16 0 q8 5 16 0 q8 -5 16 0 q8 5 16 0 q8 -5 16 0" fill="none" stroke="#ff8a3c" stroke-width="2.6"/>' + lab('成型不良（鱼鳞纹不均）');
+        g = mat + '<path d="M20 48 q8 -5 16 0 q8 5 16 0 q8 -5 16 0 q8 5 16 0 q8 -5 16 0 q8 5 16 0 q8 -5 16 0 q8 5 16 0 q8 -5 16 0" fill="none" stroke="#ff8a3c" stroke-width="2.6"/>' + lab('成型不良（鱼鳞纹不均）');
         break;
       default:
         g = mat + lab(sym);
@@ -8828,7 +8842,7 @@
       const lis = (arr, cls) => '<div class="weldai-block"><div class="weldai-h ' + cls + '">' +
         (cls === 'sol' ? '处理办法' : cls === 'prev' ? '预防措施' : '可能原因') + '</div><ul>' +
         arr.map(x => '<li>' + x + '</li>').join('') + '</ul></div>';
-      const ref = e.ref ? '<div class="weldai-block"><div class="weldai-h prev">工艺依据（文献）</div><ul><li style="color:rgba(157,184,255,0.85);">' + e.ref + '</li></ul></div>' : '';
+      const ref = e.ref ? '<div class="weldai-block"><div class="weldai-h prev">工艺依据（文献）</div><ul><li class="weldai-ref">' + e.ref + '</li></ul></div>' : '';
       return '<div class="weldai-card"><div class="weldai-fig">' + weldAiFig(e.sym) + '</div>' +
         '<div class="weldai-card-title">' + e.sym + '</div>' +
         '<div class="weldai-card-sub">' + sub + '</div>' +
