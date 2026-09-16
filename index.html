@@ -2023,6 +2023,7 @@
   .weldai-h { font-size: 12px; font-weight: 700; color: #ffd27a; margin-bottom: 4px; }
   .weldai-block ul { margin: 0; padding-left: 18px; }
   .weldai-block li { font-size: 12.5px; line-height: 1.75; color: #dbe4ec; }
+  .weldai-fig { margin-bottom: 8px; border-radius: 8px; overflow: hidden; background: rgba(8,16,28,0.35); }
   .weldai-h.sol { color: #7ee0a3; }
   .weldai-h.prev { color: #9db8ff; }
 </style>
@@ -8625,38 +8626,42 @@
     try { drawGasSec2(r); } catch (e) {}
   }
   // ===== AI 焊接诊断 · 动力电池工序异常知识库 =====
-  const WELD_AI_PROCS = ['极耳焊接', '顶盖焊接', '壳体焊接', '防爆阀焊接', '汇流排焊接', '注液口焊接', '通用'];
+  const WELD_AI_PROCS = ['FTT 焊接', '壳盖焊接', '壳体焊接', '防爆阀焊接', '汇流排焊接', '连接片焊接', '注液口焊接', '通用'];
   const WELD_AI_SYMS = ['气孔/针孔', '裂纹', '飞溅', '未熔合/虚焊', '烧穿/焊漏', '焊偏/偏移', '氧化变色', '塌陷/凹陷', '断焊/不连续', '熔深波动', '爆点/炸点', '强度不足', '气密泄漏', '成型不良'];
   const WELD_AI_DATA = [
-    { id: 1, sym: '气孔/针孔', procs: ['极耳焊接', '顶盖焊接', '壳体焊接'], keywords: ['气孔', '针孔', '气泡', '麻点', 'aluminum'],
-      causes: ['铝材氢致气孔：母材/焊丝表面油污、水分、氧化膜未除净，氢溶入熔池凝固时析出', '保护气流量不足（<10 L/min）或过大湍流（>30 L/min）卷吸空气', '焦点/功率密度不当，键孔不稳定，气泡来不及上浮', '焊接速度过快，熔池凝固快，气泡未逸出'],
-      solutions: ['焊前清洗：丙酮/酒精擦洗 + 充分干燥，去除油污与水分', '保护气调至 15-25 L/min（同轴+侧吹组合），检查气路是否泄漏', '调整离焦量（0 至 +2 mm 试焊）与功率密度，或加摆动（螺旋/正弦）搅动熔池促气泡逸出', '适当降低速度或提高峰值功率稳定键孔，控制熔池存在时间'],
-      prevent: ['来料表面状态管控（氧化膜厚度、油污按批次抽检）', '定期检查保护镜片、气路与气体纯度（≥99.99%）', '首件 X-Ray / 金相验证气孔率'] },
-    { id: 2, sym: '气孔/针孔', procs: ['汇流排焊接', '极耳焊接'], keywords: ['铜', '气孔', 'copper'],
+    { id: 1, sym: '气孔/针孔', procs: ['FTT 焊接', '壳盖焊接', '壳体焊接'], keywords: ['气孔', '针孔', '气泡', '麻点', 'aluminum'],
+      causes: ['铝材氢致/冶金型气孔：氧化膜、水汽在高温下分解产生氢气，激光冷却快氢来不及逸出', '脉冲激光热导焊模式下，气孔主要是氧化膜或水汽分解导致的冶金型气孔', '保护气流量不足（<10 L/min）或过大湍流（>30 L/min）卷吸空气', '焦点/功率密度不当，匙孔不稳定，气泡来不及上浮'],
+      solutions: ['焊前清洗：丙酮/酒精擦洗 + 充分干燥，去除油污与水分', '保护气调至 15-25 L/min（同轴+侧吹组合），检查气路泄漏', '文献研究：降低激光功率并提高焊接速度，气孔率最多可降至 1.1% 以下', '环形光斑：环光预热延长熔池存在时间促气体逸出，可显著降低气孔率', '加摆动（螺旋/正弦）搅动熔池，稳定匙孔'],
+      prevent: ['来料表面状态管控（氧化膜厚度、油污按批次抽检）', '定期检查保护镜片、气路与气体纯度（≥99.99%）', '首件 X-Ray / 金相验证气孔率'],
+      ref: '《动力电池激光焊接技术的应用现状与展望》（焊接，2022）：降功率+提速气孔率降至 1.1%；环形光斑+摆动可显著降气孔率' },
+    { id: 2, sym: '气孔/针孔', procs: ['汇流排焊接', 'FTT 焊接', '连接片焊接'], keywords: ['铜', '气孔', 'copper'],
       causes: ['铜对激光高反射、导热快，能量吸收不稳定易飞溅夹杂', '铜表面氧化皮/镀层缺陷残留', '保护气不足或湍流'],
       solutions: ['提高功率密度：缩小光纤芯径或加大准直/聚焦比', '环形光斑内外环配比优化（内芯保证熔深，外环预热）', '焊前去除铜氧化层（酸洗/机械打磨/激光清洗）', '保护气 15-25 L/min，同轴稳定'],
-      prevent: ['铜材批次与表面状态管控', '工艺窗口验证后固化参数'] },
-    { id: 3, sym: '裂纹', procs: ['极耳焊接'], keywords: ['裂纹', '开裂', '铝铜', '异种', 'IMC', '脆'],
-      causes: ['Al-Cu 异种焊接形成脆性金属间化合物（IMC：Al2Cu 等），热裂纹敏感', '热输入过大、冷却过快，焊点应力集中', '焊点几何突变/尖角'],
-      solutions: ['控制热输入（低功率+摆动），减少 IMC 层厚度', '调整光束偏移（偏向铝侧或铜侧）控制熔合比', '焊后缓冷，必要时预热工装', '严重时加镍中间层或选用镀镍铜件'],
-      prevent: ['异种焊接先做金相+拉力工艺验证', '焊点位置一致性管控'] },
-    { id: 4, sym: '裂纹', procs: ['顶盖焊接', '壳体焊接'], keywords: ['裂纹', '开裂', '铝', '热裂纹', '结晶'],
-      causes: ['铝合金热裂纹（结晶裂纹）：合金成分（Cu/Mg 含量）敏感', '热输入过大，熔池凝固收缩应力大', '焊缝深宽比过大（窄而深）易中心线裂纹'],
+      prevent: ['铜材批次与表面状态管控', '工艺窗口验证后固化参数'],
+      ref: '动力电池汇流排焊接研究：叠加热源与光束振荡耦合可抑制飞溅与气孔' },
+    { id: 3, sym: '裂纹', procs: ['FTT 焊接', '连接片焊接'], keywords: ['裂纹', '开裂', '铝铜', '异种', 'IMC', '脆'],
+      causes: ['Al-Cu 异种焊接形成脆性金属间化合物（IMC：Al2Cu、Al4Cu9 等，Al2Cu 为主相），热裂纹敏感', '铝铜熔点差 423℃、热膨胀系数差异大，冷却时产生热应力', '热输入过大、冷却过快，焊点应力集中', '焊接速度过低产生飞溅/熔穿孔洞，过高无法有效连接'],
+      solutions: ['控制热输入（低功率+摆动），减少 IMC 层厚度', '激光摆动（振荡）使 IMC 断续分布，获得延性接头；摆动宽度 0.6-1.0mm 区间验证', '调整光束偏移（偏向铝侧或铜侧）控制熔合比', '红外-蓝光复合激光可显著减少 IMC（蓝光被铜高效吸收）', '严重时加镍中间层或选用镀镍铜件'],
+      prevent: ['异种焊接先做金相+拉力工艺验证', '焊点位置一致性管控'],
+      ref: '铝/铜激光焊接研究：摆动可抑制 IMC 形成与分布，IMC 层减薄 40% 以上、抗拉强度提升 35%' },
+    { id: 4, sym: '裂纹', procs: ['壳盖焊接', '壳体焊接'], keywords: ['裂纹', '开裂', '铝', '热裂纹', '结晶'],
+      causes: ['铝合金热裂纹（结晶裂纹/液化裂纹）：合金成分（Cu/Mg 含量）敏感', '热输入过大，熔池凝固收缩应力大', '焊缝深宽比过大（窄而深）易中心线裂纹'],
       solutions: ['降低热输入 / 适当提高焊接速度', '控制深宽比：调整离焦与摆动宽度', '厚件预热或焊后缓冷', '检查材料牌号（6061 比 3003 更易开裂）'],
       prevent: ['材料牌号与批次管控', '开裂倾向材料先做焊接性试验'] },
     { id: 5, sym: '飞溅', procs: ['通用'], keywords: ['飞溅', '溅', '喷溅', 'spatter'],
-      causes: ['功率密度过高（焦点过近/芯径过小）', '表面油污、水分气化爆喷', '保护气流量过大扰动熔池', '键孔塌陷喷溅'],
-      solutions: ['降低峰值功率 / 增大离焦量', '加摆动（螺旋摆动抑制飞溅效果明显）', '保护气调至 15-25 L/min，避免过大', '焊前清洁工件表面'],
-      prevent: ['首件外观 + 金相检查', '参数窗口受控，禁止超窗口作业'] },
-    { id: 6, sym: '未熔合/虚焊', procs: ['极耳焊接', '顶盖焊接', '汇流排焊接'], keywords: ['未熔合', '虚焊', '假焊', '熔深不足', '熔深不够', '界面'],
+      causes: ['功率密度过高（焦点过近/芯径过小）', '表面油污、水分气化爆喷', '保护气流量过大扰动熔池', '匙孔不稳定、熔池剧烈沸腾，金属蒸汽喷发带出液滴'],
+      solutions: ['降低峰值功率 / 增大离焦量', '环形光斑：调节中心芯光与外围环光能量配比，形成平缓温度梯度减少飞溅', '加摆动/光束振荡（螺旋摆动抑制飞溅效果明显）', '保护气调至 15-25 L/min，避免过大', '焊前清洁工件表面'],
+      prevent: ['首件外观 + 金相检查', '参数窗口受控，禁止超窗口作业'],
+      ref: '动力电池汇流排/铝薄板焊接研究：环形光斑+光束振荡耦合抑制飞溅与气孔' },
+    { id: 6, sym: '未熔合/虚焊', procs: ['FTT 焊接', '壳盖焊接', '汇流排焊接', '连接片焊接'], keywords: ['未熔合', '虚焊', '假焊', '熔深不足', '熔深不够', '界面'],
       causes: ['功率不足或速度过快，热输入不够', '离焦量偏差（实际焦点未落在工件面）', '光束芯径与焊缝宽度不匹配', '铝表面氧化膜阻隔界面熔合', '光学镜片/光纤端面污染导致能量衰减'],
       solutions: ['阶梯试焊：提高功率 / 降低速度至熔深达标', '校准焦点：试焊切片看熔深，重新标定离焦', '环形光斑提高内芯功率占比', '清洁保护镜片，检查光纤端面', '焊后拉剪 / 金相验证'],
       prevent: ['定期标定焦点与功率', '首件破坏检查'] },
-    { id: 7, sym: '烧穿/焊漏', procs: ['壳体焊接', '顶盖焊接', '防爆阀焊接'], keywords: ['烧穿', '焊漏', '击穿', '漏液', '穿孔', 'burn through'],
+    { id: 7, sym: '烧穿/焊漏', procs: ['壳体焊接', '壳盖焊接', '防爆阀焊接'], keywords: ['烧穿', '焊漏', '击穿', '漏液', '穿孔', 'burn through'],
       causes: ['功率过大或速度过慢，热输入过大', '壳体壁厚偏薄（公差下限或来料异常）', '离焦过近，能量密度过高', '装配间隙大，熔池下坠'],
       solutions: ['立即降功率 / 提高速度', '增大离焦（正离焦）降低能量密度', '环形光斑降低内芯功率占比（能量外扩）', '检查壳体壁厚来料，加强定位压紧治具'],
       prevent: ['焊漏为致命缺陷：首件 + 在线监测（功率/高度传感器）', '100% 气密 / 外观检查', '壁厚来料 SPC 管控'] },
-    { id: 8, sym: '焊偏/偏移', procs: ['极耳焊接', '顶盖焊接', '壳体焊接'], keywords: ['焊偏', '偏移', '跑偏', '错位', '对准'],
+    { id: 8, sym: '焊偏/偏移', procs: ['FTT 焊接', '壳盖焊接', '壳体焊接'], keywords: ['焊偏', '偏移', '跑偏', '错位', '对准'],
       causes: ['来料位置公差大', '治具定位精度不足或磨损', '视觉定位示教偏差', '薄件焊接热变形累积'],
       solutions: ['治具校准，检查定位销/压紧', '视觉系统重新示教与补偿', '焊接顺序对称布局减少热变形', '必要时加在线焊缝跟踪（寻缝）'],
       prevent: ['来料尺寸 SPC', '治具定期点检'] },
@@ -8664,7 +8669,7 @@
       causes: ['保护气不足或气路泄漏', '保护气流量过大湍流卷吸空气', '保护范围未覆盖焊缝（起止位置、角度不当）', '高温停留时间长'],
       solutions: ['保护气 15-25 L/min 并确认气路无泄漏', '同轴 + 拖拽侧吹组合覆盖熔池与冷却区', '加后拖保护（焊缝冷却段覆盖）', '降低热输入，减少高温时间'],
       prevent: ['气路流量监测', '焊缝颜色与标准样件比对'] },
-    { id: 10, sym: '塌陷/凹陷', procs: ['顶盖焊接', '壳体焊接'], keywords: ['塌陷', '凹陷', '下陷', '凹', 'sag'],
+    { id: 10, sym: '塌陷/凹陷', procs: ['壳盖焊接', '壳体焊接'], keywords: ['塌陷', '凹陷', '下陷', '凹', 'sag'],
       causes: ['热输入过大，熔池表面张力不足下陷', '装配间隙过大', '背面支撑不足'],
       solutions: ['降低功率 / 提高速度', '调整离焦（负离焦改善熔深、避免表面过熔）', '摆动焊接改善成型', '检查装配间隙与支撑'],
       prevent: ['装配间隙管控', '余高标准检验'] },
@@ -8676,15 +8681,16 @@
       causes: ['材料批次表面状态/合金成分差异', '保护气流量波动', '离焦重复性差（高度传感器）', '激光功率漂移'],
       solutions: ['来料管控（表面状态抽检）', '高度传感器标定，保证离焦一致', '工艺参数取窗口居中值', '定期标定激光功率'],
       prevent: ['SPC 管控', '首件破坏检查频率固定'] },
-    { id: 13, sym: '爆点/炸点', procs: ['通用'], keywords: ['爆点', '炸点', '黑点', '内部飞溅', '飞溅内部', 'explosion'],
-      causes: ['QCW 脉冲峰值功率过高', '焦点在材料内部产生内部气化', '材料污染（油/水）瞬间气化爆喷', '脉宽过短能量骤升'],
-      solutions: ['降低峰值功率 / 调整脉宽（脉宽-峰值匹配）', '焦点移至表面（0 至 +1 mm）', '焊前清洁', '降低重复频率或增大重叠率稳定熔池'],
-      prevent: ['参数验证后固化', '表面清洁抽检'] },
-    { id: 14, sym: '强度不足', procs: ['极耳焊接', '汇流排焊接'], keywords: ['强度', '拉力', '拉剪', '剥离', 'weak', 'strength'],
+    { id: 13, sym: '爆点/炸点', procs: ['FTT 焊接', '连接片焊接'], keywords: ['爆点', '炸点', '黑点', '内部飞溅', '飞溅内部', 'explosion'],
+      causes: ['QCW 脉冲峰值功率过高', '焦点负离焦过深（焦点在材料表面以下），匙孔不稳定、熔池剧烈沸腾，金属蒸汽喷发带出液滴', '材料污染（油/水）瞬间气化爆喷', '脉冲功率陡升陡降加剧温度激变、气泡逸出失控'],
+      solutions: ['降低峰值功率 / 调整脉宽（脉宽-峰值匹配）', '焦点移至表面（0 至 +1 mm），避免负离焦过深', '优化功率渐变曲线（上升沿/下降沿斜率控制），「软起停」脉冲技术可将炸孔率压至 1% 以下', '焊前清洁', '降低重复频率或增大重叠率稳定熔池'],
+      prevent: ['参数验证后固化', '表面清洁抽检'],
+      ref: '中国工控网/贤集网（2026）：爆点主因为功率过高或负离焦过深；功率渐变控制炸孔率可降至 1% 以下，极柱焊接软起停达 0.3%；溅珠掉落电芯表面有短路风险' },
+    { id: 14, sym: '强度不足', procs: ['FTT 焊接', '汇流排焊接', '连接片焊接'], keywords: ['强度', '拉力', '拉剪', '剥离', 'weak', 'strength'],
       causes: ['熔深/熔宽不足，结合面积小', '未熔合界面缺陷', '焊点间距过大（重叠率低）', '异种焊接 IMC 脆性相导致脆断'],
       solutions: ['提高热输入至工艺窗口上沿', '加大熔宽（增大摆动宽度）', '减小焊点间距（提高重叠率）', '异种焊接控制 IMC 厚度（低热输入+摆动）'],
       prevent: ['拉力试验 SPC', '首件金相验证'] },
-    { id: 15, sym: '气密泄漏', procs: ['顶盖焊接', '防爆阀焊接', '壳体焊接'], keywords: ['气密', '泄漏', '漏气', '氦检', 'leak'],
+    { id: 15, sym: '气密泄漏', procs: ['壳盖焊接', '防爆阀焊接', '壳体焊接'], keywords: ['气密', '泄漏', '漏气', '氦检', 'leak'],
       causes: ['焊缝局部不连续或气孔链', '防爆阀薄件焊穿微孔', '虚焊界面微隙'],
       solutions: ['氦检/气密定位泄漏点', '补焊（QCW 低热输入参数）', '调整参数保证焊缝连续性', '防爆阀采用专用低功率参数'],
       prevent: ['100% 气密测试', '焊接参数防错锁定'] },
@@ -8693,6 +8699,87 @@
       solutions: ['点间距 = 焊接速度/频率，控制在 0.1-0.3 mm', '摆动宽度匹配焊缝宽度要求', '按焊缝类型选摆动（正弦/弓字/螺旋）'],
       prevent: ['首件外观标准样件'] }
   ];
+  // 焊接缺陷示意图（SVG，统一 220×96 剖面示意）
+  function weldAiFig(sym) {
+    const base = '<rect x="0" y="0" width="220" height="96" rx="8" fill="rgba(8,16,28,0.55)"/>';
+    const mat = '<rect x="12" y="50" width="196" height="34" rx="4" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>';
+    const lab = (t, x) => '<text x="' + (x || 110) + '" y="26" text-anchor="middle" font-size="11.5" fill="#cfe3f5" font-weight="600">' + t + '</text>';
+    let g = '';
+    switch (sym) {
+      case '气孔/针孔':
+        g = mat + '<ellipse cx="62" cy="50" rx="26" ry="9" fill="#ff5722" opacity="0.92"/>' +
+          '<circle cx="54" cy="60" r="3" fill="#fff" opacity="0.95"/><circle cx="64" cy="56" r="2.4" fill="#fff"/><circle cx="72" cy="62" r="3.2" fill="#fff"/>' +
+          '<path d="M40 50 l18 2" stroke="#ffb59a" stroke-width="1.2"/>' + lab('气孔/针孔（熔池内白色气泡）');
+        break;
+      case '裂纹':
+        g = mat + '<ellipse cx="62" cy="50" rx="26" ry="9" fill="#ff5722" opacity="0.9"/>' +
+          '<path d="M48 50 L54 60 L60 56 L67 68" stroke="#ff3b3b" stroke-width="2" fill="none" stroke-linecap="round"/>' + lab('裂纹（热裂纹/结晶裂纹）');
+        break;
+      case '飞溅':
+        g = mat + '<ellipse cx="62" cy="50" rx="26" ry="9" fill="#ff5722" opacity="0.9"/>' +
+          '<circle cx="34" cy="28" r="2.2" fill="#ff6b4a"/><circle cx="46" cy="18" r="2.8" fill="#ff6b4a"/><circle cx="80" cy="20" r="2.2" fill="#ff6b4a"/><circle cx="94" cy="30" r="2.6" fill="#ff6b4a"/>' +
+          '<path d="M40 46 L36 30 M50 44 L47 20 M74 44 L78 22 M84 46 L90 32" stroke="rgba(255,107,74,0.65)" stroke-width="1.4"/>' + lab('飞溅/喷溅');
+        break;
+      case '未熔合/虚焊':
+        g = '<rect x="12" y="52" width="196" height="20" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+          '<rect x="12" y="72" width="196" height="14" rx="3" fill="rgba(100,115,140,0.55)" stroke="rgba(160,175,200,0.6)"/>' +
+          '<ellipse cx="62" cy="52" rx="26" ry="7" fill="#ff5722" opacity="0.9"/>' +
+          '<line x1="20" y1="72" x2="200" y2="72" stroke="#ff3b3b" stroke-width="2.2" stroke-dasharray="6 3"/>' +
+          '<path d="M30 58 l3 6 M44 56 l3 8" stroke="#fff" stroke-width="1.2" opacity="0.7"/>' + lab('未熔合（界面缝隙）');
+        break;
+      case '烧穿/焊漏':
+        g = '<rect x="12" y="50" width="196" height="20" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+          '<circle cx="62" cy="60" r="7" fill="#1b0a05" stroke="#ff3b3b" stroke-width="2.2"/>' +
+          '<path d="M62 67 q2 8 0 14" stroke="#ff3b3b" stroke-width="2" fill="none"/><circle cx="62" cy="84" r="3.4" fill="#ff6b4a"/>' + lab('烧穿/焊漏（击穿）');
+        break;
+      case '焊偏/偏移':
+        g = mat + '<line x1="110" y1="44" x2="110" y2="86" stroke="rgba(255,255,255,0.55)" stroke-width="1.4" stroke-dasharray="4 3"/>' +
+          '<rect x="92" y="46" width="16" height="34" rx="3" fill="#ff8a3c" opacity="0.92"/>' +
+          '<line x1="110" y1="54" x2="100" y2="54" stroke="#ffd27a" stroke-width="1.4"/><text x="118" y="57" font-size="9.5" fill="#ffd27a">偏</text>' + lab('焊偏/偏移');
+        break;
+      case '氧化变色':
+        g = mat + '<rect x="30" y="46" width="120" height="6" rx="3" fill="#3a2a5a" stroke="#7a5ac0"/>' +
+          '<rect x="30" y="50" width="120" height="3" fill="#1c2340"/>' + lab('氧化变色（发黑/发蓝）');
+        break;
+      case '塌陷/凹陷':
+        g = mat + '<path d="M30 50 q32 16 62 2 q30 -14 62 -2" fill="none" stroke="#ff8a3c" stroke-width="3"/>' +
+          '<path d="M30 50 q32 16 62 2" stroke="#ffb59a" stroke-width="1" fill="none" stroke-dasharray="3 2"/>' + lab('塌陷/凹陷');
+        break;
+      case '断焊/不连续':
+        g = mat + '<rect x="24" y="47" width="52" height="6" rx="3" fill="#ff8a3c"/>' +
+          '<rect x="88" y="47" width="36" height="6" rx="3" fill="#5a6a80" opacity="0.5"/>' +
+          '<rect x="136" y="47" width="52" height="6" rx="3" fill="#ff8a3c"/>' + lab('断焊/不连续');
+        break;
+      case '熔深波动':
+        g = mat + '<ellipse cx="62" cy="50" rx="24" ry="10" fill="#ff5722" opacity="0.9"/>' +
+          '<ellipse cx="158" cy="50" rx="24" ry="5" fill="#ff8a3c" opacity="0.85"/>' +
+          '<text x="62" y="78" text-anchor="middle" font-size="9" fill="#ffd0bd">深</text><text x="158" y="78" text-anchor="middle" font-size="9" fill="#ffd0bd">浅</text>' + lab('熔深波动（深浅不一）');
+        break;
+      case '爆点/炸点':
+        g = mat + '<ellipse cx="62" cy="50" rx="26" ry="9" fill="#ff5722" opacity="0.9"/>' +
+          '<circle cx="62" cy="62" r="4.5" fill="#111" stroke="#ff3b3b" stroke-width="1.6"/>' +
+          '<path d="M66 42 l4 -8 M58 42 l-4 -8 M62 40 l0 -9" stroke="#ffd27a" stroke-width="1.6"/>' +
+          '<circle cx="70" cy="32" r="2" fill="#ffd27a"/><circle cx="54" cy="30" r="2" fill="#ffd27a"/>' + lab('爆点/炸点（内部气化爆喷）');
+        break;
+      case '强度不足':
+        g = '<rect x="20" y="28" width="76" height="16" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+          '<rect x="124" y="52" width="76" height="16" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+          '<path d="M96 30 L104 42 L96 54 L104 66" stroke="#ff3b3b" stroke-width="2.2" fill="none"/>' +
+          '<text x="118" y="88" text-anchor="middle" font-size="10" fill="#ff9d9d">断裂</text>' + lab('强度不足（拉断）');
+        break;
+      case '气密泄漏':
+        g = '<rect x="12" y="50" width="196" height="16" rx="3" fill="rgba(120,135,160,0.5)" stroke="rgba(160,175,200,0.6)"/>' +
+          '<rect x="40" y="48" width="76" height="4" rx="2" fill="#ff8a3c"/>' +
+          '<circle cx="70" cy="72" r="2.6" fill="#9adcff" opacity="0.9"/><circle cx="64" cy="79" r="2" fill="#9adcff" opacity="0.7"/><circle cx="58" cy="85" r="1.6" fill="#9adcff" opacity="0.5"/>' + lab('气密泄漏（漏气）');
+        break;
+      case '成型不良':
+        g = mat + '<path d="M20 48 q8 -5 16 0 q8 5 16 0 q8 -5 16 0 q8 5 16 0 q8 -5 16 0 q8 5 16 0 q8 -5 16 0" fill="none" stroke="#ff8a3c" stroke-width="2.6"/>' + lab('成型不良（鱼鳞纹不均）');
+        break;
+      default:
+        g = mat + lab(sym);
+    }
+    return '<svg viewBox="0 0 220 96" width="100%" style="display:block;border-radius:8px;">' + base + g + '</svg>';
+  }
   let weldAiState = { proc: '', sym: '', q: '' };
   function weldAiChips(elId, items, key, onChange) {
     const el = $(elId);
@@ -8741,9 +8828,11 @@
       const lis = (arr, cls) => '<div class="weldai-block"><div class="weldai-h ' + cls + '">' +
         (cls === 'sol' ? '处理办法' : cls === 'prev' ? '预防措施' : '可能原因') + '</div><ul>' +
         arr.map(x => '<li>' + x + '</li>').join('') + '</ul></div>';
-      return '<div class="weldai-card"><div class="weldai-card-title">' + e.sym + '</div>' +
+      const ref = e.ref ? '<div class="weldai-block"><div class="weldai-h prev">工艺依据（文献）</div><ul><li style="color:rgba(157,184,255,0.85);">' + e.ref + '</li></ul></div>' : '';
+      return '<div class="weldai-card"><div class="weldai-fig">' + weldAiFig(e.sym) + '</div>' +
+        '<div class="weldai-card-title">' + e.sym + '</div>' +
         '<div class="weldai-card-sub">' + sub + '</div>' +
-        lis(e.causes, 'cause') + lis(e.solutions, 'sol') + lis(e.prevent, 'prev') + '</div>';
+        lis(e.causes, 'cause') + lis(e.solutions, 'sol') + lis(e.prevent, 'prev') + ref + '</div>';
     }).join('');
   }
   function initWeldAi() {
