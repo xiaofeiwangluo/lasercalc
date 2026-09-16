@@ -1992,6 +1992,39 @@
     .doe-plot-row { gap: 12px; }
     .doe-plot-box .tp-canvas-wrap { min-height: 240px; }
   }
+  /* ===== AI 焊接诊断（动力电池工序异常） ===== */
+  .weldai-search input {
+    width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.16); background: rgba(0,0,0,0.28); color: #e6edf3;
+    font-size: 13px; outline: none; margin-bottom: 4px;
+  }
+  .weldai-search input:focus { border-color: rgba(64,158,255,0.6); }
+  .weldai-section { margin-top: 10px; }
+  .weldai-label { font-size: 12px; color: rgba(230,237,243,0.72); margin-bottom: 6px; letter-spacing: 1px; }
+  .weldai-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .weldai-chip {
+    padding: 6px 12px; border-radius: 16px; font-size: 12.5px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.18); color: #d8e1ea; background: rgba(255,255,255,0.05);
+    transition: all .15s; user-select: none;
+  }
+  .weldai-chip:hover { border-color: rgba(64,158,255,0.55); color: #fff; }
+  .weldai-chip.on {
+    background: linear-gradient(135deg, rgba(64,158,255,0.85), rgba(0,168,255,0.75));
+    border-color: rgba(64,158,255,0.9); color: #fff; font-weight: 600;
+  }
+  .weldai-tip { margin-top: 12px; font-size: 12.5px; color: rgba(230,237,243,0.55); }
+  .weldai-card {
+    margin-top: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+    background: rgba(255,255,255,0.045); padding: 13px 15px;
+  }
+  .weldai-card-title { font-size: 14px; font-weight: 700; color: #5ec8ff; margin-bottom: 4px; }
+  .weldai-card-sub { font-size: 11.5px; color: rgba(230,237,243,0.55); margin-bottom: 8px; }
+  .weldai-block { margin-top: 8px; }
+  .weldai-h { font-size: 12px; font-weight: 700; color: #ffd27a; margin-bottom: 4px; }
+  .weldai-block ul { margin: 0; padding-left: 18px; }
+  .weldai-block li { font-size: 12.5px; line-height: 1.75; color: #dbe4ec; }
+  .weldai-h.sol { color: #7ee0a3; }
+  .weldai-h.prev { color: #9db8ff; }
 </style>
 </head>
 <body>
@@ -3179,6 +3212,7 @@
           <option value="doe">DOE 试验设计 · 数据分析与报告</option>
           <option value="window">工艺窗口对比 · 光学配置</option>
           <option value="gas">同轴吹保护气 · 氮气保护仿真</option>
+          <option value="weldai">AI 焊接诊断 · 动力电池工序异常</option>
         </select>
       </div>
 
@@ -3862,6 +3896,29 @@
             <div class="wd-item2"><span class="wd2-label">保护区域偏移 Δx</span><span class="wd2-value" id="gasDx">0 mm</span></div>
             <div class="wd-item2"><span class="wd2-label">熔池半径参考</span><span class="wd2-value" id="gasPool">1.20 mm</span></div>
           </div>
+        </div>
+      </div>
+
+      <!-- 工具I：AI 焊接诊断 · 动力电池工序异常 -->
+      <div class="tool-panel" id="tool-weldai">
+        <div class="card">
+          <div class="card-title">AI 焊接诊断 · 动力电池工序异常处理</div>
+          <div class="hint" style="margin-bottom:12px;">
+            覆盖极耳 / 顶盖 / 壳体 / 防爆阀 / 汇流排等动力电池激光焊接工序。选择工序与异常现象（或直接输入关键词），给出可能原因、处理办法与预防措施。
+          </div>
+          <div class="weldai-search">
+            <input type="text" id="weldAiSearch" placeholder="输入关键词检索，如：气孔 / 飞溅 / 焊漏 / 虚焊 / 氧化" />
+          </div>
+          <div class="weldai-section">
+            <div class="weldai-label">焊接工序</div>
+            <div class="weldai-chips" id="weldAiProc"></div>
+          </div>
+          <div class="weldai-section">
+            <div class="weldai-label">异常现象</div>
+            <div class="weldai-chips" id="weldAiSym"></div>
+          </div>
+          <div class="weldai-tip" id="weldAiTip">点击上方工序 / 现象，或输入关键词，查看诊断建议。</div>
+          <div id="weldAiResult"></div>
         </div>
       </div>
     </section>
@@ -8567,6 +8624,139 @@
     try { drawGasSec(r); } catch (e) {}
     try { drawGasSec2(r); } catch (e) {}
   }
+  // ===== AI 焊接诊断 · 动力电池工序异常知识库 =====
+  const WELD_AI_PROCS = ['极耳焊接', '顶盖焊接', '壳体焊接', '防爆阀焊接', '汇流排焊接', '注液口焊接', '通用'];
+  const WELD_AI_SYMS = ['气孔/针孔', '裂纹', '飞溅', '未熔合/虚焊', '烧穿/焊漏', '焊偏/偏移', '氧化变色', '塌陷/凹陷', '断焊/不连续', '熔深波动', '爆点/炸点', '强度不足', '气密泄漏', '成型不良'];
+  const WELD_AI_DATA = [
+    { id: 1, sym: '气孔/针孔', procs: ['极耳焊接', '顶盖焊接', '壳体焊接'], keywords: ['气孔', '针孔', '气泡', '麻点', 'aluminum'],
+      causes: ['铝材氢致气孔：母材/焊丝表面油污、水分、氧化膜未除净，氢溶入熔池凝固时析出', '保护气流量不足（<10 L/min）或过大湍流（>30 L/min）卷吸空气', '焦点/功率密度不当，键孔不稳定，气泡来不及上浮', '焊接速度过快，熔池凝固快，气泡未逸出'],
+      solutions: ['焊前清洗：丙酮/酒精擦洗 + 充分干燥，去除油污与水分', '保护气调至 15-25 L/min（同轴+侧吹组合），检查气路是否泄漏', '调整离焦量（0 至 +2 mm 试焊）与功率密度，或加摆动（螺旋/正弦）搅动熔池促气泡逸出', '适当降低速度或提高峰值功率稳定键孔，控制熔池存在时间'],
+      prevent: ['来料表面状态管控（氧化膜厚度、油污按批次抽检）', '定期检查保护镜片、气路与气体纯度（≥99.99%）', '首件 X-Ray / 金相验证气孔率'] },
+    { id: 2, sym: '气孔/针孔', procs: ['汇流排焊接', '极耳焊接'], keywords: ['铜', '气孔', 'copper'],
+      causes: ['铜对激光高反射、导热快，能量吸收不稳定易飞溅夹杂', '铜表面氧化皮/镀层缺陷残留', '保护气不足或湍流'],
+      solutions: ['提高功率密度：缩小光纤芯径或加大准直/聚焦比', '环形光斑内外环配比优化（内芯保证熔深，外环预热）', '焊前去除铜氧化层（酸洗/机械打磨/激光清洗）', '保护气 15-25 L/min，同轴稳定'],
+      prevent: ['铜材批次与表面状态管控', '工艺窗口验证后固化参数'] },
+    { id: 3, sym: '裂纹', procs: ['极耳焊接'], keywords: ['裂纹', '开裂', '铝铜', '异种', 'IMC', '脆'],
+      causes: ['Al-Cu 异种焊接形成脆性金属间化合物（IMC：Al2Cu 等），热裂纹敏感', '热输入过大、冷却过快，焊点应力集中', '焊点几何突变/尖角'],
+      solutions: ['控制热输入（低功率+摆动），减少 IMC 层厚度', '调整光束偏移（偏向铝侧或铜侧）控制熔合比', '焊后缓冷，必要时预热工装', '严重时加镍中间层或选用镀镍铜件'],
+      prevent: ['异种焊接先做金相+拉力工艺验证', '焊点位置一致性管控'] },
+    { id: 4, sym: '裂纹', procs: ['顶盖焊接', '壳体焊接'], keywords: ['裂纹', '开裂', '铝', '热裂纹', '结晶'],
+      causes: ['铝合金热裂纹（结晶裂纹）：合金成分（Cu/Mg 含量）敏感', '热输入过大，熔池凝固收缩应力大', '焊缝深宽比过大（窄而深）易中心线裂纹'],
+      solutions: ['降低热输入 / 适当提高焊接速度', '控制深宽比：调整离焦与摆动宽度', '厚件预热或焊后缓冷', '检查材料牌号（6061 比 3003 更易开裂）'],
+      prevent: ['材料牌号与批次管控', '开裂倾向材料先做焊接性试验'] },
+    { id: 5, sym: '飞溅', procs: ['通用'], keywords: ['飞溅', '溅', '喷溅', 'spatter'],
+      causes: ['功率密度过高（焦点过近/芯径过小）', '表面油污、水分气化爆喷', '保护气流量过大扰动熔池', '键孔塌陷喷溅'],
+      solutions: ['降低峰值功率 / 增大离焦量', '加摆动（螺旋摆动抑制飞溅效果明显）', '保护气调至 15-25 L/min，避免过大', '焊前清洁工件表面'],
+      prevent: ['首件外观 + 金相检查', '参数窗口受控，禁止超窗口作业'] },
+    { id: 6, sym: '未熔合/虚焊', procs: ['极耳焊接', '顶盖焊接', '汇流排焊接'], keywords: ['未熔合', '虚焊', '假焊', '熔深不足', '熔深不够', '界面'],
+      causes: ['功率不足或速度过快，热输入不够', '离焦量偏差（实际焦点未落在工件面）', '光束芯径与焊缝宽度不匹配', '铝表面氧化膜阻隔界面熔合', '光学镜片/光纤端面污染导致能量衰减'],
+      solutions: ['阶梯试焊：提高功率 / 降低速度至熔深达标', '校准焦点：试焊切片看熔深，重新标定离焦', '环形光斑提高内芯功率占比', '清洁保护镜片，检查光纤端面', '焊后拉剪 / 金相验证'],
+      prevent: ['定期标定焦点与功率', '首件破坏检查'] },
+    { id: 7, sym: '烧穿/焊漏', procs: ['壳体焊接', '顶盖焊接', '防爆阀焊接'], keywords: ['烧穿', '焊漏', '击穿', '漏液', '穿孔', 'burn through'],
+      causes: ['功率过大或速度过慢，热输入过大', '壳体壁厚偏薄（公差下限或来料异常）', '离焦过近，能量密度过高', '装配间隙大，熔池下坠'],
+      solutions: ['立即降功率 / 提高速度', '增大离焦（正离焦）降低能量密度', '环形光斑降低内芯功率占比（能量外扩）', '检查壳体壁厚来料，加强定位压紧治具'],
+      prevent: ['焊漏为致命缺陷：首件 + 在线监测（功率/高度传感器）', '100% 气密 / 外观检查', '壁厚来料 SPC 管控'] },
+    { id: 8, sym: '焊偏/偏移', procs: ['极耳焊接', '顶盖焊接', '壳体焊接'], keywords: ['焊偏', '偏移', '跑偏', '错位', '对准'],
+      causes: ['来料位置公差大', '治具定位精度不足或磨损', '视觉定位示教偏差', '薄件焊接热变形累积'],
+      solutions: ['治具校准，检查定位销/压紧', '视觉系统重新示教与补偿', '焊接顺序对称布局减少热变形', '必要时加在线焊缝跟踪（寻缝）'],
+      prevent: ['来料尺寸 SPC', '治具定期点检'] },
+    { id: 9, sym: '氧化变色', procs: ['通用'], keywords: ['氧化', '变色', '发黑', '发蓝', '发黄', '发白', 'oxidation'],
+      causes: ['保护气不足或气路泄漏', '保护气流量过大湍流卷吸空气', '保护范围未覆盖焊缝（起止位置、角度不当）', '高温停留时间长'],
+      solutions: ['保护气 15-25 L/min 并确认气路无泄漏', '同轴 + 拖拽侧吹组合覆盖熔池与冷却区', '加后拖保护（焊缝冷却段覆盖）', '降低热输入，减少高温时间'],
+      prevent: ['气路流量监测', '焊缝颜色与标准样件比对'] },
+    { id: 10, sym: '塌陷/凹陷', procs: ['顶盖焊接', '壳体焊接'], keywords: ['塌陷', '凹陷', '下陷', '凹', 'sag'],
+      causes: ['热输入过大，熔池表面张力不足下陷', '装配间隙过大', '背面支撑不足'],
+      solutions: ['降低功率 / 提高速度', '调整离焦（负离焦改善熔深、避免表面过熔）', '摆动焊接改善成型', '检查装配间隙与支撑'],
+      prevent: ['装配间隙管控', '余高标准检验'] },
+    { id: 11, sym: '断焊/不连续', procs: ['通用'], keywords: ['断焊', '不连续', '断续', '断点', '中断'],
+      causes: ['激光器功率波动（电网/老化）', '运动机构速度波动或程序问题', '保护镜片污染导致局部能量衰减', '光纤端面损伤'],
+      solutions: ['检查激光器功率稳定性（监控曲线）', '检查运动轴速度与加工程序', '清洁/更换保护镜片', '检查 QBH 光纤端面'],
+      prevent: ['功率在线监测', '镜片定期更换周期'] },
+    { id: 12, sym: '熔深波动', procs: ['通用'], keywords: ['熔深波动', '波动', '不稳定', '深浅不一'],
+      causes: ['材料批次表面状态/合金成分差异', '保护气流量波动', '离焦重复性差（高度传感器）', '激光功率漂移'],
+      solutions: ['来料管控（表面状态抽检）', '高度传感器标定，保证离焦一致', '工艺参数取窗口居中值', '定期标定激光功率'],
+      prevent: ['SPC 管控', '首件破坏检查频率固定'] },
+    { id: 13, sym: '爆点/炸点', procs: ['通用'], keywords: ['爆点', '炸点', '黑点', '内部飞溅', '飞溅内部', 'explosion'],
+      causes: ['QCW 脉冲峰值功率过高', '焦点在材料内部产生内部气化', '材料污染（油/水）瞬间气化爆喷', '脉宽过短能量骤升'],
+      solutions: ['降低峰值功率 / 调整脉宽（脉宽-峰值匹配）', '焦点移至表面（0 至 +1 mm）', '焊前清洁', '降低重复频率或增大重叠率稳定熔池'],
+      prevent: ['参数验证后固化', '表面清洁抽检'] },
+    { id: 14, sym: '强度不足', procs: ['极耳焊接', '汇流排焊接'], keywords: ['强度', '拉力', '拉剪', '剥离', 'weak', 'strength'],
+      causes: ['熔深/熔宽不足，结合面积小', '未熔合界面缺陷', '焊点间距过大（重叠率低）', '异种焊接 IMC 脆性相导致脆断'],
+      solutions: ['提高热输入至工艺窗口上沿', '加大熔宽（增大摆动宽度）', '减小焊点间距（提高重叠率）', '异种焊接控制 IMC 厚度（低热输入+摆动）'],
+      prevent: ['拉力试验 SPC', '首件金相验证'] },
+    { id: 15, sym: '气密泄漏', procs: ['顶盖焊接', '防爆阀焊接', '壳体焊接'], keywords: ['气密', '泄漏', '漏气', '氦检', 'leak'],
+      causes: ['焊缝局部不连续或气孔链', '防爆阀薄件焊穿微孔', '虚焊界面微隙'],
+      solutions: ['氦检/气密定位泄漏点', '补焊（QCW 低热输入参数）', '调整参数保证焊缝连续性', '防爆阀采用专用低功率参数'],
+      prevent: ['100% 气密测试', '焊接参数防错锁定'] },
+    { id: 16, sym: '成型不良', procs: ['通用'], keywords: ['成型', '鱼鳞纹', '纹路', '粗糙', '美观'],
+      causes: ['摆动频率与焊接速度不匹配（点间距过大）', '摆动宽度与焊缝要求不匹配', '焊接速度过快'],
+      solutions: ['点间距 = 焊接速度/频率，控制在 0.1-0.3 mm', '摆动宽度匹配焊缝宽度要求', '按焊缝类型选摆动（正弦/弓字/螺旋）'],
+      prevent: ['首件外观标准样件'] }
+  ];
+  let weldAiState = { proc: '', sym: '', q: '' };
+  function weldAiChips(elId, items, key, onChange) {
+    const el = $(elId);
+    if (!el) return;
+    el.innerHTML = '<span class="weldai-chip' + (weldAiState[key] === '' ? ' on' : '') + '" data-v="">全部</span>' +
+      items.map(v => '<span class="weldai-chip' + (weldAiState[key] === v ? ' on' : '') + '" data-v="' + v + '">' + v + '</span>').join('');
+    el.querySelectorAll('.weldai-chip').forEach(c => {
+      c.addEventListener('click', () => {
+        const v = c.getAttribute('data-v');
+        weldAiState[key] = (weldAiState[key] === v ? '' : v);
+        onChange();
+      });
+    });
+  }
+  function renderWeldAiResult() {
+    const res = $('weldAiResult'), tip = $('weldAiTip');
+    if (!res) return;
+    let list;
+    if (weldAiState.q) {
+      // 搜索模式：忽略工序/现象过滤，全文检索
+      const q = weldAiState.q.toLowerCase();
+      list = WELD_AI_DATA.filter(e => {
+        const hay = (e.sym + ' ' + e.keywords.join(' ') + ' ' + e.causes.join(' ') + ' ' + e.solutions.join(' ')).toLowerCase();
+        return hay.includes(q);
+      });
+    } else {
+      list = WELD_AI_DATA.filter(e => {
+        if (weldAiState.proc && !e.procs.includes(weldAiState.proc) && !e.procs.includes('通用')) return false;
+        if (weldAiState.sym && e.sym !== weldAiState.sym) return false;
+        return true;
+      });
+    }
+    if (!weldAiState.proc && !weldAiState.sym && !weldAiState.q) {
+      tip.textContent = '点击上方工序 / 现象，或输入关键词，查看诊断建议。';
+      res.innerHTML = '';
+      return;
+    }
+    if (!list.length) {
+      tip.textContent = '未找到匹配项，请更换工序 / 现象或关键词。';
+      res.innerHTML = '';
+      return;
+    }
+    tip.textContent = '共 ' + list.length + ' 条诊断建议（工艺参数仅供参考，请以现场首件验证为准）：';
+    res.innerHTML = list.map(e => {
+      const sub = '适用工序：' + (e.procs.join(' / '));
+      const lis = (arr, cls) => '<div class="weldai-block"><div class="weldai-h ' + cls + '">' +
+        (cls === 'sol' ? '处理办法' : cls === 'prev' ? '预防措施' : '可能原因') + '</div><ul>' +
+        arr.map(x => '<li>' + x + '</li>').join('') + '</ul></div>';
+      return '<div class="weldai-card"><div class="weldai-card-title">' + e.sym + '</div>' +
+        '<div class="weldai-card-sub">' + sub + '</div>' +
+        lis(e.causes, 'cause') + lis(e.solutions, 'sol') + lis(e.prevent, 'prev') + '</div>';
+    }).join('');
+  }
+  function initWeldAi() {
+    weldAiChips('weldAiProc', WELD_AI_PROCS, 'proc', () => { weldAiChips('weldAiProc', WELD_AI_PROCS, 'proc', rerenderWeldAi); weldAiChips('weldAiSym', WELD_AI_SYMS, 'sym', rerenderWeldAi); rerenderWeldAi(); });
+    weldAiChips('weldAiSym', WELD_AI_SYMS, 'sym', () => { weldAiChips('weldAiProc', WELD_AI_PROCS, 'proc', rerenderWeldAi); weldAiChips('weldAiSym', WELD_AI_SYMS, 'sym', rerenderWeldAi); rerenderWeldAi(); });
+    const s = $('weldAiSearch');
+    if (s && !s._bound) {
+      s._bound = true;
+      s.addEventListener('input', () => { weldAiState.q = s.value.trim(); renderWeldAiResult(); });
+    }
+    renderWeldAiResult();
+  }
+  function rerenderWeldAi() { renderWeldAiResult(); }
   let gasSecState = { w: 0, h: 0 };
   function resizeGasSecCanvas() {
     const cv = $('gasSecCanvas');
@@ -9158,11 +9348,12 @@
   })();
 
   function switchTool(name) {
-    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe', 'tool-window', 'tool-gas'].forEach(id => {
+    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe', 'tool-window', 'tool-gas', 'tool-weldai'].forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('active', id === 'tool-' + name);
     });
     if (name === 'gas') { resizeGasCanvas(); startGasSim(); } else { stopGasSim(); }
+    if (name === 'weldai') { initWeldAi(); }
     if (name === 'focus') { resizeTpCanvas(); drawTpFit(); }
     if (name === 'accel') { resizeAccCanvas(); calcAccel(); }
     if (name === 'spacing') { resizeSpCanvas(); calcSpacing(); }
