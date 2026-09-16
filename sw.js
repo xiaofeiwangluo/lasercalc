@@ -1,5 +1,5 @@
 ﻿// Service Worker - 绂荤嚎缂撳瓨
-const CACHE_NAME = 'fiber-laser-calc-v107';
+const CACHE_NAME = 'fiber-laser-calc-v108';
 const ASSETS = [
   './',
   './index.html',
