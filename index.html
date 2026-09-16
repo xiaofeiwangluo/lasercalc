@@ -2039,6 +2039,48 @@
   .weldai-h.prev { color: var(--info); }
   .weldai-fig { margin-bottom: 8px; border-radius: 8px; overflow: hidden; background: var(--wfig-bg); }
   .weldai-h.prev { color: #9db8ff; }
+
+  /* ===== 激光器异常处理 lf ===== */
+  .lf-search input {
+    width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--card-2); color: var(--text);
+    font-size: 13.5px; outline: none;
+  }
+  .lf-search input:focus { border-color: var(--cyan); }
+  .lf-search input::placeholder { color: var(--text-3); }
+  .lf-section { margin-top: 10px; }
+  .lf-label { font-size: 12px; color: var(--text-3); margin-bottom: 6px; letter-spacing: 1px; }
+  .lf-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .lf-chip {
+    padding: 5px 12px; border-radius: 999px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border); color: var(--text-2); background: transparent;
+    transition: all .15s; user-select: none;
+  }
+  .lf-chip:hover { border-color: var(--cyan); color: var(--text); }
+  .lf-chip.on { background: var(--cyan); border-color: var(--cyan); color: #06121f; font-weight: 700; }
+  .lf-tip { margin-top: 12px; font-size: 12.5px; color: var(--text-3); }
+  .lf-card {
+    margin-top: 12px; border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; background: var(--card); position: relative;
+  }
+  .lf-card-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .lf-brand {
+    font-size: 11px; font-weight: 700; color: #06121f; background: var(--cyan);
+    padding: 2px 9px; border-radius: 999px; letter-spacing: .5px;
+  }
+  .lf-codes {
+    font-size: 11px; font-weight: 700; color: var(--warn);
+    border: 1px solid var(--warn); padding: 1px 8px; border-radius: 6px;
+  }
+  .lf-card-title { font-size: 14px; font-weight: 700; color: var(--cyan); margin-bottom: 8px; }
+  .lf-block { margin-top: 8px; }
+  .lf-h { font-size: 12px; font-weight: 700; color: var(--warn); margin-bottom: 4px; }
+  .lf-h.sol { color: var(--ok); }
+  .lf-h.prev { color: var(--info); }
+  .lf-block ul { margin: 0; padding-left: 18px; }
+  .lf-block li { font-size: 12.5px; line-height: 1.75; color: var(--text-2); }
+  .lf-sym { font-size: 12.5px; line-height: 1.7; color: var(--text-2); }
+  .lf-ref { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 11.5px; color: var(--info); }
 </style>
 </head>
 <body>
@@ -3227,6 +3269,7 @@
           <option value="window">工艺窗口对比 · 光学配置</option>
           <option value="gas">同轴吹保护气 · 氮气保护仿真</option>
           <option value="weldai">AI 焊接诊断 · 动力电池工序异常</option>
+          <option value="laserfault">激光器异常处理 · 厂商速查</option>
         </select>
       </div>
 
@@ -3933,6 +3976,27 @@
           </div>
           <div class="weldai-tip" id="weldAiTip">点击上方工序 / 现象，或输入关键词，查看诊断建议。</div>
           <div id="weldAiResult"></div>
+        </div>
+      </div>
+      <div class="tool-panel" id="tool-laserfault">
+        <div class="card">
+          <div class="card-title">激光器异常处理 · 主流厂商速查</div>
+          <div class="hint" style="margin-bottom:12px;">
+            覆盖通快（TRUMPF）/ IPG / 创鑫（MAX）/ 大族光子 / 杰普特（JPT）/ 吉祥云 / 光大激光等主流激光器厂商的常见异常与处理方法。选择厂商与故障类别（或直接输入关键词，如报警代码 E010、回光、不出光），给出可能原因、处理办法与预防措施。内容整理自厂商官网、使用手册与行业维修资料，具体请以厂商手册与售后为准。
+          </div>
+          <div class="lf-search">
+            <input type="text" id="lfSearch" placeholder="输入关键词检索，如：E010 / 回光 / 不出光 / 泵源 / QBH" />
+          </div>
+          <div class="lf-section">
+            <div class="lf-label">厂商</div>
+            <div class="lf-chips" id="lfBrand"></div>
+          </div>
+          <div class="lf-section">
+            <div class="lf-label">故障类别</div>
+            <div class="lf-chips" id="lfCat"></div>
+          </div>
+          <div class="lf-tip" id="lfTip">点击上方厂商 / 故障类别，或输入关键词，查看异常处理方法。</div>
+          <div id="lfResult"></div>
         </div>
       </div>
     </section>
@@ -8639,6 +8703,64 @@
     try { drawGasSec2(r); } catch (e) {}
   }
   // ===== AI 焊接诊断 · 动力电池工序异常知识库 =====
+
+  // ===== 激光器异常处理 lf =====
+  const LF_BRANDS = ["通快", "IPG", "创鑫", "大族光子", "杰普特", "吉祥云", "光大激光"];
+  const LF_FAULTS = ["全部", "不出光/无输出", "功率异常/衰减", "温度/冷却报警", "报警代码", "回光/光学", "通信/控制", "安装/安全"];
+  const LF_DATA = [{"brand": "通快", "cat": "报警代码", "name": "E010 温度过高报警", "codes": "E010", "sym": "腔内温度超限，激光器停机保护。", "causes": ["散热器堵塞或损坏", "环境温度过高"], "sols": ["检查散热器是否有堵塞或损坏，清理并排除故障", "改善机台散热环境后重新启动设备"], "prev": ["定期清理散热风道与滤网", "监控车间环境温度"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "报警代码", "name": "电源类报警 E020-E060", "codes": "E020/E030/E040/E050/E060", "sym": "加速电压过低、电流过大、电压过大、充电器故障、电压过低等电源类报警。", "causes": ["加速电压、电流、电压超出设定范围", "充电器或电源模块故障"], "sols": ["逐项检查电压电流是否处于正常范围", "必要时维修或更换对应模块"], "prev": ["定期检查电源接线与稳压", "使用稳压电源"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "报警代码", "name": "传感器 / 充电故障 E080-E090", "codes": "E080/E090", "sym": "温度传感器读取异常或充电系统故障。", "causes": ["温度传感器损坏", "充电系统异常"], "sols": ["检查温度传感器是否正常，异常则更换", "检查充电系统，必要时维修更换"], "prev": ["按计划点检传感器"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "报警代码", "name": "镜头机构报警 E100-E230", "codes": "E100/E110/E120/E200/E220/E230", "sym": "镜头控制器、放大器、旋转、标定、移动、焦距相关报警。", "causes": ["镜头控制器故障", "镜头放大器故障", "镜头旋转机构异常", "镜头标定系统异常"], "sols": ["检查对应镜头机构与标定系统", "必要时更换损坏部件"], "prev": ["定期执行镜头标定维护"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "不出光/无输出", "name": "不出光 + 压力低报警", "codes": "", "sym": "激光发射口无光束，控制面板显示压力低报警。", "causes": ["气源不足或气管弯曲、堵塞", "光路异物阻挡或光学元件老化", "激光模块（激光管）故障", "控制系统异常或传感器失灵"], "sols": ["检查气瓶与气管，必要时替换气源", "清洁光学元件，检查镜片光纤无异物", "用专业设备测量激光模块参数，异常则更换", "更新或重启控制软件，检查电气连接"], "prev": ["定期检查气源与管路", "定期清洁光路", "控制软件及时升级"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "报警代码", "name": "高压报警", "codes": "", "sym": "电路呈高压、强电流状态，触发高压报警。", "causes": ["电源线路短路、接触不良或电压不稳", "冷却水未开、流量过小或冷凝器积垢", "内部光路污染（积尘、镜头污染）", "环境温度湿度不达标"], "sols": ["检查电源线路与输出电压，必要时更换电缆", "确认冷却水流量水温，清洗冷凝器铜管", "用光路清洗液清理内部光路污染", "调整环境温湿度"], "prev": ["定期清洗冷凝器", "定期检查线路与冷却系统"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "功率异常/衰减", "name": "功率不稳定", "codes": "", "sym": "输出功率波动、不稳定。", "causes": ["电源不稳定，电压电流超范围", "工作模式设置不当", "内部控制板或连接线接触不良、老化"], "sols": ["确认电压电流在允许范围", "切换不同工作模式观察功率输出", "检查内部控制板与连接线，必要时更换"], "prev": ["使用稳压电源", "定期点检控制板"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "温度/冷却报警", "name": "冷却系统故障", "codes": "", "sym": "冷却异常报警或过热停机。", "causes": ["冷却液液位或流量不足", "冷却泵故障", "散热器堵塞"], "sols": ["检查冷却液液位与流量，及时补充", "检查冷却泵与散热器工作状态"], "prev": ["定期更换冷却液", "定期清洗散热器"], "ref": "第三方维修资料整理"}, {"brand": "通快", "cat": "不出光/无输出", "name": "官方自助排查：Service app / Technical Guide", "codes": "", "sym": "任意错误码，可通过官方图文步骤自行排查。", "causes": ["TRUMPF 官方机制：Solution Guide 定位问题 → Technical Guide 给出逐步解决步骤"], "sols": ["使用 Service app 或 MyTRUMPF 账号提交错误码", "按图文指南自行排查修复", "无法解决时联系通快官方技术服务"], "prev": ["购买设备时签订服务协议，Solution Guide 免费"], "ref": "通快官网（trumpf.com / trumpf.cn）"}, {"brand": "IPG", "cat": "不出光/无输出", "name": "不出光（泵源老化 / 模块失效）", "codes": "", "sym": "设备正常运行但无激光输出，或功率严重衰减。", "causes": ["泵浦源衰减或失效（案例：IPG 4000W 实际仅剩 900W）", "单个泵源模块失效后主控停止供电", "合束器内部连接点烧毁（软件报\"严重光学故障\"）"], "sols": ["用功率计实测输出功率对比额定值", "检查各泵源模块，更换失效模块", "重启后仍报 PD 前向光或超强回光报警，需停机检修合束器 / QBH 输出头"], "prev": ["定期测功率并记录衰减趋势", "避免长期满负荷运行"], "ref": "行业维修案例整理"}, {"brand": "IPG", "cat": "回光/光学", "name": "超强回光报警", "codes": "", "sym": "加工高反材料时触发保护性停机。", "causes": ["铜、铝、黄铜等材料表面将激光反射回激光器", "合束模块检测到回光过强", "长期回光会烧毁合束器"], "sols": ["加装光隔离器", "调整加工参数（功率、焦距、辅助气压）", "高反材料选用带背反射保护功能的机型"], "prev": ["加工高反材料必须加装隔离器"], "ref": "行业维修案例整理"}, {"brand": "IPG", "cat": "温度/冷却报警", "name": "温度与冷却系统报警", "codes": "", "sym": "泵源温度报警、水冷板过温停光。", "causes": ["水冷机水温设置过高", "冷却水流量不足", "过滤网堵塞导致泵源散热不畅"], "sols": ["检查水冷机水温与流量设定", "清洗过滤网", "检查水路与水泵"], "prev": ["每季度清洗过滤网、更换冷却液"], "ref": "行业维修案例整理"}, {"brand": "IPG", "cat": "安装/安全", "name": "陶瓷环信号报警", "codes": "", "sym": "切割头频繁报警\"电容传感器错误 / 陶瓷环信号错误\"。", "causes": ["切割头内部陶瓷环破损", "陶瓷环被污染"], "sols": ["检查陶瓷环与喷嘴之间的绝缘状态", "更换或清洁陶瓷环"], "prev": ["定期检查切割头陶瓷环"], "ref": "行业维修案例整理"}, {"brand": "IPG", "cat": "不出光/无输出", "name": "无激光输出系统排查", "codes": "", "sym": "启动正常但无激光束输出。", "causes": ["电源异常（电压电流不足）", "控制电路故障", "冷却失效触发保护", "光纤连接不良或损伤"], "sols": ["目视检查有无烧毁痕迹", "万用表测量电源输出", "检测控制电路信号", "检查冷却系统", "检查并重新连接光纤"], "prev": ["每月检查电源及通信接口"], "ref": "第三方维修资料整理"}, {"brand": "IPG", "cat": "功率异常/衰减", "name": "功率衰减与维修成本参考", "codes": "", "sym": "输出功率随使用时间下降。", "causes": ["泵浦模块老化", "光纤端面污染", "冷却水质变差"], "sols": ["定期清洁光纤接头端面", "更换冷却液并保持水质洁净", "模块更换成本参考：泵浦模块 4-8 万、合束器 1.5-3 万、控制板 0.8-2 万、冷却 0.5-1.5 万元"], "prev": ["定期清洁光纤接头", "加装稳压 UPS"], "ref": "第三方维修资料整理"}, {"brand": "IPG", "cat": "报警代码", "name": "常见报警代码速查", "codes": "E-01/ALM-T、E-05/ALM-BR、E-10/PSU Fault、E-20/COM Error", "sym": "按报警代码快速定位故障类型。", "causes": ["E-01/ALM-T 温度超限：冷却系统、环境温度、风扇", "E-05/ALM-BR 背反射：高反材料回光", "E-10/PSU Fault 电源：输入电压不稳、电源模块损坏", "E-20/COM Error 通信：线缆松动、电磁干扰"], "sols": ["温度报警→检查冷水机水温（20-25℃）与管路流量", "背反射→检查加工参数与防反射镜片", "电源报警→万用表测三相电压 380V±10%，查模块与端子", "通信报警→重新插拔线缆、检查接地、远离强干扰源"], "prev": ["车间加装稳压器 / UPS", "远离变频器等强电磁干扰源"], "ref": "第三方报警代码综述（SkyFire 等）"}, {"brand": "创鑫", "cat": "回光/光学", "name": "前向光 PD 报警", "codes": "", "sym": "主电源停止供电，激光器关闭。", "causes": ["激光器内部 PD 检测不到激光"], "sols": ["重启激光器，不开激光检查是否有红光；无红光联系创鑫客服", "有红光则检查相关模块能否开启激光，检查模块供电直流开关电源电压"], "prev": ["关注监控软件报警提示"], "ref": "创鑫官网常见问题"}, {"brand": "创鑫", "cat": "回光/光学", "name": "超强回光报警", "codes": "", "sym": "主电源停止供电，激光器关闭。", "causes": ["激光器合束模块检测到回光过强"], "sols": ["检查激光器焦点位置", "检查材料是否放置水平", "关闭激光器暂停 3-5 分钟，重启后开启激光"], "prev": ["高反材料加工注意回光防护"], "ref": "创鑫官网常见问题"}, {"brand": "创鑫", "cat": "安装/安全", "name": "急停 / 冷水机流量报警", "codes": "", "sym": "激光器报警停机。", "causes": ["急停开关被按下", "冷水机异常导致水流量降低"], "sols": ["复位急停开关", "关闭激光器，检查水冷机流速及水温是否正常、水管是否堵塞", "检查完成后重启激光器"], "prev": ["定期点检冷水机与急停开关"], "ref": "创鑫官网常见问题"}, {"brand": "创鑫", "cat": "通信/控制", "name": "通讯异常报警", "codes": "", "sym": "主电源停止供电，激光器关闭。", "causes": ["单模块通讯线与主模块没有信号传输"], "sols": ["检查单模块与主模块连接信号线是否松动", "检查单模块能否正常上电启动、是否有红光、辅助电源电压是否正常"], "prev": ["定期检查信号线连接"], "ref": "创鑫官网常见问题"}, {"brand": "创鑫", "cat": "功率异常/衰减", "name": "最大电流报警", "codes": "", "sym": "激光器报最大电流报警。", "causes": ["单模块驱动 MOS 管击穿"], "sols": ["关闭激光器后重启检查是否正常", "仍报最大电流报警需立即关闭激光器，联系创鑫客服"], "prev": ["勿自行拆机（影响保修）"], "ref": "创鑫官网常见问题"}, {"brand": "创鑫", "cat": "温度/冷却报警", "name": "水冷板温度报警（电模块 / 合束器）", "codes": "", "sym": "电模块水冷板或合束器水冷板温度过高报警停机。", "causes": ["水冷机流速或水温异常", "水管堵塞"], "sols": ["关闭激光器，检查水冷机流速及水温、水管是否堵塞", "检查完成后重启；不能恢复联系创鑫客服"], "prev": ["定期清洗水冷滤网"], "ref": "创鑫官网常见问题"}, {"brand": "创鑫", "cat": "不出光/无输出", "name": "高功率机型（6000W）不出光 6 系统排查", "codes": "", "sym": "完全不出光或\"切不动\"。", "causes": ["三相供电缺相、电压偏低或波动", "报警为组合逻辑，需看历史报警", "光闸未打开或安全回路被切断（门禁、防护罩、急停）", "冷水机水温（22-28℃）、流量、水质不达标", "控制卡通信、24V 控制电源、出光使能信号异常", "功率模块损坏、驱动板异常、内部光路问题"], "sols": ["按序排查：三相电压实测 → 查看历史报警记录 → 光闸反馈与安全回路 → 冷水机温度流量水质 → 控制通信与使能信号 → 内部模块（勿自行拆机）"], "prev": ["高功率机型配备稳压供电", "重复同一报警多为真问题，随机报警多为外围问题"], "ref": "行业维修资料整理"}, {"brand": "创鑫", "cat": "功率异常/衰减", "name": "功率降低", "codes": "", "sym": "激光输出功率下降。", "causes": ["电源供电不稳、电流未达额定", "准直输出镜镜面污染", "红光合束器、振镜、场镜等光学镜片污染", "输出光被遮挡", "使用 2 万小时后正常功率衰减"], "sols": ["检查供电电流是否达额定", "棉签蘸无水乙醇轻擦准直输出镜（勿刮花膜层）", "检查并清洁其他光学镜片", "确认隔离器输出端与振镜口在同一水平"], "prev": ["2 万小时后功率衰减属正常损耗", "弱电强电引线分开走并采用屏蔽信号线"], "ref": "创鑫激光使用手册"}, {"brand": "大族光子", "cat": "安装/安全", "name": "急停报警", "codes": "", "sym": "激光器报警停机，复位前锁定不解除。", "causes": ["面板急停开关被按下"], "sols": ["查看面板急停开关是否处于按下状态并复位"], "prev": ["规范操作培训"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "安装/安全", "name": "外部互锁 1/2", "codes": "", "sym": "外部互锁报警。", "causes": ["外部互锁未正确连接或信号缺失", "内部互锁检查线路异常"], "sols": ["检查外部互锁是否正确连接且有信号", "检查激光器内部外部互锁线路"], "prev": ["定期检查安全回路"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "安装/安全", "name": "QBH 安装检测报警", "codes": "", "sym": "QBH 输出头安装检测报警。", "causes": ["QBH 触点未接好", "QBH 触点信号线异常"], "sols": ["检查 QBH 触点是否接好", "检查 QBH 触点信号线"], "prev": ["QBH 输出头两铜触点（Interlock pins）必须短接，否则激光器无法工作"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "回光/光学", "name": "熔断开关 1/2", "codes": "", "sym": "熔断开关报警。", "causes": ["光学未装熔断", "光路异常"], "sols": ["确认光学是否装有熔断", "开红光看是否有红光", "点射确认光路正常与否"], "prev": ["定期检查光学熔断"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "功率异常/衰减", "name": "电压 / 电流报警", "codes": "", "sym": "模块电压或电流报警。", "causes": ["相应模块电压有波动", "模块电流过流"], "sols": ["观察相应模块电压是否有波动，降低或升高模块", "检查模块电流是否过流"], "prev": ["定期点检模块电源"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "不出光/无输出", "name": "无红光", "codes": "", "sym": "开启红光但无红光输出。", "causes": ["红光 LD 故障", "光路异常"], "sols": ["开启红光，查看模块红光是否有红光电流", "有红光电流则检查光路是否正常", "光路正常就是红光 LD 有问题"], "prev": ["定期检查红光"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "温度/冷却报警", "name": "温度报警", "codes": "", "sym": "温度超限报警停机。", "causes": ["水温异常、冷水机故障", "温度显示值异常或设置不当", "机台对大地阻抗与电压异常"], "sols": ["检查水温是否正常、冷水机是否正常", "查看温度显示值与设置", "若温度跳动大或显示异常，检查机台对大地阻抗与电压"], "prev": ["定期维护冷水机"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "通信/控制", "name": "网络连接不上", "codes": "", "sym": "上位机无法连接激光器。", "causes": ["网线连接问题", "电脑 IP 配置错误"], "sols": ["检查网线连接", "查看电脑 IP 配置", "cmd 输入 ping 192.168.0.7 -t 验证连通性"], "prev": ["设备固定 IP 便于管理"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "大族光子", "cat": "功率异常/衰减", "name": "功率异常", "codes": "", "sym": "输出功率与设定不符。", "causes": ["光路异常", "电流电压异常"], "sols": ["确认光路正常", "检查电流电压", "查看整体 PD 值"], "prev": ["定期用功率计校验"], "ref": "大族光子 HSC 系列使用说明书"}, {"brand": "杰普特", "cat": "不出光/无输出", "name": "不出光排查", "codes": "", "sym": "无激光输出或光强大幅降低。", "causes": ["光路被遮挡", "软件设置错误", "软件有报警未清除", "外部设备连接异常", "参数设置不合适", "开关电源供电异常"], "sols": ["确认激光器光路不被遮挡", "核对软件设置是否正确", "查看软件是否报警", "检查外部设备是否正确连接", "确认参数设置合适", "用万用表测量开关电源"], "prev": ["规范启停流程"], "ref": "杰普特官网技术支持"}, {"brand": "杰普特", "cat": "功率异常/衰减", "name": "光弱问题", "codes": "", "sym": "使用中出现光弱。", "causes": ["激光器输出镜头有脏污、损伤", "功率参数错误", "外部设备异常", "机台高度不当", "光斑被遮挡、光斑不圆", "红光合束镜片问题"], "sols": ["确认输出镜头无脏污损伤", "确保功率参数无误", "确认外部设备正常", "调节机台高度", "确认光斑未被遮挡且为圆形", "尝试去除红光合束镜片，更换振镜、场镜"], "prev": ["定期清洁输出镜片"], "ref": "杰普特官网技术支持"}, {"brand": "杰普特", "cat": "功率异常/衰减", "name": "功率异常（可调但数值异常）", "codes": "", "sym": "功率可调节但输出异常。", "causes": ["软件设置错误", "激光器与 25 针信号线或板卡异常"], "sols": ["确认软件设置是否正确", "检查激光器与 25 针信号线、板卡是否正常", "使用 JPT 提供的 GUI 软件测试"], "prev": ["定期检查信号线"], "ref": "杰普特官网技术支持"}, {"brand": "杰普特", "cat": "安装/安全", "name": "急停报警", "codes": "", "sym": "急停按钮按下后报警并切断内部电源。", "causes": ["急停按钮被按下"], "sols": ["右旋弹起按钮复位", "复位后需重新启动激光器或发送报警复位信号取消报警"], "prev": ["规范操作，避免误触急停"], "ref": "杰普特连续光纤激光器使用说明"}, {"brand": "杰普特", "cat": "温度/冷却报警", "name": "水温设置与冬季防冻", "codes": "", "sym": "冬季凝露或结冰可能导致不可修复损坏。", "causes": ["环境温度低", "水温与环境温差过大导致凝露", "冷却液结冰"], "sols": ["水温推荐：夏季冷冻 26-28℃ / 常温 28-30℃，冬季冷冻 24-26℃ / 常温 26-28℃", "防冻措施：当地不停电则夜间不关冷水机；长时间停用排空冷却液；添加防冻液与纯净水混合液"], "prev": ["激光器运行温度需 ≥10℃"], "ref": "杰普特连续光纤激光器使用说明"}, {"brand": "杰普特", "cat": "不出光/无输出", "name": "无输出 + 温度过高", "codes": "", "sym": "激光器突然停止工作并报警温度过高。", "causes": ["冷却系统失效（水/风冷）", "电源不稳定", "光学部件污损", "控制系统异常"], "sols": ["检查水冷系统水位、流量与水泵", "万用表测量电源电压", "检查内部光学元件有无污垢损坏", "用专用软件诊断控制系统"], "prev": ["定期维护冷却系统"], "ref": "第三方维修资料整理"}, {"brand": "杰普特", "cat": "安装/安全", "name": "长时间停机养护", "codes": "", "sym": "长期不使用激光器的养护要求。", "causes": ["镜片污染", "水路结垢或结冰"], "sols": ["切断激光器电源供电", "用干净无尘布清理镜片并装好保护盖", "水冷机型排空水管冷却水"], "prev": ["按规范执行停机养护"], "ref": "杰普特官网售后"}, {"brand": "吉祥云", "cat": "不出光/无输出", "name": "开机报警排查", "codes": "", "sym": "激光器上电即报警。", "causes": ["配套冷水机未启动", "激光器电源箱背部信号线插头未插紧"], "sols": ["确认配套冷水机已启动", "检查激光器电源箱背部信号线插头是否牢固插紧"], "prev": ["规范开机顺序：先启动冷水机，再开激光器"], "ref": "吉祥云（科洛德激光）官网技术支持"}, {"brand": "吉祥云", "cat": "通信/控制", "name": "通用报警排查", "codes": "", "sym": "设备任意通用报警。", "causes": ["报警点位未定位", "伺服驱动器硬件故障"], "sols": ["读取屏幕报警信息，定位故障点位并解除报警", "复查伺服驱动器是否存在硬件故障"], "prev": ["记录报警信息便于快速定位"], "ref": "吉祥云（科洛德激光）官网技术支持"}, {"brand": "吉祥云", "cat": "功率异常/衰减", "name": "功率偏低判定（功率计实测）", "codes": "", "sym": "加工功率不足、效果变差。", "causes": ["激光器功率衰减"], "sols": ["拆下振镜场镜，用功率计搭配内控模式实测：240W 以上正常、230W 以下功率偏低、200W 以下需更换激光器", "功率异常及时联系厂家"], "prev": ["定期实测激光功率"], "ref": "吉祥云（科洛德激光）官网技术支持"}, {"brand": "吉祥云", "cat": "温度/冷却报警", "name": "激光器报警（多因水冷高温）", "codes": "", "sym": "激光器报警多为水冷机型高温。", "causes": ["冷水机运行异常", "冷却水脏、水泵堵塞"], "sols": ["检查冷水机运行状态", "更换脏冷却水并疏通水泵", "不同型号处理方式有差异，复杂故障联系厂家"], "prev": ["定期更换冷却水"], "ref": "吉祥云（科洛德激光）官网技术支持"}, {"brand": "吉祥云", "cat": "通信/控制", "name": "驱动器报警", "codes": "", "sym": "驱动器报警停机。", "causes": ["驱动器故障", "编码器线连接异常"], "sols": ["断电重启驱动器", "检查编码器线连接是否正常", "根据驱动器报警代码排查对应问题"], "prev": ["定期检查线缆连接"], "ref": "吉祥云（科洛德激光）官网技术支持"}, {"brand": "吉祥云", "cat": "通信/控制", "name": "软件 IO 报警", "codes": "", "sym": "软件提示 IO 报警。", "causes": ["IO 信号异常"], "sols": ["查看 IO 报警信息，确认 IO 信号是否正常", "根据报警信息检查对应设备位置"], "prev": ["规范接线"], "ref": "吉祥云（科洛德激光）官网技术支持"}, {"brand": "吉祥云", "cat": "通信/控制", "name": "控制器打开失败", "codes": "", "sym": "启动软件提示控制器打开失败。", "causes": ["板卡接触不良"], "sols": ["关闭电脑并切断电源", "打开主机箱找到 CN17、CN18 插头拔下", "取出连接的卡件，用蘸少量酒精的无尘布擦拭后装回"], "prev": ["定期清理板卡"], "ref": "吉祥云（科洛德激光）官网技术支持"}, {"brand": "光大激光", "cat": "通信/控制", "name": "模块通信故障（1#/2# 模块）", "codes": "E001/X001", "sym": "模块与主控板通信中断报警。", "causes": ["模块通信线异常", "主控板异常"], "sols": ["检查模块与主控板通信连接", "无法解决时联系 GW Laser 客服支持"], "prev": ["定期检查通信线缆"], "ref": "YLLM 系列光纤激光器操作手册"}, {"brand": "光大激光", "cat": "报警代码", "name": "湿度超限自检", "codes": "", "sym": "自检程序提示湿度超过上限。", "causes": ["环境湿度过高"], "sols": ["改善环境湿度后重新执行全自检（SMAT）", "问题持续请联系 GW Laser 客服支持"], "prev": ["控制车间环境湿度"], "ref": "YLLM 系列光纤激光器操作手册"}, {"brand": "光大激光", "cat": "功率异常/衰减", "name": "激光输出能量低于下限", "codes": "X011", "sym": "激光输出能量低于设定下限。", "causes": ["光路污染", "输出能量衰减"], "sols": ["检查光路与输出端", "联系售后检修"], "prev": ["定期清洁光路"], "ref": "YLLM 系列光纤激光器操作手册"}, {"brand": "光大激光", "cat": "通信/控制", "name": "状态码 / 故障码体系速查", "codes": "S0xx / X、E 系列", "sym": "界面显示字符对应系统状态与故障。", "causes": ["状态码（S0xx）：S010/S011 控制电源开关、S020 主电源开关等对应系统状态", "故障码（X/E 系列）：X001/E001 模块通信故障、X011 输出能量低于下限等"], "sols": ["对照手册「状态码 / 故障码查询表」读取界面字符定位问题"], "prev": ["记录界面字符便于售后定位"], "ref": "YLLM 系列光纤激光器操作手册"}, {"brand": "光大激光", "cat": "安装/安全", "name": "保修与服务说明", "codes": "", "sym": "维修须知。", "causes": ["激光器无用户可自行维修的部件", "自行拆修可能扩大故障"], "sols": ["所有检修由 GW Laser 或授权服务人员完成", "保修期内发现问题及时通知 GW 或区域服务代表"], "prev": ["报修时提供设备 SN 编号与报警代码"], "ref": "YLLM 系列光纤激光器操作手册"}];
+  const lfState = { brand: '', cat: '', q: '' };
+  function lfChips(el, items, key) {
+    el.innerHTML = '<span class="lf-chip' + (lfState[key] === '' ? ' on' : '') + '" data-v="">全部</span>' +
+      items.map(v => '<span class="lf-chip' + (lfState[key] === v ? ' on' : '') + '" data-v="' + v + '">' + v + '</span>').join('');
+    el.querySelectorAll('.lf-chip').forEach(c => {
+      c.addEventListener('click', () => {
+        lfState[key] = c.getAttribute('data-v') || '';
+        lfChips(el, items, key);
+        renderLfResult();
+      });
+    });
+  }
+  function renderLfResult() {
+    const tip = document.getElementById('lfTip');
+    const box = document.getElementById('lfResult');
+    const q = lfState.q.trim().toLowerCase();
+    let list = LF_DATA;
+    if (q) {
+      list = LF_DATA.filter(e => (e.brand + ' ' + e.name + ' ' + e.codes + ' ' + e.sym + ' ' +
+        e.causes.join(' ') + ' ' + e.sols.join(' ') + ' ' + e.prev.join(' ')).toLowerCase().indexOf(q) >= 0);
+    } else {
+      if (lfState.brand) list = list.filter(e => e.brand === lfState.brand);
+      if (lfState.cat) list = list.filter(e => e.cat === lfState.cat);
+    }
+    if (!list.length) {
+      tip.textContent = '未找到匹配项，请更换厂商 / 故障类别或关键词。';
+      box.innerHTML = '';
+      return;
+    }
+    tip.textContent = '共 ' + list.length + ' 条异常处理方法（内容供参考，请以厂商手册与售后为准）：';
+    box.innerHTML = list.map(e => {
+      const codes = e.codes ? '<span class="lf-codes">' + e.codes + '</span>' : '';
+      const lis = arr => '<ul>' + arr.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+      return '<div class="lf-card">' +
+        '<div class="lf-card-head"><span class="lf-brand">' + e.brand + '</span>' + codes + '</div>' +
+        '<div class="lf-card-title">' + e.name + '</div>' +
+        '<div class="lf-block"><div class="lf-h">现象</div><div class="lf-sym">' + e.sym + '</div></div>' +
+        '<div class="lf-block"><div class="lf-h">可能原因</div>' + lis(e.causes) + '</div>' +
+        '<div class="lf-block"><div class="lf-h sol">处理方法</div>' + lis(e.sols) + '</div>' +
+        '<div class="lf-block"><div class="lf-h prev">预防措施</div>' + lis(e.prev) + '</div>' +
+        '<div class="lf-ref">来源：' + e.ref + '</div>' +
+        '</div>';
+    }).join('');
+  }
+  function initLaserFault() {
+    lfChips(document.getElementById('lfBrand'), LF_BRANDS, 'brand');
+    lfChips(document.getElementById('lfCat'), LF_FAULTS, 'cat');
+    const s = document.getElementById('lfSearch');
+    s.value = lfState.q;
+    s.oninput = () => { lfState.q = s.value; renderLfResult(); };
+    renderLfResult();
+  }
+
   const WELD_AI_PROCS = ['FTT 焊接', '壳盖焊接', '壳体焊接', '防爆阀焊接', '汇流排焊接', '连接片焊接', '注液口焊接', '通用'];
   const WELD_AI_SYMS = ['气孔/针孔', '裂纹', '飞溅', '未熔合/虚焊', '烧穿/焊漏', '焊偏/偏移', '氧化变色', '塌陷/凹陷', '断焊/不连续', '熔深波动', '爆点/炸点', '强度不足', '气密泄漏', '成型不良'];
   const WELD_AI_DATA = [
@@ -9451,12 +9573,13 @@
   })();
 
   function switchTool(name) {
-    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe', 'tool-window', 'tool-gas', 'tool-weldai'].forEach(id => {
+    ['tool-focus', 'tool-accel', 'tool-spacing', 'tool-fit', 'tool-mod', 'tool-doe', 'tool-window', 'tool-gas', 'tool-weldai', 'tool-laserfault'].forEach(id => {
       const el = $(id);
       if (el) el.classList.toggle('active', id === 'tool-' + name);
     });
     if (name === 'gas') { resizeGasCanvas(); startGasSim(); } else { stopGasSim(); }
     if (name === 'weldai') { initWeldAi(); }
+    if (name === 'laserfault') { initLaserFault(); }
     if (name === 'focus') { resizeTpCanvas(); drawTpFit(); }
     if (name === 'accel') { resizeAccCanvas(); calcAccel(); }
     if (name === 'spacing') { resizeSpCanvas(); calcSpacing(); }
