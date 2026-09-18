@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.23</div>
+    <div class="splash-version">v1.4.24</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.23</span>
+        <span class="ar-value">v1.4.24</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.23</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.24</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,12 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.24</span><span class="cl-date">2026-09-18 · AI 助手功能介绍补全</span></div>
+        <ul class="cl-list">
+          <li><b>"你能干什么"完整回答</b>：识别"你能干什么/能干嘛/有什么作用"等说法，完整介绍五大功能：正向计算（5 种焊接方式）、逆向推荐、工具计算、工艺问答、工具箱直达。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.23</span><span class="cl-date">2026-09-18 · AI 助手点焊频率计算</span></div>
         <ul class="cl-list">
           <li><b>支持点焊频率快速计算</b>：如"激光点焊，速度100mm/s，点焊间距5mm，频率需要设置多少"，直接算出频率（f=速度÷点间距），并可一键打开动态演示。</li>
@@ -15068,8 +15074,14 @@
       bot('不客气！焊接参数、材料或工艺问题随时找我。');
       return true;
     }
-    if(/你是谁|你是什么|介绍.*你|你会什么|能做什么|有什么功能|介绍一下/i.test(t)){
-      bot('我是 <b>AI 焊接助手</b>，内置在连接技术工具箱中，基于本地焊接模型运行（无需联网）。<br>我能做：<br>· <b>正向计算</b>：5 种焊接方式参数 → 熔深/熔宽/频率/重叠率<br>· <b>逆向推荐</b>：目标熔深 + 材料 → 推荐光学配置与焊接参数<br>· <b>工具计算</b>：加速距离、点间距频率直接对话计算<br>· <b>工艺问答</b>：材料可焊性、焊接缺陷处理建议、功率选型<br>· <b>界面直达</b>：打焦点/配合公差/工艺窗口/DOE/保护气/焊接诊断/激光器异常一键跳转');
+    if(/你是谁|你是什么|介绍.*你|你会什么|能做什么|能干什么|能干嘛|干什么用|干嘛用|有什么功能|有什么作用|介绍一下|你能做/i.test(t)){
+      bot('我是 <b>AI 焊接助手</b>，内置在连接技术工具箱里，本地运行、不用联网。我的功能分五块：<div class="ai-res">'+
+        '<div class="r-row"><span class="r-k">① 正向计算</span><span class="r-v">5 种焊接方式 → 熔深/熔宽/频率/重叠率等<br>环形光斑摆动 · 单光斑CW · QCW脉冲 · 激光填丝 · 功率调制</span></div>'+
+        '<div class="r-row"><span class="r-k">② 逆向推荐</span><span class="r-v">"T2紫铜 熔深0.2~1.4 帮我推荐" → 推荐光学配置与焊接参数（Top 3）</span></div>'+
+        '<div class="r-row"><span class="r-k">③ 工具计算</span><span class="r-v">加速距离 · 点焊频率（速度÷点间距）· 配合公差，直接对话算</span></div>'+
+        '<div class="r-row"><span class="r-k">④ 工艺问答</span><span class="r-v">材料可焊性（钢/铝/铜/黄铜/异种）· 焊接缺陷处理（飞溅/气孔/咬边/烧穿/裂纹…）· 功率选型</span></div>'+
+        '<div class="r-row"><span class="r-k">⑤ 工具箱直达</span><span class="r-v">打焦点记录 · 加速距离 · 点间距频率 · 配合公差 · 工艺窗口 · DOE · 保护气 · AI焊接诊断 · 激光器异常，一句话跳转</span></div></div>'+
+        '直接对我说焊接需求就行，比如"6061铝环形摆动 内芯3000W 外环1500W"。');
       return true;
     }
     // 焊接缺陷/异常（优先于计算，避免"填丝焊接气孔多"走计算）
