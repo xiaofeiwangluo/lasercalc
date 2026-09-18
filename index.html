@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.26</div>
+    <div class="splash-version">v1.4.27</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.26</span>
+        <span class="ar-value">v1.4.27</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.26</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.27</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,17 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.27</span><span class="cl-date">2026-09-18 · AI 助手新增 6 大工艺知识功能</span></div>
+        <ul class="cl-list">
+          <li><b>激光波长选型</b>：焊铜用蓝光/绿光/红外怎么选，吸收率对比与适用场景（蓝光&gt;65%、绿光40~50%、红外&lt;5%）。</li>
+          <li><b>保护气参数推荐</b>：不锈钢/铝/铜/碳钢分别用什么气体、开多大流量、纯度要求。</li>
+          <li><b>焊缝质量检测</b>：目视/金相/X射线/超声/渗透/力学 6 种方法适用场景，及 ISO 13919 质量等级参考。</li>
+          <li><b>焊接术语科普</b>：什么是匙孔/深熔焊/热导焊/离焦/瑞利长度/重叠率/热影响区/线能量等 13 个术语。</li>
+          <li><b>焊接成本估算</b>：电费+保护气+工时三块构成，给功率和时长可直接算用电量。</li>
+          <li><b>激光安全提醒</b>：4 类激光防护、防护眼镜、环境要求、GB 18490 规范。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.26</span><span class="cl-date">2026-09-18 · AI 助手排版优化与移动端适配</span></div>
         <ul class="cl-list">
           <li><b>回答排版优化</b>：结果卡片改为左对齐阅读式布局，长内容不再挤在右侧；补充说明用浅灰底注释样式，层次更清楚。</li>
@@ -15108,6 +15119,87 @@
     return null;
   }
 
+  /* ---- 焊接术语库 ---- */
+  var TERMS=[
+    [/匙孔|小孔/i,'匙孔（Keyhole）','深熔焊的标志：激光束在熔池中形成由金属蒸气压维持的微小孔洞，光束直达孔底加热，熔深大幅增加。'],
+    [/深熔/i,'深熔焊','功率密度较高（一般 >10⁶ W/cm²）时形成匙孔，熔深大、深宽比高，是激光焊主力模式。'],
+    [/热导焊|热传导/i,'热导焊','功率密度较低（<10⁵ W/cm²），靠表面热传导熔化，熔深浅而宽、表面平滑，适合薄件/热敏件。'],
+    [/离焦/i,'离焦量','焦点相对工件表面的距离：正离焦焦点在工件上方（光斑大、能量分散），负离焦在下方（利于深熔）。'],
+    [/瑞利|焦深/i,'瑞利长度 / 焦深','光束从束腰增大到 √2 倍截面处的距离 zR，表示聚焦深度（zR = π·w₀²/λ）。'],
+    [/重叠率/i,'重叠率','相邻焊斑重叠部分占光斑直径的比例，脉冲/点焊常用；频率 f、速度 v、间距 d 关系：f=v/d。'],
+    [/热影响|haz/i,'热影响区（HAZ）','焊缝周围受热循环影响但未熔化的区域，组织与性能会变化，是质量关注点之一。'],
+    [/功率密度|能量密度/i,'功率密度','单位面积上的激光功率（W/cm²），决定焊接模式（热导 vs 深熔）。'],
+    [/线能量/i,'线能量','单位焊缝长度输入的热量 = 功率 ÷ 焊接速度，控制热输入的核心指标。'],
+    [/单模|多模/i,'单模 / 多模','光束质量差异：单模（M²≈1）可聚焦更小光斑、熔深更深；多模光斑均匀、适合表面处理。'],
+    [/摆动焊|摆焊/i,'摆动焊接','光束按正弦/螺旋/弓字等轨迹摆动，搅拌熔池、稳定匙孔、显著减少气孔飞溅。'],
+    [/调制/i,'功率调制','激光功率按设定频率/占空比周期变化（连续光脉冲化），控制热输入与熔池。'],
+    [/光斑/i,'焦点光斑','焦点处光束直径 d = 光纤芯径 × 聚焦镜焦距 ÷ 准直镜焦距。']
+  ];
+  function weldTerm(t){
+    for(var i=0;i<TERMS.length;i++) if(TERMS[i][0].test(t)) return TERMS[i];
+    return null;
+  }
+
+  /* ---- 激光波长/光源选型（蓝光/绿光/红外，铜铝高反材料） ---- */
+  function wavelengthQ(t){
+    return '激光波长选型（高反材料很关键）：<div class="ai-res">'+
+      '<div class="r-row"><span class="r-k">红外 1064nm</span><span class="r-v">铜吸收率 &lt;5%、铝约 5%~10%，需高功率密度/表面处理/摆动</span></div>'+
+      '<div class="r-row"><span class="r-k">绿光 532nm</span><span class="r-v">铜吸收率约 40%~50%，深熔稳定，适合发卡电机/较深焊缝</span></div>'+
+      '<div class="r-row"><span class="r-k">蓝光 450nm</span><span class="r-v">铜吸收率 &gt;65%，热导焊平滑，适合薄箔/汇流排/极耳，熔深较浅</span></div></div>'+
+      '<div class="ai-note">经验：焊铜薄件优先蓝光、深熔优先绿光，常规场景红外+摆动或表面黑化；铝材高功率红外+摆动最常见。</div>';
+  }
+
+  /* ---- 保护气参数推荐（材料→气体/流量/纯度） ---- */
+  function shieldGasQ(t){
+    return '保护气参数参考（按材料）：<div class="ai-res">'+
+      '<div class="r-row"><span class="r-k">不锈钢</span><span class="r-v">纯氩 12~18 L/min（薄板 10~15，厚板 18~22）；奥氏体可用 ≥99.995% 氮气</span></div>'+
+      '<div class="r-row"><span class="r-k">铝合金</span><span class="r-v">氩气 15~20 L/min，纯度 ≥99.995%，抑制氢气孔</span></div>'+
+      '<div class="r-row"><span class="r-k">铜/铜合金</span><span class="r-v">氩/氦 ≥99.995%，防止氧化；氮气也可用于铜合金抑制氧化</span></div>'+
+      '<div class="r-row"><span class="r-k">碳钢</span><span class="r-v">氩气 10~15 L/min（薄板），厚板可加氦</span></div></div>'+
+      '<div class="ai-note">流量过小→氧化变色；过大→湍流卷空气反而出缺陷。喷嘴离工件约 8~12mm，保持层流。</div>';
+  }
+
+  /* ---- 焊缝质量检测方法与标准 ---- */
+  function weldInspect(t){
+    return '焊缝质量检测一般按 <b>外观 → 内部无损 → 破坏性检验</b> 三步走：<div class="ai-res">'+
+      '<div class="r-row"><span class="r-k">目视</span><span class="r-v">成形、飞溅、咬边、颜色（氧化发蓝/发黑）</span></div>'+
+      '<div class="r-row"><span class="r-k">金相</span><span class="r-v">精确测量熔深/熔宽/未熔合，电池焊接最常用</span></div>'+
+      '<div class="r-row"><span class="r-k">X射线</span><span class="r-v">内部气孔/裂纹（参考 GB/T 3323）</span></div>'+
+      '<div class="r-row"><span class="r-k">超声</span><span class="r-v">未熔合/内部缺陷（薄板可用 Lamb 波）</span></div>'+
+      '<div class="r-row"><span class="r-k">渗透</span><span class="r-v">表面开口裂纹</span></div>'+
+      '<div class="r-row"><span class="r-k">力学</span><span class="r-v">拉拔/剪切/硬度；动力电池极耳、连接片常用拉拔力验收</span></div></div>'+
+      '<div class="ai-note">质量标准可参考 ISO 13919（激光焊缺陷质量等级 B/C/D）；具体验收按产品规范，常见要求熔深达设计值、无贯穿/裂纹/超标气孔。</div>';
+  }
+
+  /* ---- 焊接成本估算 ---- */
+  function weldCost(t){
+    var h='焊接成本主要看 <b>电费 + 保护气 + 工时</b> 三块：<div class="ai-res">'+
+      '<div class="r-row"><span class="r-k">电费</span><span class="r-v">功率 × 时间 ÷ 电光效率 × 电价<br>光纤激光器电光效率约 30%~45%</span></div>'+
+      '<div class="r-row"><span class="r-k">气体</span><span class="r-v">流量(L/min) × 时间 × 气价（按瓶/按方计）</span></div>'+
+      '<div class="r-row"><span class="r-k">工时</span><span class="r-v">焊接+辅助时间 × 设备折旧与人工费率</span></div></div>';
+    var mK=t.match(/([\d.]+)\s*(?:kw|千瓦)/i);
+    var kW=null, pv=null;
+    if(mK){ kW=parseFloat(mK[1]); pv=mK[1]+'kW'; }
+    else { var mW=t.match(/([\d.]+)\s*(?:w|瓦)/i); if(mW){ kW=parseFloat(mW[1])/1000; pv=mW[1]+'W'; } }
+    var mH=t.match(/([\d.]+)\s*(?:小时|h)/i);
+    if(kW&&mH){
+      var kwh=kW/0.4*parseFloat(mH[1]);
+      h+='<div class="ai-note">按你给的 '+pv+' 焊 '+mH[1]+' 小时估算：用电量约 <b>'+kwh.toFixed(1)+' kWh</b>（按电光效率 40% 计），乘以当地电价即电费。</div>';
+    } else {
+      h+='<div class="ai-note">把功率（kW）和焊接时长告诉我，我帮你算单件电费。如"3kW 焊 8 小时"。</div>';
+    }
+    return h;
+  }
+
+  /* ---- 激光安全提醒 ---- */
+  function laserSafety(t){
+    return '激光焊接安全要点：<div class="ai-res">'+
+      '<div class="r-row"><span class="r-k">激光等级</span><span class="r-v">焊接用激光一般属 4 类，严禁裸眼直视光束或反射光</span></div>'+
+      '<div class="r-row"><span class="r-k">防护</span><span class="r-v">佩戴与激光波长匹配的防护眼镜（看 OD 值与防护波长范围）</span></div>'+
+      '<div class="r-row"><span class="r-k">环境</span><span class="r-v">光束路径设防护罩/挡板，焊接区强制通风排烟</span></div>'+
+      '<div class="r-row"><span class="r-k">规范</span><span class="r-v">参考 GB 18490《激光加工机械 安全要求》及设备操作规程</span></div></div>';
+  }
+
   /* ---- 意图总入口 ---- */
   function intentTry(text){
     var t=(text||'').trim();
@@ -15153,6 +15245,25 @@
         for(var _ti=0;_ti<TOOL_LIST.length;_ti++) if(TOOL_LIST[_ti].key==='weldai'){ toolJump(TOOL_LIST[_ti]); return true; }
       }
     }
+    // 保护气参数（在可焊性之前，避免"铝用什么保护气"被可焊性劫持）
+    if(/(保护气|气体|氮气|氩气|氦气|吹气)/i.test(t) && /(多少|流量|用什么|怎么选|选择|推荐|l\/min|升|纯度|纯|合适|开多少)/i.test(t)){
+      bot(shieldGasQ(t)+'<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>');
+      return true;
+    }
+    // 激光波长/光源选型
+    if(/(蓝光|绿光|红外|波长|什么激光|激光器.*(选|用))/i.test(t) && /(铜|铝|高反|选|区别|怎么|推荐|什么|用)/i.test(t)){
+      var wq=wavelengthQ(t); if(wq){ bot(wq+'<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>'); return true; }
+    }
+    // 焊缝质量检测
+    if(/检测|检验|探伤|金相|射线|超声|验收|质量标准|质量检查/i.test(t) && /(怎么|如何|方法|标准|合格|检查|看|吗|？|\?)/i.test(t)){
+      bot(weldInspect(t)+'<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>');
+      return true;
+    }
+    // 激光安全
+    if(/安全|防护|眼镜|辐射|激光等级/i.test(t) && /(注意|怎么|要求|什么|吗|？|\?|需要|防护)/i.test(t)){
+      bot(laserSafety(t)+'<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>');
+      return true;
+    }
     // 功率选型
     if(/(功率|多少瓦|瓦数|用多大|多大功率|需要多少|功率要多大|用几瓦|要多少瓦|功率选多少|功率用多少|多大合适)/i.test(t) && /多少|多大|选择|推荐|合适|吗|？|\?|够|行/i.test(t)){
       bot(powerGuide(t));
@@ -15165,6 +15276,16 @@
     if(/吗|？|\?|为什么|怎么|能不能|是否|如何|好焊|难焊|能焊|可以焊|可焊/i.test(t) && /材料|紫铜|纯铜|铜|铝|黄铜|不锈钢|碳钢|钢|镍|钛|镀锌|镁|磷铜|铍铜|电解铜|青铜|合金|sus|q195|q345|spcc|2a12|5a06|5754|5086|钛合金/i.test(t)){
       var wel=weldability(t);
       if(wel){ bot(wel); return true; }
+    }
+    // 焊接术语科普
+    if(/什么是|啥是|什么叫|是什么|啥叫|解释一下|是什么意思|科普/i.test(t)){
+      var tm=weldTerm(t);
+      if(tm){ bot('<b>'+tm[1]+'</b><div class="ai-res"><div class="r-row"><span class="r-k">解释</span><span class="r-v" style="text-align:left">'+tm[2]+'</span></div></div><button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>'); return true; }
+    }
+    // 焊接成本估算
+    if(/成本|多少钱|电费|划算|能耗|花多少|费用/i.test(t)){
+      bot(weldCost(t));
+      return true;
     }
     return false;
   }
