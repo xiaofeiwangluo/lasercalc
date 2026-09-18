@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.22</div>
+    <div class="splash-version">v1.4.23</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.22</span>
+        <span class="ar-value">v1.4.23</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.22</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.23</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,14 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.23</span><span class="cl-date">2026-09-18 · AI 助手点焊频率计算</span></div>
+        <ul class="cl-list">
+          <li><b>支持点焊频率快速计算</b>：如"激光点焊，速度100mm/s，点焊间距5mm，频率需要设置多少"，直接算出频率（f=速度÷点间距），并可一键打开动态演示。</li>
+          <li><b>口语参数解析增强</b>："速度为100""速度时100""速度是100"等说法均能识别。</li>
+          <li><b>识别"激光点焊/点斑/焊斑"说法</b>：自动归入点间距频率计算。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.22</span><span class="cl-date">2026-09-18 · AI 助手交互优化</span></div>
         <ul class="cl-list">
           <li><b>快捷选项支持取消</b>：再次点击已选中的焊接方式（环形摆动/CW/QCW/填丝/调制）会取消选择，回到自由输入状态。</li>
@@ -14697,7 +14705,7 @@
 
     {key:'accel',name:'加速距离计算',pats:[/加速距离|加减速|加速时间|起弧延时/i],toolSel:'accel',desc:'加速距离计算：加速度、减速度、焊接速度、焊接距离 → 加速/匀速/减速时间与距离。'},
 
-    {key:'spacing',name:'点间距频率计算',pats:[/点间距|焊点间距|频率计算|脉冲频率/i],toolSel:'spacing',desc:'点间距频率计算：焊接速度、焊接距离、加速度、点间距 → 脉冲频率与焊点数。'},
+    {key:'spacing',name:'点间距频率计算',pats:[/点间距|焊点间距|频率计算|脉冲频率|点焊|点斑|焊斑/i],toolSel:'spacing',desc:'点间距频率计算：焊接速度、焊接距离、加速度、点间距 → 脉冲频率与焊点数。'},
 
     {key:'fit',name:'动力电池壳盖配合公差',pats:[/配合公差|公差分析|壳盖|盖板|装配间隙|间隙分析/i],toolSel:'fit',jump:true,desc:'动力电池壳盖配合公差分析：输入盖板与壳体尺寸公差，自动计算最大/最小装配间隙。'},
 
@@ -14819,6 +14827,13 @@
 
     if(v==null&&L==null&&d==null&&a==null){ toolJump(TOOL_LIST[2]); return true; }
 
+    if(v!=null&&d!=null&&(L==null||a==null)){
+      var f=v/d;
+      bot('好的，算出来了：点焊频率 <b>'+fmt(f,2)+' Hz</b>（f = 速度 ÷ 点间距 = '+v+' ÷ '+d+'）。<div class="ai-note">如需包含加减速段的完整分析（焊点数、加速时间等），请补充：焊接距离（mm）、加速度（mm/s²）。</div>'+
+        '<button class="ai-btn pri" onclick="window.__aiJumpTool(\'spacing\')">打开动态演示</button>'+
+        '<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>');
+      return true;
+    }
     if(v==null||L==null||d==null||a==null){
 
       var miss=[];
@@ -14879,7 +14894,7 @@
 
   function numOf2(text,key){
 
-    var re=new RegExp(key+'\\s*[:：]?\\s*(-?\\d+(?:\\.\\d+)?)','i');
+    var re=new RegExp(key+'\\s*(?:[:：=]|为|是|时|约|大概)?\\s*(-?\\d+(?:\\.\\d+)?)','i');
 
     var m=text.match(re);
 
