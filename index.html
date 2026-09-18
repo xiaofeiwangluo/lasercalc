@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.24</div>
+    <div class="splash-version">v1.4.25</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.24</span>
+        <span class="ar-value">v1.4.25</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.24</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.25</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,15 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.25</span><span class="cl-date">2026-09-18 · AI 助手识别词全面补全</span></div>
+        <ul class="cl-list">
+          <li><b>材料牌号扩展</b>：316L/304L/201/202/430/410/Q195/Q345/SPCC/SUS304/SUS316/镀锌板/马氏体/奥氏体；铝 2A12/5A06/5086/5754/6060/6005/铝镁合金；铜 电解铜/磷铜/锡青铜/青铜。</li>
+          <li><b>缺陷说法扩展</b>：焊瘤/焊偏/焊歪/跑偏/翘曲/变形/变色/发蓝/热影响区/焊不牢/脱落/未焊满/针孔/溅渣等。</li>
+          <li><b>焊接模式与工具箱词扩展</b>：振镜/摇摆焊/连续波/连续焊接；减速距离/速度规划/配合间隙/实验设计/氮气保护/激光器故障代码等。</li>
+          <li><b>更懂口语</b>：早上好/晚上好等问候、"咋回事/什么情况"追问、"你真厉害"夸赞都能接住；新增镁合金焊接提示。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.24</span><span class="cl-date">2026-09-18 · AI 助手功能介绍补全</span></div>
         <ul class="cl-list">
           <li><b>"你能干什么"完整回答</b>：识别"你能干什么/能干嘛/有什么作用"等说法，完整介绍五大功能：正向计算（5 种焊接方式）、逆向推荐、工具计算、工艺问答、工具箱直达。</li>
@@ -14964,6 +14973,33 @@
     addAlias('al1060','铝排'); addAlias('al6061','铝板'); addAlias('al6061','电池壳'); addAlias('al6061','铝壳');
     addAlias('al5052','电池壳'); addAlias('cu_t2','紫铜板'); addAlias('cu_t2','铜排'); addAlias('cu_t2','铜板'); addAlias('cu_t2','红铜');
     addAlias('cu_h62','黄铜板'); addAlias('cu_c1020','铜箔');
+    addAlias('steel','316l'); addAlias('steel','304l'); addAlias('steel','201'); addAlias('steel','202');
+    addAlias('steel','430'); addAlias('steel','410'); addAlias('steel','q195'); addAlias('steel','q345');
+    addAlias('steel','spcc'); addAlias('steel','sus304'); addAlias('steel','sus316'); addAlias('steel','不锈钢板');
+    addAlias('steel','镀锌板'); addAlias('steel','马氏体'); addAlias('steel','奥氏体');
+    addAlias('al5083','5a06'); addAlias('al5083','5086'); addAlias('al5052','5754'); addAlias('al6061','2a12');
+    addAlias('al6061','6060'); addAlias('al6061','6005'); addAlias('al6061','铝镁合金');
+    addAlias('cu_t2','电解铜'); addAlias('cu_t2','磷铜'); addAlias('cu_c5191','锡青铜'); addAlias('cu_c5191','青铜');
+  })();
+
+  /* ---- 识别词扩展（焊接模式/工具箱，运行时生效） ---- */
+  (function(){
+    if(typeof MODE_PATTERNS!=='undefined'){
+      MODE_PATTERNS[0][1]=/环形|摆动|wob|ring|摆焊|环形光斑|振镜|摇摆焊|circle/i;
+      MODE_PATTERNS[4][1]=/单光斑|cw|连续|直连|单光束|weld|连续波|连续焊接/i;
+    }
+    if(typeof TOOL_LIST!=='undefined'){
+      for(var _i=0;_i<TOOL_LIST.length;_i++){
+        var _T=TOOL_LIST[_i];
+        if(_T.key==='accel') _T.pats.push(/减速距离|速度规划|梯形速度/i);
+        if(_T.key==='spacing') _T.pats.push(/焊点频率|点焊频率|脉冲间距/i);
+        if(_T.key==='fit') _T.pats.push(/配合间隙|装配公差|壳盖配合/i);
+        if(_T.key==='window') _T.pats.push(/工艺参数窗口|焊接窗口|窗口分析/i);
+        if(_T.key==='doe') _T.pats.push(/实验设计|正交实验/i);
+        if(_T.key==='gas') _T.pats.push(/氮气保护|气体保护|保护效果/i);
+        if(_T.key==='laserfault') _T.pats.push(/激光器.*(问题|报错|故障代码)|设备.*(问题|报错|故障代码)|报警代码/i);
+      }
+    }
   })();
 
   /* ---- 焊接缺陷知识库（依据行业文献：气孔/咬边/未熔合/飞溅/裂纹成因与对策） ---- */
@@ -14996,6 +15032,10 @@
     var isSteel=/不锈钢|碳钢|钢|304|316|q235|镀锌/i.test(t);
     var isNi=/镍|纯镍|镍带/i.test(t);
     var isTi=/钛/i.test(t);
+    var isMg=/镁|镁合金/i.test(t);
+    if(isMg){
+      return '镁合金激光焊接提示：导热快、易氧化甚至燃烧，激光焊需严格惰性保护气与低热输入。模型暂未内置，建议先做工艺试验，或咨询设备厂商获取参数窗口。';
+    }
     if(isBrass){
       return '黄铜确实不太好焊，主要难点在这几点：<div class="ai-res">'+
         '<div class="r-row"><span class="r-k">难点</span><span class="r-v">锌含量超出激光焊允许范围，锌熔点低易汽化 → 气孔/飞溅</span></div>'+
@@ -15066,12 +15106,16 @@
     var t=(text||'').trim();
     if(!t) return false;
     // 闲聊与帮助
-    if(/^(你好|您好|hi|hello|哈喽|嗨|在吗|hey)/i.test(t)){
+    if(/^(你好|您好|hi|hello|哈喽|嗨|在吗|hey|早上好|中午好|下午好|晚上好|早安|午安|晚安|你好呀|嗨喽)/i.test(t)){
       bot('你好，我是 <b>AI 焊接助手</b>。可以这样问我：<br>· <b>算参数</b>：6061铝 环形摆动，内芯3000W 外环1500W…<br>· <b>推荐配置</b>：T2紫铜，熔深0.2~1.4mm，帮我推荐<br>· <b>材料可焊性</b>：紫铜好焊吗 / 铝和铜能焊一起吗<br>· <b>焊接问题</b>：飞溅大怎么办 / 气孔多怎么处理<br>· <b>功率选型</b>：2mm不锈钢需要多大功率<br>· <b>工具箱</b>：点间距频率计算 / 打焦点 / 配合公差…');
       return true;
     }
     if(/^(谢谢|感谢|thanks|thank|再见|拜拜|88|辛苦了)/i.test(t)){
       bot('不客气！焊接参数、材料或工艺问题随时找我。');
+      return true;
+    }
+    if(/你真(棒|厉害|聪明|行|牛)|太厉害|太棒了|真不错|好厉害|牛啊|给力/i.test(t)){
+      bot('哈哈，谢谢夸奖！焊接相关的参数计算、材料可焊性、缺陷处理、功率选型，随时找我。');
       return true;
     }
     if(/你是谁|你是什么|介绍.*你|你会什么|能做什么|能干什么|能干嘛|干什么用|干嘛用|有什么功能|有什么作用|介绍一下|你能做/i.test(t)){
@@ -15085,9 +15129,9 @@
       return true;
     }
     // 焊接缺陷/异常（优先于计算，避免"填丝焊接气孔多"走计算）
-    var defPat=/飞溅|炸点|爆点|气孔|砂眼|气泡|咬边|塌边|烧穿|焊穿|熔穿|未熔合|虚焊|假焊|焊不透|不熔|熔透不了|脱焊|裂纹|开裂|发黑|氧化|黑渣|烧黑|成形差|成型差|塌陷|凹陷|下塌|炸渣|毛刺|火花大|起焊|收弧/i;
+    var defPat=/飞溅|炸点|爆点|气孔|砂眼|气泡|咬边|塌边|烧穿|焊穿|熔穿|未熔合|虚焊|假焊|焊不透|不熔|熔透不了|脱焊|裂纹|开裂|发黑|氧化|黑渣|烧黑|成形差|成型差|塌陷|凹陷|下塌|炸渣|毛刺|火花大|起焊|收弧|溅渣|熔渣|针孔|气穴|微气孔|焊瘤|焊豆|疙瘩|焊偏|焊歪|跑偏|偏移|翘曲|翘起|变形|变色|发蓝|蓝紫|热影响区|焊不牢|不牢|脱落|剥离|未焊满|填不满|烧损|烧蚀|黑斑/i;
     if(defPat.test(t)){
-      var qMark=/怎么办|怎么处理|如何处理|怎么解决|什么原因|为什么|如何避免|如何解决|怎么改善|改善|如何|原因|咋办|怎么弄|怎么调/i;
+      var qMark=/怎么办|怎么处理|如何处理|怎么解决|什么原因|为什么|如何避免|如何解决|怎么改善|改善|如何|原因|咋办|怎么弄|怎么调|咋回事|怎么回事|什么情况|啥原因|处理一下|解决一下|怎么修|怎么治|有没有办法|有什么办法|咋处理/i;
       if(qMark.test(t)){
         var adv=defectAdvice(t);
         if(adv){
@@ -15103,7 +15147,7 @@
       }
     }
     // 功率选型
-    if(/(功率|多少瓦|瓦数|用多大|多大功率|需要多少|功率要多大)/i.test(t) && /多少|多大|选择|推荐|合适|吗|？|\?|够|行/i.test(t)){
+    if(/(功率|多少瓦|瓦数|用多大|多大功率|需要多少|功率要多大|用几瓦|要多少瓦|功率选多少|功率用多少|多大合适)/i.test(t) && /多少|多大|选择|推荐|合适|吗|？|\?|够|行/i.test(t)){
       bot(powerGuide(t));
       return true;
     }
@@ -15111,7 +15155,7 @@
     var oq=opticsQ(t);
     if(oq){ bot(oq); return true; }
     // 材料可焊性
-    if(/吗|？|\?|为什么|怎么|能不能|是否|如何|好焊|难焊|能焊|可以焊|可焊/i.test(t) && /材料|紫铜|纯铜|铜|铝|黄铜|不锈钢|碳钢|钢|镍|钛|镀锌/i.test(t)){
+    if(/吗|？|\?|为什么|怎么|能不能|是否|如何|好焊|难焊|能焊|可以焊|可焊/i.test(t) && /材料|紫铜|纯铜|铜|铝|黄铜|不锈钢|碳钢|钢|镍|钛|镀锌|镁|磷铜|铍铜|电解铜|青铜|合金|sus|q195|q345|spcc|2a12|5a06|5754|5086|钛合金/i.test(t)){
       var wel=weldability(t);
       if(wel){ bot(wel); return true; }
     }
