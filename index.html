@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.18</div>
+    <div class="splash-version">v1.4.19</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.18</span>
+        <span class="ar-value">v1.4.19</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.18</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.19</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,13 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.19</span><span class="cl-date">2026-09-18 · AI 助手升级</span></div>
+        <ul class="cl-list">
+          <li><b>AI 焊接助手支持逆向推荐</b>：说出目标材料与熔深范围（如"T2紫铜，熔深需要0.2~1.4mm，帮我推荐配置"），自动网格扫描焊接模型，推荐光学配置与焊接参数（Top 3），覆盖单光斑 CW / 环形摆动 / QCW / 填丝 / 功率调制全部焊接方式。</li>
+          <li><b>AI 助手接入工具箱工具</b>：加速距离、点间距频率可直接对话输入计算；打焦点、配合公差、工艺窗口、DOE、保护气、AI 焊接诊断、激光器异常等一键跳转对应界面。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.18</span><span class="cl-date">2026-09-16 · AI 焊接助手</span></div>
         <ul class="cl-list">
           <li><b>新增 AI 焊接助手（悬浮球入口）</b>：说出焊接需求（如"6061铝环形摆动焊接，内芯功率3000W，外环1500W"），自动识别焊接方式与参数，缺失参数逐步反问引导，齐备后调用对应焊接模型实时计算熔深/熔宽/频率/重叠率等，支持一键填入参数并查看仿真动画。</li>
@@ -13419,9 +13426,9 @@
     wob: {
       name:'环形光斑摆动焊接', view:'lib', libSel:'ring',
       params:{
-        coreP:{label:'内芯功率',unit:'W',kw:1,aliases:['内芯功率','芯功率']},
+        coreP:{label:'内芯功率',unit:'W',kw:1,aliases:['内芯功率','芯功率','内芯']},
         ringP:{label:'外环功率',unit:'W',kw:1,aliases:['外环功率','环功率','外环']},
-        coreDia:{label:'内芯芯径',unit:'μm',aliases:['内芯芯径','内芯直径','内芯','芯径']},
+        coreDia:{label:'内芯芯径',unit:'μm',aliases:['内芯芯径','内芯直径','芯径']},
         ringDia:{label:'外环芯径',unit:'μm',aliases:['外环芯径','外环直径','环芯径','外芯径']},
         fc:{label:'准直镜焦距',unit:'mm',aliases:['准直镜','准直','准直焦距']},
         ff:{label:'聚焦镜焦距',unit:'mm',aliases:['聚焦镜','聚焦','聚焦焦距']},
@@ -13740,6 +13747,19 @@
         }
       }
     }
+    // 单位回退：裸单位值绑定对应参数（Hz→频率、ms→脉宽、W→功率类）
+    if(got.freq==null){
+      var fmz=t.match(/(\d+(?:\.\d+)?)\s*hz/i);
+      if(fmz){ got.freq=conv(parseFloat(fmz[1]),'hz',null,null); }
+    }
+    if(got.tau==null){
+      var fmq=t.match(/(\d+(?:\.\d+)?)\s*ms\b/i);
+      if(fmq){ got.tau=parseFloat(fmq[1]); }
+    }
+    if(got.pp==null&&got.pav==null&&got.wP==null){
+      var fmw=t.match(/(\d+(?:\.\d+)?)\s*w\b/i);
+      if(fmw){ var wv=parseFloat(fmw[1]); if(mod.params.pp) got.pp=wv; else if(mod.params.pav) got.pav=wv; else if(mod.params.wP) got.wP=wv; }
+    }
     return got;
   }
 
@@ -13806,6 +13826,8 @@
   function handle(text){
     text=(text||'').trim();
     if(!text) return;
+    if(recTry(text)) return;
+    if(toolTry(text)) return;
     user(text);
     if(/^(帮助|help|重新|重来|清空|reset)$/i.test(text)){
       S.mode=null;S.got={};setQuick(null);
@@ -13879,6 +13901,249 @@
   } else {
     initAI();
   }
+  /* ============ 逆向推荐引擎（目标熔深 → 推荐配置） ============ */
+  function recTry(text){
+    var t=(text||'').trim();
+    var wantRec=/推荐|建议|帮我配|怎么选|帮我选|选什么|配什么/i.test(t);
+    var rng=t.match(/([\d.]+)\s*[~～\-到至]\s*([\d.]+)/);
+    var hasDeep=/熔深|焊深/i.test(t);
+    if(!(wantRec&&rng&&hasDeep)) return false;
+    var lo=parseFloat(rng[1]), hi=parseFloat(rng[2]);
+    if(!(isFinite(lo)&&isFinite(hi)&&lo>0&&hi>lo)) { bot('请给出有效的目标熔深范围，例如：熔深需要 0.2~1.4mm。'); return true; }
+    var mat=matchMaterial(t)||'steel';
+    var mode=detectMode(t); // 可为 null → 全部模式扫描
+    var modes=mode?[mode]:['weld','wob','qcw','fill','mod'];
+    var all=[];
+    for(var i=0;i<modes.length;i++){
+      var rs=recScan(modes[i],mat,lo,hi);
+      for(var j=0;j<rs.length;j++) all.push(rs[j]);
+    }
+    if(!all.length){ bot('按目标熔深 <b>'+lo+'~'+hi+'mm</b>、材料 <b>'+matName(mat)+'</b> 未扫描到满足的组合。可尝试：调整材料或扩大熔深范围后重新提问。'); return true; }
+    // 评分排序：接近区间中心优先、功率低优先、离焦绝对值小优先
+    var center=(lo+hi)/2, span=Math.max(hi-lo,0.1);
+    all.forEach(function(r){ r.score=Math.abs(r.depth-center)/span*10 + (r.P||0)/8000*3 + Math.abs(r.def||0)*0.5; });
+    all.sort(function(a,b){ return a.score-b.score; });
+    // 模式去重：每种模式最多 2 条，保证推荐覆盖多种焊接方式
+    var top=[], modeCnt={};
+    for(var ri=0; ri<all.length && top.length<3; ri++){
+      var rc=all[ri];
+      var mc=modeCnt[rc.mode]||0;
+      if(mc<2){ top.push(rc); modeCnt[rc.mode]=mc+1; }
+    }
+    var h='已按目标熔深 <b>'+lo+'~'+hi+'mm</b>、材料 <b>'+matName(mat)+'</b> 推荐（Top '+top.length+'）：<div class="ai-res">';
+    for(var k=0;k<top.length;k++){
+      var r=top[k];
+      h+='<div class="r-row"><span class="r-k">'+(k+1)+' · '+modeName(r.mode)+'</span><span class="r-v">'+fmt(r.depth,2)+' mm 熔深</span></div>'+
+         '<div class="r-row"><span class="r-k">光学</span><span class="r-v">芯径'+r.core+'μm · 准直'+r.fc+' · 聚焦'+r.ff+'</span></div>'+
+         '<div class="r-row"><span class="r-k">参数</span><span class="r-v">'+recParamStr(r)+'</span></div>'+
+         '<div class="r-row"><span class="r-k">预估</span><span class="r-v">熔宽 '+fmt(r.width,2)+' mm · '+recModeTag(r)+'</span></div>';
+    }
+    h+='</div><div class="ai-note">以上为模型估算推荐，实际焊接请以试焊验证为准。需要精确计算可说完整参数，我按指定参数计算。</div>'+
+      '<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>';
+    bot(h);
+    return true;
+  }
+  function matName(m){ var n={steel:'不锈钢/碳钢',al1060:'纯铝1060',al3003:'铝3003',al5052:'铝5052',al5083:'铝5083',al6061:'铝6061',al6063:'铝6063',al7075:'铝7075',cu_t2:'T2紫铜',cu_c1020:'无氧铜C1020',cu_h62:'黄铜H62',cu_c5191:'磷青铜C5191',cu_qbe2:'铍铜QBe2'}[m]; return n||m; }
+  function modeName(m){ return ({weld:'单光斑 CW',wob:'环形摆动',qcw:'QCW 脉冲',fill:'激光填丝',mod:'功率调制'})[m]||m; }
+  function recModeTag(r){ if(r.mode==='wob') return r.freq!=null?('摆动频率 '+fmt(r.freq,0)+'Hz'):'摆动焊接'; if(r.mode==='qcw') return r.overlap!=null?('重叠率 '+fmt(r.overlap*100,1)+'%'):'脉冲焊接'; return r.mode==='mod'?'功率调制':'CW 焊接'; }
+  function recParamStr(r){
+    var s='';
+    if(r.mode==='wob'){ s='内芯 '+r.coreP+'W · 外环 '+r.ringP+'W · 速度 '+r.V+'mm/s · 离焦 '+r.def+'mm'; }
+    else if(r.mode==='qcw'){ s='峰值 '+r.P+'W · 脉宽 '+r.tau+'ms · '+r.freq+'Hz · 速度 '+r.V+'mm/s · 离焦 '+r.def+'mm'; }
+    else if(r.mode==='fill'){ s='峰值 '+r.P+'W · 速度 '+r.V+'mm/s · 送丝 '+r.wfs+'mm/s · 离焦 '+r.def+'mm'; }
+    else if(r.mode==='mod'){ s='平均 '+r.P+'W · '+r.freq+'Hz · 幅度'+r.amp+'% · 速度 '+r.V+'mm/s · 离焦 '+r.def+'mm'; }
+    else { s='功率 '+r.P+'W · 速度 '+r.V+'mm/s · 离焦 '+r.def+'mm'; }
+    return s;
+  }
+  // 各模式扫描器：设置输入 → 调正向模型 → 收集满足区间的组合
+  function recScan(mode,mat,lo,hi){
+    var out=[];
+    try{
+      if(mode==='weld'){
+        var opts=[{core:50,fc:100,ff:200},{core:100,fc:100,ff:200},{core:50,fc:100,ff:300},{core:100,fc:150,ff:300}];
+        var Ps=[1000,1500,2000,3000,4000,5000], Vs=[10,20,30,50,80], Zs=[0,-1,-2];
+        var save={P:state.wP,core:state.wCore,fc:state.wFc,ff:state.wFf,V:state.wV,def:state.wDefocus,mat:state.wMaterial};
+        for(var oi=0;oi<opts.length;oi++)for(var pi=0;pi<Ps.length;pi++)for(var vi=0;vi<Vs.length;vi++)for(var zi=0;zi<Zs.length;zi++){
+          state.wP=Ps[pi];state.wCore=opts[oi].core;state.wFc=opts[oi].fc;state.wFf=opts[oi].ff;state.wV=Vs[vi];state.wDefocus=Zs[zi];state.wMaterial=mat;
+          try{ var r=weldCalculate(); if(r&&isFinite(r.depth)&&r.depth>=lo&&r.depth<=hi) out.push({mode:'weld',P:Ps[pi],V:Vs[vi],def:Zs[zi],core:opts[oi].core,fc:opts[oi].fc,ff:opts[oi].ff,depth:r.depth,width:r.width||0}); }catch(e){}
+        }
+        state.wP=save.P;state.wCore=save.core;state.wFc=save.fc;state.wFf=save.ff;state.wV=save.V;state.wDefocus=save.def;state.wMaterial=save.mat;
+      }
+      else if(mode==='wob'){
+        var opts2=[{coreDia:50,ringDia:100,fc:100,ff:200},{coreDia:100,ringDia:150,fc:100,ff:200}];
+        var cPs=[1000,1500,2000,3000], rPs=[500,1000,1500,2000], Vs2=[20,40,60,100], Zs2=[0,-1];
+        for(var o2=0;o2<opts2.length;o2++)for(var c2=0;c2<cPs.length;c2++)for(var r2=0;r2<rPs.length;r2++)for(var v2=0;v2<Vs2.length;v2++)for(var z2=0;z2<Zs2.length;z2++){
+          wobSet({coreP:cPs[c2],ringP:rPs[r2],coreDia:opts2[o2].coreDia,ringDia:opts2[o2].ringDia,fc:opts2[o2].fc,ff:opts2[o2].ff,def:Zs2[z2],V:Vs2[v2],mat:mat});
+          try{ var rw=wobCalculate(); if(rw&&isFinite(rw.depth)&&rw.depth>=lo&&rw.depth<=hi) out.push({mode:'wob',coreP:cPs[c2],ringP:rPs[r2],V:Vs2[v2],def:Zs2[z2],core:opts2[o2].coreDia,fc:opts2[o2].fc,ff:opts2[o2].ff,depth:rw.depth,width:rw.width||0,freq:rw.freq!=null?rw.freq:null}); }catch(e){}
+        }
+      }
+      else if(mode==='qcw'){
+        var opts3=[{core:50,fc:100,ff:200},{core:100,fc:100,ff:200}];
+        var pPs=[500,1000,1500,2000,3000], Vs3=[10,20,30,50], taus=[1,2,5];
+        for(var o3=0;o3<opts3.length;o3++)for(var p3=0;p3<pPs.length;p3++)for(var v3=0;v3<Vs3.length;v3++)for(var t3=0;t3<taus.length;t3++){
+          qcwSet({pp:pPs[p3],core:opts3[o3].core,fc:opts3[o3].fc,ff:opts3[o3].ff,tau:taus[t3],freq:300,V:Vs3[v3],def:0,mat:mat});
+          try{ var rq=qcwCalculate(qcwRead()); if(rq&&isFinite(rq.depth)&&rq.depth>=lo&&rq.depth<=hi) out.push({mode:'qcw',P:pPs[p3],V:Vs3[v3],def:0,tau:taus[t3],freq:300,core:opts3[o3].core,fc:opts3[o3].fc,ff:opts3[o3].ff,depth:rq.depth,width:rq.width||0,overlap:rq.overlap!=null?rq.overlap:null}); }catch(e){}
+        }
+      }
+      else if(mode==='fill'){
+        var opts4=[{core:50,fc:100,ff:200},{core:100,fc:100,ff:200}];
+        var pPs2=[1000,1500,2000,3000,4000], Vs4=[5,10,20], wfs=[30,40,60];
+        for(var o4=0;o4<opts4.length;o4++)for(var p4=0;p4<pPs2.length;p4++)for(var v4=0;v4<Vs4.length;v4++)for(var w4=0;w4<wfs.length;w4++){
+          fillSet({pp:pPs2[p4],core:opts4[o4].core,fc:opts4[o4].fc,ff:opts4[o4].ff,V:Vs4[v4],def:0,mat:mat,wireDia:1.2,wfs:wfs[w4]});
+          try{ var rf=fillCalculate(fillRead()); if(rf&&isFinite(rf.depth)&&rf.depth>=lo&&rf.depth<=hi) out.push({mode:'fill',P:pPs2[p4],V:Vs4[v4],def:0,core:opts4[o4].core,fc:opts4[o4].fc,ff:opts4[o4].ff,depth:rf.depth,width:rf.width||0,wfs:wfs[w4]}); }catch(e){}
+        }
+      }
+      else if(mode==='mod'){
+        var opts5=[{core:50,fc:100,ff:200},{core:100,fc:100,ff:200}];
+        var pAv=[1000,1500,2000,3000,4000], Vs5=[20,40,60,100];
+        for(var o5=0;o5<opts5.length;o5++)for(var p5=0;p5<pAv.length;p5++)for(var v5=0;v5<Vs5.length;v5++){
+          modSet({pav:pAv[p5],core:opts5[o5].core,fc:opts5[o5].fc,ff:opts5[o5].ff,freq:1000,amp:30,V:Vs5[v5],def:0,mat:mat});
+          try{ var rm=modCalculate(modRead()); if(rm&&isFinite(rm.depth)&&rm.depth>=lo&&rm.depth<=hi) out.push({mode:'mod',P:pAv[p5],V:Vs5[v5],def:0,core:opts5[o5].core,fc:opts5[o5].fc,ff:opts5[o5].ff,depth:rm.depth,width:rm.width||0,freq:1000,amp:30}); }catch(e){}
+        }
+      }
+    }catch(e){}
+    return out;
+  }
+  // 表单设置辅助（供扫描器使用）
+  function wobSet(g){
+    setNum('wobCorePNum',g.coreP); syncR('wobCorePNum','wobCoreP');
+    setNum('wobRingPNum',g.ringP); syncR('wobRingPNum','wobRingP');
+    setNum('wobCoreDiaNum',g.coreDia); syncR('wobCoreDiaNum','wobCoreDia');
+    setNum('wobRingDiaNum',g.ringDia); syncR('wobRingDiaNum','wobRingDia');
+    setNum('wobFcNum',g.fc); syncR('wobFcNum','wobFc');
+    setNum('wobFfNum',g.ff); syncR('wobFfNum','wobFf');
+    setNum('wobDefocusNum',g.def); syncR('wobDefocusNum','wobDefocus');
+    setNum('wobVNum',g.V); syncR('wobVNum','wobV');
+    setVal('wobMaterial',g.mat);
+  }
+  function qcwSet(g){
+    setNum('qcwPpNum',g.pp); setNum('qcwCoreNum',g.core); setNum('qcwFcNum',g.fc); setNum('qcwFfNum',g.ff);
+    setNum('qcwDefocusNum',g.def||0); setNum('qcwTauNum',g.tau); setNum('qcwFreqNum',g.freq); setNum('qcwVNum',g.V);
+    setVal('qcwMaterial',g.mat);
+  }
+  function fillSet(g){
+    setNum('fillPpNum',g.pp); setNum('fillCoreNum',g.core); setNum('fillFcNum',g.fc); setNum('fillFfNum',g.ff);
+    setNum('fillDefocusNum',g.def||0); setNum('fillFreqNum',g.freq||200); setNum('fillDutyNum',g.duty||80); setNum('fillVNum',g.V);
+    setNum('fillWireDiaNum',g.wireDia||1.2); setNum('fillWfsNum',g.wfs); setNum('fillLenNum',g.len||100);
+    setVal('fillMaterial',g.mat);
+  }
+  function modSet(g){
+    setNum('modPav',g.pav); setNum('modCore',g.core); setNum('modFc',g.fc); setNum('modFf',g.ff);
+    setNum('modDefocus',g.def||0); setNum('modFreq',g.freq); setNum('modAmp',g.amp); setNum('modV',g.V);
+    setNum('modThickness',g.thickness||2);
+    setVal('modMaterial',g.mat);
+  }
+
+  /* ============ 工具箱工具接入 ============ */
+  var TOOL_LIST=[
+    {key:'focus',name:'打焦点记录',pats:[/打焦点|焦点记录|焦点拟合|零离焦/i],toolSel:'focus',jump:true,desc:'打焦点记录：通过机械坐标与实测焦点大小拟合出排除氧化铝板厚度的 0 离焦坐标。'},
+    {key:'accel',name:'加速距离计算',pats:[/加速距离|加减速|加速时间|起弧延时/i],toolSel:'accel',desc:'加速距离计算：加速度、减速度、焊接速度、焊接距离 → 加速/匀速/减速时间与距离。'},
+    {key:'spacing',name:'点间距频率计算',pats:[/点间距|焊点间距|频率计算|脉冲频率/i],toolSel:'spacing',desc:'点间距频率计算：焊接速度、焊接距离、加速度、点间距 → 脉冲频率与焊点数。'},
+    {key:'fit',name:'动力电池壳盖配合公差',pats:[/配合公差|公差分析|壳盖|盖板|装配间隙|间隙分析/i],toolSel:'fit',jump:true,desc:'动力电池壳盖配合公差分析：输入盖板与壳体尺寸公差，自动计算最大/最小装配间隙。'},
+    {key:'window',name:'工艺窗口对比',pats:[/工艺窗口|窗口对比|达标窗口/i],toolSel:'window',jump:true,desc:'工艺窗口对比：输入目标熔深/熔宽区间，对比两种光学配置的离焦/功率/速度窗口。'},
+    {key:'doe',name:'DOE 试验设计',pats:[/doe|试验设计|因子设计|响应面|pareto/i],toolSel:'doe',jump:true,desc:'DOE 试验设计：自定义因子与响应，生成设计表、方差分析、效应图、等值线与响应优化器。'},
+    {key:'gas',name:'保护气模拟',pats:[/保护气|吹气|同轴吹/i],toolSel:'gas',jump:true,desc:'保护气模拟：同轴吹保护气（氮气）参数对保护效果与氛围占比的模拟动画。'},
+    {key:'weldai',name:'AI 焊接诊断',pats:[/诊断|焊接不良|缺陷|飞溅|气孔|裂纹|未熔合/i],toolSel:'weldai',jump:true,desc:'AI 焊接诊断：动力电池焊接工序（FTT焊接/壳盖焊接/连接片焊接）异常处理查询。'},
+    {key:'laserfault',name:'激光器异常查询',pats:[/激光器.*(异常|故障|报警)|设备.*(异常|故障)/i],toolSel:'laserfault',jump:true,desc:'激光器异常处理：主流激光器厂商（通快/IPG/创鑫/大族/杰普特等）异常查询与解决方法。'}
+  ];
+  function toolTry(text){
+    for(var i=0;i<TOOL_LIST.length;i++){
+      var T=TOOL_LIST[i];
+      for(var j=0;j<T.pats.length;j++){
+        if(T.pats[j].test(text)){
+          if(T.key==='accel') return toolAccel(text);
+          if(T.key==='spacing') return toolSpacing(text);
+          // 其余工具：跳转工具箱对应界面
+          toolJump(T);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  function toolJump(T){
+    bot('已识别：<b>'+T.name+'</b>。<br>'+T.desc+'<br><button class="ai-btn pri" onclick="window.__aiJumpTool(\''+T.toolSel+'\')">打开 '+T.name+'</button>');
+  }
+  function toolAccel(text){
+    var dres=numOf2(text,'减速度'), ares=numOf2(dres.rest,'加速度'), vres=numOf2(ares.rest,'速度'), Lres=numOf2(vres.rest,'距离');
+    var a=ares.v, d=dres.v, v=vres.v, L=Lres.v;
+    if(a==null&&d==null&&v==null&&L==null){ toolJump(TOOL_LIST[1]); return true; }
+    if(a==null||d==null||v==null||L==null){
+      var miss=[];
+      if(a==null)miss.push('加速度（mm/s²）'); if(d==null)miss.push('减速度（mm/s²）'); if(v==null)miss.push('焊接速度（mm/s）'); if(L==null)miss.push('焊接距离（mm）');
+      bot('已识别为 <b>加速距离计算</b>，还缺：'+miss.join('、')+'。例如：加速度3000，减速度3000，速度100，距离80。');
+      return true;
+    }
+    var m=computeMotion(a,d,v,L,true);
+    var rows=[
+      ['加速距离 Sa=v²/2a',fmt(m.sa,2)+' mm'],
+      ['加速时间 Ta=v/a',fmt(m.ta,3)+' s'],
+      ['匀速距离 Su',fmt(m.su,2)+' mm'],
+      ['匀速时间 Tu',fmt(m.tu,3)+' s'],
+      ['减速距离 Sd=v²/2d',fmt(m.sd,2)+' mm'],
+      ['减速时间 Td=v/d',fmt(m.td,3)+' s'],
+      ['总焊接时间 T',fmt(m.t,3)+' s'],
+      ['状态',m.reached?'完整 加速→匀速→减速':'距离不足（三角曲线峰值 '+fmt(m.vp,1)+'mm/s）']
+    ];
+    var h='<b>加速距离计算</b>（加速度 '+fmt(a,0)+' · 减速度 '+fmt(d,0)+' · 速度 '+fmt(v,0)+' · 距离 '+fmt(L,0)+'）<div class="ai-res">';
+    for(var i=0;i<rows.length;i++) h+='<div class="r-row"><span class="r-k">'+rows[i][0]+'</span><span class="r-v">'+rows[i][1]+'</span></div>';
+    h+='</div><div class="ai-note">加速段热输入集中易起焊过熔，减速段易收尾过熔，建议加减速段结束后再触发激光。</div>'+
+      '<button class="ai-btn pri" onclick="window.__aiJumpTool(\'accel\')">打开动态演示</button>'+
+      '<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>';
+    bot(h);
+    return true;
+  }
+  function toolSpacing(text){
+    var vres=numOf2(text,'速度'), v=vres.v;
+    var Lres=numOf2(vres.rest,'距离'), L=Lres.v;
+    var dres=numOf2(Lres.rest,'间距'), d=dres.v;
+    var ares=numOf2(dres.rest,'加速度'), a=ares.v;
+    if(v==null&&L==null&&d==null&&a==null){ toolJump(TOOL_LIST[2]); return true; }
+    if(v==null||L==null||d==null||a==null){
+      var miss=[];
+      if(v==null)miss.push('焊接速度（mm/s）'); if(L==null)miss.push('焊接距离（mm）'); if(d==null)miss.push('点间距（mm）'); if(a==null)miss.push('加速度（mm/s²）');
+      bot('已识别为 <b>点间距频率计算</b>，还缺：'+miss.join('、')+'。例如：速度100，距离80，加速度3000，点间距0.5。');
+      return true;
+    }
+    var f=v/d, N=Math.max(1,Math.floor(L/d));
+    var m=computeMotion(a,0,v,L,false);
+    var rows=[
+      ['脉冲频率 f=v/d',fmt(f,2)+' Hz'],
+      ['焊缝点数 N≈L/d',N+' 个'],
+      ['加速时间 Ta',fmt(m.ta,3)+' s'],
+      ['加速距离 Sa',fmt(m.sa,2)+' mm'],
+      ['总焊接时间 T',fmt(m.t,3)+' s']
+    ];
+    var h='<b>点间距频率计算</b>（速度 '+fmt(v,0)+' · 距离 '+fmt(L,0)+' · 加速度 '+fmt(a,0)+' · 点间距 '+fmt(d,2)+'）<div class="ai-res">';
+    for(var i=0;i<rows.length;i++) h+='<div class="r-row"><span class="r-k">'+rows[i][0]+'</span><span class="r-v">'+rows[i][1]+'</span></div>';
+    h+='</div><div class="ai-note">频率由焊接速度与点间距决定（f=v/d），与加速度无关。</div>'+
+      '<button class="ai-btn pri" onclick="window.__aiJumpTool(\'spacing\')">打开动态演示</button>'+
+      '<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>';
+    bot(h);
+    return true;
+  }
+  function numOf(text,key){
+    var m=text.match(new RegExp(key+'\\s*[:：]?\\s*(-?\\d+(?:\\.\\d+)?)','i'));
+    if(m) return parseFloat(m[1]);
+    return null;
+  }
+  // 提取 键+数值 并返回剔除该段的剩余文本（避免"减速度3000"被"速度"误匹配）
+  function numOf2(text,key){
+    var re=new RegExp(key+'\\s*[:：]?\\s*(-?\\d+(?:\\.\\d+)?)','i');
+    var m=text.match(re);
+    if(!m) return {v:null, rest:text};
+    return {v:parseFloat(m[1]), rest:text.replace(m[0],' ')};
+  }
+  window.__aiJumpTool=function(toolSel){
+    var view='toolbox';
+    var ts=$('toolSelect'); if(ts){ ts.value=toolSel; if(ts.dispatchEvent) ts.dispatchEvent(new Event('change')); }
+    if(typeof ZONE_KEYS!=='undefined' && ZONE_KEYS[view] && !isZoneUnlocked(view)){
+      openZoneLock(view,function(){ enterView(view); });
+      return;
+    }
+    enterView(view);
+  };
+
 })();
 
 })();
