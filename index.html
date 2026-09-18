@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.20</div>
+    <div class="splash-version">v1.4.21</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.20</span>
+        <span class="ar-value">v1.4.21</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.20</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.21</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,14 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.21</span><span class="cl-date">2026-09-18 · AI 助手更懂人话</span></div>
+        <ul class="cl-list">
+          <li><b>回答更像真人对话</b>：计算前自然开场（随机话术），缺参数用口语引导（"还差这几个参数，补给我马上算"），答完有收尾。</li>
+          <li><b>知识库口语化</b>：焊接缺陷、材料可焊性、功率选型、光学咨询回复改为自然语气（"这个情况我懂""铜确实难伺候""这个简单，光斑就这么算"）。</li>
+          <li><b>无关问题友好兜底</b>：聊到非焊接话题会自然说明自己的擅长范围并给出示例；"好的/知道了/收到"等确认词会自然回应。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.20</span><span class="cl-date">2026-09-18 · AI 助手更善解人意</span></div>
         <ul class="cl-list">
           <li><b>新增焊接问题问答</b>：说出异常现象（如"飞溅大怎么办""气孔多怎么处理""焊不透"），AI 依据行业文献给出缺陷成因与处理建议，并可一键跳转 AI 焊接诊断。</li>
@@ -14218,6 +14226,11 @@
 
   }
 
+  function human(){
+    var os=['好的，我帮你看看。','没问题，这就来。','收到，我算一下。','好嘞，稍等。','可以，马上好。'];
+    return os[Math.floor(Math.random()*os.length)];
+  }
+
   function askMissing(){
 
     var mod=MODS[S.mode];
@@ -14228,7 +14241,7 @@
 
       var labels=missing.map(function(k){ var p=mod.params[k]; return p.label+(p.unit?'（'+p.unit+'）':''); });
 
-      bot('好的，已识别为<b>'+mod.name+'</b>。\n还缺：'+labels.join('、')+'。\n请补充，例如：'+sample(missing[0]));
+      bot('好的，收到，是 <b>'+mod.name+'</b>。\n还差这几个参数：'+labels.join('、')+'。\n补给我，我马上帮你算。比如：'+sample(missing[0]));
 
       return true;
 
@@ -14268,7 +14281,10 @@
 
     if(!S.mode){
 
-      bot('请先告诉我焊接方式，例如：环形摆动焊接 / 单光斑CW / QCW脉冲 / 激光填丝 / 功率调制。');
+      if(/^(嗯|好|好的|知道了|ok|OK|行|哦|这样啊|原来如此|明白|了解|收到)$/i.test(text)){
+      bot('好嘞，有需要随时叫我。'); return;
+    }
+    bot('这个我可能帮不上忙，我主要懂激光焊接这块：参数计算、材料可焊性、缺陷处理、功率选型。可以试试问我：<br>· "6061铝 环形摆动 内芯3000W 外环1500W"<br>· "T2紫铜 熔深0.2~1.4 帮我推荐"<br>· "飞溅大怎么办"');
 
       return;
 
@@ -14288,7 +14304,7 @@
 
       var desc=keys.map(function(k){ var p=mod.params[k]; return p.label+'='+parsed[k]+(p.unit||''); }).join('、');
 
-      bot('已记录：'+desc);
+      bot('好的，我记下了：'+desc);
 
     }
 
@@ -14302,7 +14318,7 @@
 
       var modeNow=S.mode;
 
-      var msg=mod.result(r)+'\n'+
+      var msg=human()+'\n'+mod.result(r)+'\n'+
 
         '<button class="ai-btn pri" onclick="window.__aiJump(\''+modeNow+'\')">填入并查看动画</button>'+
 
@@ -14312,7 +14328,7 @@
 
     }catch(e){
 
-      bot('计算遇到异常：'+(e&&e.message?e.message:e)+'。请检查参数是否合理，或重新描述。');
+      bot('哎呀，计算时碰到点问题：'+(e&&e.message?e.message:e)+'。你检查下参数合不合理，或者重新描述一下？');
 
     }
 
@@ -14936,7 +14952,7 @@
     var hit=null;
     for(var i=0;i<DEFECT_ADVICE.length;i++) if(DEFECT_ADVICE[i].pat.test(t)){ hit=DEFECT_ADVICE[i]; break; }
     if(!hit) return null;
-    var h='关于 <b>'+hit.title+'</b> 的处理建议（依据行业文献整理）：<div class="ai-res">';
+    var h='这个情况我懂，<b>'+hit.title+'</b> 一般是这几种原因引起的，我帮你理了理，从这几个方面下手：<div class="ai-res">';
     for(var j=0;j<hit.items.length;j++) h+='<div class="r-row"><span class="r-k">·</span><span class="r-v" style="font-weight:500;text-align:left;font-size:12px;">'+hit.items[j]+'</span></div>';
     h+='</div>';
     return h;
@@ -14951,34 +14967,34 @@
     var isNi=/镍|纯镍|镍带/i.test(t);
     var isTi=/钛/i.test(t);
     if(isBrass){
-      return '黄铜激光焊接提示：<div class="ai-res">'+
+      return '黄铜确实不太好焊，主要难点在这几点：<div class="ai-res">'+
         '<div class="r-row"><span class="r-k">难点</span><span class="r-v">锌含量超出激光焊允许范围，锌熔点低易汽化 → 气孔/飞溅</span></div>'+
         '<div class="r-row"><span class="r-k">对策</span><span class="r-v">控制热输入（脉冲/摆动）· 表面处理增吸收 · 必要时预热 200~300℃</span></div>'+
         '<div class="r-row"><span class="r-k">提示</span><span class="r-v">工具箱已内置黄铜 H62 模型</span></div></div>';
     }
     if(isCu&&isAl){
-      return '铜铝异种激光焊接（动力电池连接片/极耳常见）：<div class="ai-res">'+
+      return '铜和铝焊在一起确实有讲究（动力电池连接片/极耳很常见），重点看这几条：<div class="ai-res">'+
         '<div class="r-row"><span class="r-k">难点</span><span class="r-v">易生成脆性金属间化合物（IMC）</span></div>'+
         '<div class="r-row"><span class="r-k">要点</span><span class="r-v">控制热输入，激光仅穿透下层铝 20%~30%</span></div>'+
         '<div class="r-row"><span class="r-k">手段</span><span class="r-v">摆动焊接 · 光斑偏铜侧 · 短时高速</span></div>'+
         '<div class="r-row"><span class="r-k">建议</span><span class="r-v">用"环形摆动"模式试算参数，或打开焊接诊断查询</span></div></div>';
     }
     if(isCu){
-      return '铜材激光焊接提示：<div class="ai-res">'+
+      return '铜这个材料确实难伺候，主要在这几点：<div class="ai-res">'+
         '<div class="r-row"><span class="r-k">难点</span><span class="r-v">1064nm 反射率约 95%、热导率 401W/mK，能量耦合差</span></div>'+
         '<div class="r-row"><span class="r-k">对策</span><span class="r-v">高功率密度 · 蓝/绿光激光 · 表面黑化 · 预热 200~300℃</span></div>'+
         '<div class="r-row"><span class="r-k">工艺</span><span class="r-v">摆动焊接可稳定匙孔、减少飞溅</span></div>'+
         '<div class="r-row"><span class="r-k">提示</span><span class="r-v">工具箱已内置 T2紫铜/无氧铜/黄铜/磷青铜/铍铜模型，可直接计算</span></div></div>';
     }
     if(isAl){
-      return '铝合金激光焊接提示：<div class="ai-res">'+
+      return '铝合金焊接得细心点，主要注意这几条：<div class="ai-res">'+
         '<div class="r-row"><span class="r-k">难点</span><span class="r-v">反射高、导热快（需要较高能量密度）；易吸氢生气孔；镁/硅等元素易烧损</span></div>'+
         '<div class="r-row"><span class="r-k">对策</span><span class="r-v">摆动焊接破碎氧化膜+搅拌熔池 · 高纯保护气 · 清理表面</span></div>'+
         '<div class="r-row"><span class="r-k">经验</span><span class="r-v">2mm 6061 参考：2~3kW，3~5m/min，摆动频率 100~150Hz（文献）</span></div>'+
         '<div class="r-row"><span class="r-k">提示</span><span class="r-v">工具箱已内置 1060/3003/5052/5083/6061/6063/7075 铝模型</span></div></div>';
     }
     if(isSteel){
-      return '不锈钢/碳钢激光焊接提示：<div class="ai-res">'+
+      return '钢是激光焊接里最省心的材料之一，给你些经验参考：<div class="ai-res">'+
         '<div class="r-row"><span class="r-k">特点</span><span class="r-v">吸收率较高、焊接性好，是激光焊接最成熟的材料</span></div>'+
         '<div class="r-row"><span class="r-k">经验</span><span class="r-v">0.5~1kW 焊 0.1~1mm · 1~3kW 焊 1~4mm · 3~6kW 焊 4~8mm（文献）</span></div>'+
         '<div class="r-row"><span class="r-k">深熔</span><span class="r-v">厚板深熔焊焦点宜置于表面下约 -0.2~-0.3×板厚</span></div>'+
@@ -14997,7 +15013,7 @@
       ['3~6kW','4~8mm','中厚板/结构件'],
       ['6~20kW','8~25mm','深熔焊/重工业']
     ];
-    var h='激光功率选型经验参考（文献整理）：<div class="ai-res">';
+    var h='可以，给你个功率选型的经验参考：<div class="ai-res">';
     for(var i=0;i<guide.length;i++) h+='<div class="r-row"><span class="r-k">'+guide[i][0]+'</span><span class="r-v">'+guide[i][1]+' · '+guide[i][2]+'</span></div>';
     h+='</div><div class="ai-note">具体功率还需结合材料（铜铝需更高功率密度）、速度、光斑与离焦。需要精确计算可把参数告诉我。</div>'+
       '<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>';
@@ -15007,7 +15023,7 @@
   /* ---- 光学咨询（芯径/准直/聚焦 → 光斑） ---- */
   function opticsQ(text){
     if(/(光斑|芯径|准直|聚焦|焦距).*(多大|多少|大小|怎么选|怎么选择|选择|关系|影响|决定)/i.test(text) && /吗|？|\?|怎么|如何|多大|多少|选择|推荐|关系|影响/i.test(text)){
-      return '光斑与光学配置的关系：<div class="ai-res">'+
+      return '这个简单，光斑就这么算：<div class="ai-res">'+
         '<div class="r-row"><span class="r-k">公式</span><span class="r-v">光斑直径 d = 光纤芯径 × 聚焦镜焦距 ÷ 准直镜焦距</span></div>'+
         '<div class="r-row"><span class="r-k">规律</span><span class="r-v">芯径越小光斑越小 · 聚焦越长光斑越大 · 准直越长光斑越小</span></div>'+
         '<div class="r-row"><span class="r-k">建议</span><span class="r-v">告诉我"芯径、准直、聚焦"数值，我直接帮你算出焦点光斑与功率密度</span></div></div>';
