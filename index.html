@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.17</div>
+    <div class="splash-version">v1.4.18</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.17</span>
+        <span class="ar-value">v1.4.18</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.17</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.18</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,13 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.18</span><span class="cl-date">2026-09-16 · AI 焊接助手</span></div>
+        <ul class="cl-list">
+          <li><b>新增 AI 焊接助手（悬浮球入口）</b>：说出焊接需求（如"6061铝环形摆动焊接，内芯功率3000W，外环1500W"），自动识别焊接方式与参数，缺失参数逐步反问引导，齐备后调用对应焊接模型实时计算熔深/熔宽/频率/重叠率等，支持一键填入参数并查看仿真动画。</li>
+          <li><b>支持全部焊接方式</b>：环形光斑摆动、单光斑 CW、QCW 准连续脉冲、激光填丝、通快功率调制；支持 W/kW、mm/s/m/min、μm/mm 等单位自动换算。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.17</span><span class="cl-date">2026-09-11 · 测试专区新增激光填丝补焊模拟</span></div>
         <ul class="cl-list">
           <li><b>新增激光填丝补焊模拟</b>：测试专区下拉菜单新增填丝熔深/熔宽/余高仿真，焊丝大小自定义 + 光学配置 + 焊接参数（连续波频率焊接）。</li>
@@ -13396,7 +13403,551 @@
     if (oR) oR.addEventListener('click', doeOptimize);
   })();
 
+
+
+(function(){
+  if (window.__aiWelder) return;
+  window.__aiWelder = true;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  var fmt = function(v,d){ d=(d==null?2:d); if(!isFinite(v)) return '—'; return String(Number(Number(v).toFixed(d))); };
+  var sf = function(v){ if(!isFinite(v)) return '—'; if(Math.abs(v)>=10000||Math.abs(v)<0.01) return Number(v).toExponential(1); return fmt(v,1); };
+
+  /* ============ 模块元数据 ============ */
+  var MODS = {
+    wob: {
+      name:'环形光斑摆动焊接', view:'lib', libSel:'ring',
+      params:{
+        coreP:{label:'内芯功率',unit:'W',kw:1,aliases:['内芯功率','芯功率']},
+        ringP:{label:'外环功率',unit:'W',kw:1,aliases:['外环功率','环功率','外环']},
+        coreDia:{label:'内芯芯径',unit:'μm',aliases:['内芯芯径','内芯直径','内芯','芯径']},
+        ringDia:{label:'外环芯径',unit:'μm',aliases:['外环芯径','外环直径','环芯径','外芯径']},
+        fc:{label:'准直镜焦距',unit:'mm',aliases:['准直镜','准直','准直焦距']},
+        ff:{label:'聚焦镜焦距',unit:'mm',aliases:['聚焦镜','聚焦','聚焦焦距']},
+        def:{label:'离焦量',unit:'mm',aliases:['离焦量','离焦']},
+        B:{label:'摆动宽度',unit:'mm',aliases:['摆动宽度','摆宽','摆动幅宽']},
+        pitch:{label:'摆动间距',unit:'mm',aliases:['摆动间距','摆间距','间距']},
+        V:{label:'焊接速度',unit:'mm/s',speed:1,aliases:['焊接速度','焊速','速度']},
+        type:{label:'摆动类型',aliases:['摆动类型','摆型']},
+        material:{label:'材料',aliases:['材料','材质']},
+        thickness:{label:'母材厚度',unit:'mm',aliases:['母材厚度','板厚','材料厚度']},
+        len:{label:'焊接长度',unit:'mm',aliases:['焊接长度','焊缝长度','长度']}
+      },
+      required:['coreP','ringP','coreDia','ringDia','fc','ff','V','material'],
+      apply:function(g){
+        setNum('wobCorePNum',g.coreP); syncR('wobCorePNum','wobCoreP');
+        setNum('wobRingPNum',g.ringP); syncR('wobRingPNum','wobRingP');
+        setNum('wobCoreDiaNum',g.coreDia); syncR('wobCoreDiaNum','wobCoreDia');
+        setNum('wobRingDiaNum',g.ringDia); syncR('wobRingDiaNum','wobRingDia');
+        setNum('wobFcNum',g.fc); syncR('wobFcNum','wobFc');
+        setNum('wobFfNum',g.ff); syncR('wobFfNum','wobFf');
+        if(g.def!=null){setNum('wobDefocusNum',g.def);syncR('wobDefocusNum','wobDefocus');}
+        if(g.B!=null){setNum('wobWidthNum',g.B);syncR('wobWidthNum','wobWidth');}
+        if(g.pitch!=null){setNum('wobPitchNum',g.pitch);syncR('wobPitchNum','wobPitch');}
+        if(g.V!=null){setNum('wobVNum',g.V);syncR('wobVNum','wobV');}
+        if(g.thickness!=null){setNum('wobThicknessNum',g.thickness);syncR('wobThicknessNum','wobThickness');}
+        if(g.len!=null){setNum('wobLenNum',g.len);syncR('wobLenNum','wobLen');}
+        if(g.type) setVal('wobType',g.type);
+        if(g.material) setVal('wobMaterial',g.material);
+        try{ updateWob(); }catch(e){}
+      },
+      calc:function(){ return wobCalculate(); },
+      result:function(r){
+        var rows=[
+          ['预估熔深', fmt(r.depth,2)+' mm'],
+          ['预估熔宽', fmt(r.width,2)+' mm'],
+          ['摆动频率', fmt(r.f,1)+' Hz'],
+          ['内芯光斑', fmt(r.core.d0Um,0)+' μm'],
+          ['外环光斑', fmt(r.ring.d0Um,0)+' μm'],
+          ['功率密度', sf(r.density)+' W/cm²'],
+          ['线能量', fmt(r.heatTotal,1)+' J/mm'],
+          ['深宽比', fmt(r.ratio,2)],
+          ['焊接模式', r.isKeyhole?'深熔匙孔':'热传导']
+        ];
+        return '<b>环形光斑摆动焊接 · 计算结果</b>\n'+resHtml(rows);
+      }
+    },
+    weld: {
+      name:'单光斑 CW 连续焊接', view:'weld',
+      params:{
+        wP:{label:'激光功率',unit:'W',kw:1,aliases:['激光功率','总功率','功率']},
+        core:{label:'光纤芯径',unit:'μm',aliases:['光纤芯径','芯径','纤芯']},
+        fc:{label:'准直镜焦距',unit:'mm',aliases:['准直镜','准直','准直焦距']},
+        ff:{label:'聚焦镜焦距',unit:'mm',aliases:['聚焦镜','聚焦','聚焦焦距']},
+        def:{label:'离焦量',unit:'mm',aliases:['离焦量','离焦']},
+        V:{label:'焊接速度',unit:'mm/s',speed:1,aliases:['焊接速度','焊速','速度']},
+        material:{label:'材料',aliases:['材料','材质']},
+        thickness:{label:'母材厚度',unit:'mm',aliases:['母材厚度','板厚','材料厚度']}
+      },
+      required:['wP','core','fc','ff','V','material'],
+      apply:function(g){
+        setNum('wPNum',g.wP); syncR('wPNum','wP'); state.wP=numV('wPNum');
+        setNum('wCoreNum',g.core); syncR('wCoreNum','wCore'); state.wCore=numV('wCoreNum');
+        setNum('wFcNum',g.fc); syncR('wFcNum','wFc'); state.wFc=numV('wFcNum');
+        setNum('wFfNum',g.ff); syncR('wFfNum','wFf'); state.wFf=numV('wFfNum');
+        if(g.V!=null){setNum('wVNum',g.V);syncR('wVNum','wV');state.wV=numV('wVNum');}
+        if(g.def!=null){setNum('wDefocusNum',g.def);syncR('wDefocusNum','wDefocus');state.wDefocus=numV('wDefocusNum');}
+        if(g.material){setVal('wMaterial',g.material);state.wMaterial=g.material;}
+        try{ updateWeld(); }catch(e){}
+      },
+      calc:function(){ return weldCalculate(); },
+      result:function(r){
+        var rows=[
+          ['预估熔深', fmt(r.estDef,2)+' mm'],
+          ['理论熔深', fmt(r.theoryDef,2)+' mm'],
+          ['预估熔宽', fmt(r.width,2)+' mm'],
+          ['焦点光斑', fmt(r.d,1)+' μm'],
+          ['功率密度', sf(r.density)+' W/mm²'],
+          ['热线能量', fmt(r.heat,2)+' J/mm'],
+          ['焊接模式', r.keyhole?'深熔匙孔':'热传导']
+        ];
+        return '<b>单光斑 CW 连续焊接 · 计算结果</b>\n'+resHtml(rows);
+      }
+    },
+    qcw: {
+      name:'QCW 准连续脉冲焊接', view:'lib', libSel:'qcw',
+      params:{
+        pp:{label:'峰值功率',unit:'W',kw:1,aliases:['峰值功率','峰功率','功率']},
+        core:{label:'光纤芯径',unit:'μm',aliases:['光纤芯径','芯径','纤芯']},
+        fc:{label:'准直镜焦距',unit:'mm',aliases:['准直镜','准直','准直焦距']},
+        ff:{label:'聚焦镜焦距',unit:'mm',aliases:['聚焦镜','聚焦','聚焦焦距']},
+        def:{label:'离焦量',unit:'mm',aliases:['离焦量','离焦']},
+        tau:{label:'脉宽',unit:'ms',aliases:['脉宽','脉冲宽度']},
+        freq:{label:'重复频率',unit:'Hz',khz:1,aliases:['重复频率','脉冲频率','频率']},
+        V:{label:'焊接速度',unit:'mm/s',speed:1,aliases:['焊接速度','焊速','速度']},
+        material:{label:'材料',aliases:['材料','材质']},
+        thickness:{label:'母材厚度',unit:'mm',aliases:['母材厚度','板厚','材料厚度']},
+        len:{label:'焊接长度',unit:'mm',aliases:['焊接长度','焊缝长度','长度']}
+      },
+      required:['pp','core','fc','ff','tau','freq','V','material'],
+      apply:function(g){
+        setNum('qcwPpNum',g.pp); syncR('qcwPpNum','qcwPp');
+        setNum('qcwCoreNum',g.core); syncR('qcwCoreNum','qcwCore');
+        setNum('qcwFcNum',g.fc); syncR('qcwFcNum','qcwFc');
+        setNum('qcwFfNum',g.ff); syncR('qcwFfNum','qcwFf');
+        if(g.def!=null){setNum('qcwDefocusNum',g.def);syncR('qcwDefocusNum','qcwDefocus');}
+        if(g.tau!=null){setNum('qcwTauNum',g.tau);syncR('qcwTauNum','qcwTau');}
+        if(g.freq!=null){setNum('qcwFreqNum',g.freq);syncR('qcwFreqNum','qcwFreq');}
+        if(g.V!=null){setNum('qcwVNum',g.V);syncR('qcwVNum','qcwV');}
+        if(g.thickness!=null){setNum('qcwThicknessNum',g.thickness);syncR('qcwThicknessNum','qcwThickness');}
+        if(g.len!=null){setNum('qcwLenNum',g.len);syncR('qcwLenNum','qcwLen');}
+        if(g.material) setVal('qcwMaterial',g.material);
+        try{ qcwUpdateResults(qcwCalculate(qcwRead())); }catch(e){}
+      },
+      calc:function(){ return qcwCalculate(qcwRead()); },
+      result:function(r){
+        var rows=[
+          ['预估熔深', fmt(r.h,2)+' mm'+(r.melted?'（已熔透）':'')],
+          ['预估熔宽', fmt(r.w,2)+' mm'],
+          ['平均功率', fmt(r.pAvg,0)+' W'],
+          ['占空比', fmt(r.duty*100,1)+' %'],
+          ['焊斑间距', fmt(r.dx,3)+' mm'],
+          ['重叠率', fmt(r.overlap*100,1)+' %'],
+          ['焦点光斑', fmt(r.dUm,1)+' μm'],
+          ['峰值功率密度', sf(r.Ipeak)+' W/mm²'],
+          ['每毫米脉冲数', fmt(r.nPulse/Math.max(r.len||1,0.1),1)]
+        ];
+        return '<b>QCW 准连续脉冲焊接 · 计算结果</b>\n'+resHtml(rows);
+      }
+    },
+    fill: {
+      name:'激光填丝焊接', view:'lib', libSel:'fill',
+      params:{
+        pp:{label:'激光功率',unit:'W',kw:1,aliases:['激光功率','峰值功率','功率']},
+        core:{label:'光纤芯径',unit:'μm',aliases:['光纤芯径','芯径','纤芯']},
+        fc:{label:'准直镜焦距',unit:'mm',aliases:['准直镜','准直','准直焦距']},
+        ff:{label:'聚焦镜焦距',unit:'mm',aliases:['聚焦镜','聚焦','聚焦焦距']},
+        def:{label:'离焦量',unit:'mm',aliases:['离焦量','离焦']},
+        freq:{label:'频率',unit:'Hz',khz:1,aliases:['频率','调制频率']},
+        duty:{label:'占空比',unit:'%',aliases:['占空比','占空']},
+        V:{label:'焊接速度',unit:'mm/s',speed:1,aliases:['焊接速度','焊速','速度']},
+        wireDia:{label:'焊丝直径',unit:'mm',aliases:['焊丝直径','焊丝大小','丝径','焊丝']},
+        wfs:{label:'送丝速度',unit:'mm/s',speed:1,aliases:['送丝速度','送丝速率','送丝']},
+        material:{label:'材料',aliases:['材料','材质']},
+        thickness:{label:'母材厚度',unit:'mm',aliases:['母材厚度','板厚','材料厚度']},
+        len:{label:'焊接长度',unit:'mm',aliases:['焊接长度','焊缝长度','长度']}
+      },
+      required:['pp','core','fc','ff','V','material','wireDia'],
+      apply:function(g){
+        setNum('fillPpNum',g.pp); syncR('fillPpNum','fillPp');
+        setNum('fillCoreNum',g.core); syncR('fillCoreNum','fillCore');
+        setNum('fillFcNum',g.fc); syncR('fillFcNum','fillFc');
+        setNum('fillFfNum',g.ff); syncR('fillFfNum','fillFf');
+        if(g.def!=null){setNum('fillDefocusNum',g.def);syncR('fillDefocusNum','fillDefocus');}
+        if(g.freq!=null){setNum('fillFreqNum',g.freq);syncR('fillFreqNum','fillFreq');}
+        if(g.duty!=null){setNum('fillDutyNum',g.duty);syncR('fillDutyNum','fillDuty');}
+        if(g.V!=null){setNum('fillVNum',g.V);syncR('fillVNum','fillV');}
+        if(g.wireDia!=null){setNum('fillWireDiaNum',g.wireDia);syncR('fillWireDiaNum','fillWireDia');}
+        if(g.wfs!=null){setNum('fillWfsNum',g.wfs);syncR('fillWfsNum','fillWfs');}
+        if(g.thickness!=null){setNum('fillThicknessNum',g.thickness);syncR('fillThicknessNum','fillThickness');}
+        if(g.len!=null){setNum('fillLenNum',g.len);syncR('fillLenNum','fillLen');}
+        if(g.material) setVal('fillMaterial',g.material);
+        try{ fillUpdateResults(fillCalculate(fillRead())); }catch(e){}
+      },
+      calc:function(){ return fillCalculate(fillRead()); },
+      result:function(r){
+        var rows=[
+          ['预估熔深', fmt(r.h,2)+' mm'+(r.melted?'（已熔透）':'')],
+          ['预估熔宽', fmt(r.wFinal,2)+' mm'],
+          ['余高', fmt(r.reinf,2)+' mm'],
+          ['送丝/焊接比', fmt(r.ratio,2)],
+          ['焊丝熔化功率', fmt(r.pMelt,0)+' W'],
+          ['母材有效功率', fmt(r.pBase,0)+' W'],
+          ['重叠率', fmt(r.overlap*100,1)+' %'],
+          ['焦点光斑', fmt(r.dUm,1)+' μm']
+        ];
+        return '<b>激光填丝焊接 · 计算结果</b>\n'+resHtml(rows);
+      }
+    },
+    mod: {
+      name:'通快功率调制焊接', view:'toolbox', toolSel:'mod',
+      params:{
+        pav:{label:'平均功率',unit:'W',kw:1,aliases:['平均功率','功率']},
+        core:{label:'光纤芯径',unit:'μm',aliases:['光纤芯径','芯径','纤芯']},
+        fc:{label:'准直镜焦距',unit:'mm',aliases:['准直镜','准直','准直焦距']},
+        ff:{label:'聚焦镜焦距',unit:'mm',aliases:['聚焦镜','聚焦','聚焦焦距']},
+        def:{label:'离焦量',unit:'mm',aliases:['离焦量','离焦']},
+        freq:{label:'调制频率',unit:'Hz',khz:1,aliases:['调制频率','频率']},
+        amp:{label:'调制幅度',unit:'%',aliases:['调制幅度','调幅','幅度']},
+        V:{label:'焊接速度',unit:'mm/s',speed:1,aliases:['焊接速度','焊速','速度']},
+        wave:{label:'调制波形',aliases:['波形','调制波形']},
+        material:{label:'材料',aliases:['材料','材质']},
+        thickness:{label:'母材厚度',unit:'mm',aliases:['母材厚度','板厚','材料厚度']}
+      },
+      required:['pav','core','fc','ff','freq','amp','V','material'],
+      apply:function(g){
+        setNum('modPav',g.pav);
+        setNum('modCore',g.core);
+        setNum('modFc',g.fc);
+        setNum('modFf',g.ff);
+        if(g.def!=null) setNum('modDefocus',g.def);
+        if(g.freq!=null) setNum('modFreq',g.freq);
+        if(g.amp!=null) setNum('modAmp',g.amp);
+        if(g.V!=null) setNum('modV',g.V);
+        if(g.thickness!=null) setNum('modThickness',g.thickness);
+        if(g.wave) setVal('modWave',g.wave);
+        if(g.material) setVal('modMaterial',g.material);
+        try{ modUpdateResults(modCalculate(modRead())); }catch(e){}
+      },
+      calc:function(){ return modCalculate(modRead()); },
+      result:function(r){
+        var rows=[
+          ['预估熔深（调制）', fmt(r.hMod,2)+' mm'],
+          ['预估熔宽（调制）', fmt(r.wMod,2)+' mm'],
+          ['CW 基准熔深', fmt(r.hCW,2)+' mm'],
+          ['峰值功率', fmt(r.Ppeak,0)+' W'],
+          ['谷值功率', fmt(r.Pmin,0)+' W'],
+          ['调制周期', fmt(r.Tms,1)+' ms'],
+          ['匙孔惯性增益', '×'+fmt(r.K,2)],
+          ['峰值功率密度', sf(r.Ipeak)+' W/mm²']
+        ];
+        return '<b>通快功率调制焊接 · 计算结果</b>\n'+resHtml(rows);
+      }
+    }
+  };
+
+  /* ============ 工具函数 ============ */
+  function setVal(id,v){ var el=$(id); if(el) el.value=v; }
+  function setNum(id,v){ var el=$(id); if(el && isFinite(v)) el.value=Math.round(v*1000)/1000; }
+  function numV(id){ var el=$(id); return el?parseFloat(el.value)||0:0; }
+  function syncR(numId,rangeId){
+    var r=$(rangeId),n=$(numId); if(!r||!n) return;
+    var v=parseFloat(n.value); if(!isFinite(v)) return;
+    var mn=parseFloat(r.min), mx=parseFloat(r.max);
+    if(isFinite(mn)&&isFinite(mx)) r.value=Math.min(Math.max(v,mn),mx); else r.value=v;
+  }
+  function resHtml(rows){
+    var h='<div class="ai-res">';
+    for(var i=0;i<rows.length;i++){ h+='<div class="r-row"><span class="r-k">'+esc(rows[i][0])+'</span><span class="r-v">'+rows[i][1]+'</span></div>'; }
+    h+='</div>';
+    return h;
+  }
+
+  var MAT_ALIASES = [
+    ['steel',['碳钢','不锈钢','钢','steel']],
+    ['al1060',['1060','纯铝','al1060']],
+    ['al3003',['3003','al3003']],
+    ['al5052',['5052','al5052']],
+    ['al5083',['5083','al5083']],
+    ['al6061',['6061','al6061','铝','铝合金']],
+    ['al6063',['6063','al6063']],
+    ['al7075',['7075','al7075']],
+    ['cu_t2',['t2','紫铜','纯铜','c1100','cu_t2']],
+    ['cu_c1020',['c1020','无氧铜','cu_c1020']],
+    ['cu_h62',['h62','黄铜','cu_h62']],
+    ['cu_c5191',['c5191','磷青铜','cu_c5191']],
+    ['cu_qbe2',['qbe2','铍铜','cu_qbe2']]
+  ];
+  function matchMaterial(t){
+    t=t.toLowerCase();
+    for(var i=0;i<MAT_ALIASES.length;i++){
+      for(var j=0;j<MAT_ALIASES[i][1].length;j++){
+        if(t.indexOf(MAT_ALIASES[i][1][j])>=0) return MAT_ALIASES[i][0];
+      }
+    }
+    return null;
+  }
+  var TYPE_ALIASES=[['sine',['正弦','正玄','sin']],['spiral',['螺旋','spiral']],['zigzag',['弓字','弓形','之字','zigzag']]];
+  function matchType(t){
+    t=t.toLowerCase();
+    for(var i=0;i<TYPE_ALIASES.length;i++) for(var j=0;j<TYPE_ALIASES[i][1].length;j++) if(t.indexOf(TYPE_ALIASES[i][1][j])>=0) return TYPE_ALIASES[i][0];
+    return null;
+  }
+  var WAVE_ALIASES=[['square',['方波','square']],['triangle',['三角','triangle']],['sine',['正弦','正弦波','sin']]];
+  function matchWave(t){
+    t=t.toLowerCase();
+    for(var i=0;i<WAVE_ALIASES.length;i++) for(var j=0;j<WAVE_ALIASES[i][1].length;j++) if(t.indexOf(WAVE_ALIASES[i][1][j])>=0) return WAVE_ALIASES[i][0];
+    return null;
+  }
+  function conv(v,unit,target,flags){
+    if(!unit) return v;
+    var u=unit.toLowerCase().replace(/μ/g,'u');
+    if(u==='kw') return v*1000;
+    if(u==='w') return v;
+    if(flags&&flags.speed){
+      if(u==='m/min') return v*1000/60;
+      if(u==='mm/min') return v/60;
+      if(u==='cm/s') return v*10;
+      if(u==='m/s') return v*1000;
+    }
+    if(flags&&flags.khz && u==='k') return v*1000;
+    if(u==='khz') return v*1000;
+    if(u==='hz') return v;
+    if(target==='μm' && u==='mm') return v*1000;
+    if(target==='μm' && (u==='um'||u==='u')) return v;
+    if(target==='mm' && (u==='um'||u==='u')) return v/1000;
+    return v;
+  }
+  function parseParams(text,mod){
+    var t=text.toLowerCase().replace(/[，。；、,：]/g,' ');
+    var got={};
+    for(var key in mod.params){
+      var p=mod.params[key];
+      if(key==='material'){ var m=matchMaterial(t); if(m) got[key]=m; continue; }
+      if(key==='type'){ var ty=matchType(t); if(ty) got[key]=ty; continue; }
+      if(key==='wave'){ var wv=matchWave(t); if(wv) got[key]=wv; continue; }
+      for(var a=0;a<p.aliases.length;a++){
+        var al=p.aliases[a].toLowerCase();
+        var alEsc=al.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        var UN='((?:kw|w|m\\/min|mm\\/min|mm\\/s|cm\\/s|m\\/s|khz|hz|k|ms|um|μm|mm|%)?)';
+        var re2=new RegExp(alEsc+'\\s*[:：]?\\s*([+-]?\\d+(?:\\.\\d+)?)\\s*'+UN,'i');
+        var re=new RegExp('([+-]?\\d+(?:\\.\\d+)?)\\s*'+UN+alEsc,'i');
+        var m2=t.match(re2)||t.match(re);
+        if(m2){
+          got[key]=conv(parseFloat(m2[1]),m2[2],p.unit,p);
+          break;
+        }
+      }
+    }
+    return got;
+  }
+
+  /* ============ 状态机 ============ */
+  var S={mode:null,got:{}};
+  var MODE_PATTERNS=[
+    ['wob',/环形|摆动|wob|ring|摆焊|环形光斑/i],
+    ['qcw',/qcw|准连续|准连|脉冲/i],
+    ['fill',/填丝|送丝|焊丝|fill|wire|补焊/i],
+    ['mod',/调制|trumpf|功率调制/i],
+    ['weld',/单光斑|cw|连续|直连|单光束|weld/i]
+  ];
+  function detectMode(t){
+    for(var i=0;i<MODE_PATTERNS.length;i++) if(MODE_PATTERNS[i][1].test(t)) return MODE_PATTERNS[i][0];
+    return null;
+  }
+
+  /* ============ UI ============ */
+  function aiBody(){ return $('aiBody'); }
+  function bot(html){
+    var d=document.createElement('div');
+    d.className='ai-m bot';
+    d.innerHTML=html;
+    var b=aiBody(); if(!b) return;
+    b.appendChild(d); scrollDown();
+  }
+  function user(text){
+    var d=document.createElement('div');
+    d.className='ai-m user';
+    d.textContent=text;
+    var b=aiBody(); if(!b) return;
+    b.appendChild(d); scrollDown();
+  }
+  function scrollDown(){ var b=aiBody(); if(b) b.scrollTop=b.scrollHeight; }
+  function setQuick(mode){
+    var q=$('aiQuick'); if(!q) return;
+    var qs=q.querySelectorAll('button');
+    for(var i=0;i<qs.length;i++) qs[i].classList.toggle('on',qs[i].dataset.m===mode);
+  }
+  function sample(key){
+    var samples={
+      coreP:'"内芯功率3000W"',ringP:'"外环功率1500W"',coreDia:'"内芯芯径50"',ringDia:'"外环芯径100"',
+      fc:'"准直镜100"',ff:'"聚焦镜200"',V:'"速度80mm/s"',material:'"6061铝"',
+      B:'"摆动宽度1.2"',pitch:'"摆动间距0.5"',def:'"离焦0"',thickness:'"板厚1.5"',len:'"长度100"',
+      wP:'"功率3000W"',core:'"芯径50"',pp:'"峰值功率1500W"',tau:'"脉宽2ms"',freq:'"频率300Hz"',
+      wireDia:'"焊丝直径1.2"',wfs:'"送丝速度40"',duty:'"占空比80"',pav:'"平均功率2000W"',amp:'"调制幅度30"',
+      wave:'"正弦波"',type:'"正弦摆动"'
+    };
+    return samples[key]||('请输入该参数');
+  }
+  function askMissing(){
+    var mod=MODS[S.mode];
+    var missing=mod.required.filter(function(k){ return S.got[k]==null||S.got[k]===''; });
+    if(missing.length){
+      var labels=missing.map(function(k){ var p=mod.params[k]; return p.label+(p.unit?'（'+p.unit+'）':''); });
+      bot('好的，已识别为<b>'+mod.name+'</b>。\n还缺：'+labels.join('、')+'。\n请补充，例如：'+sample(missing[0]));
+      return true;
+    }
+    return false;
+  }
+  function welcome(){
+    bot('你好，我是 <b>AI 焊接助手</b>。\n告诉我你想计算的焊接方式和参数，例如：\n<span class="ai-chip">6061铝 环形摆动焊接，内芯功率3000W，外环1500W，芯径50，准直100，聚焦200，速度80mm/s</span>\n\n支持：环形摆动 / 单光斑 CW / QCW 脉冲 / 激光填丝 / 功率调制。');
+  }
+  function handle(text){
+    text=(text||'').trim();
+    if(!text) return;
+    user(text);
+    if(/^(帮助|help|重新|重来|清空|reset)$/i.test(text)){
+      S.mode=null;S.got={};setQuick(null);
+      welcome();return;
+    }
+    var nm=detectMode(text);
+    if(nm && nm!==S.mode){ S.mode=nm; S.got={}; setQuick(nm); }
+    if(!S.mode){
+      bot('请先告诉我焊接方式，例如：环形摆动焊接 / 单光斑CW / QCW脉冲 / 激光填丝 / 功率调制。');
+      return;
+    }
+    var mod=MODS[S.mode];
+    var parsed=parseParams(text,mod);
+    var any=false;
+    for(var k in parsed){ S.got[k]=parsed[k]; any=true; }
+    if(any){
+      var keys=Object.keys(parsed);
+      var desc=keys.map(function(k){ var p=mod.params[k]; return p.label+'='+parsed[k]+(p.unit||''); }).join('、');
+      bot('已记录：'+desc);
+    }
+    if(askMissing()) return;
+    try{
+      mod.apply(S.got);
+      var r=mod.calc();
+      var modeNow=S.mode;
+      var msg=mod.result(r)+'\n'+
+        '<button class="ai-btn pri" onclick="window.__aiJump(\''+modeNow+'\')">填入并查看动画</button>'+
+        '<button class="ai-btn gho" onclick="window.__aiReset()">重新提问</button>';
+      bot(msg);
+    }catch(e){
+      bot('计算遇到异常：'+(e&&e.message?e.message:e)+'。请检查参数是否合理，或重新描述。');
+    }
+  }
+
+  /* ============ 全局入口 ============ */
+  window.__aiToggle=function(){
+    var p=$('aiPanel');
+    if(!p) return;
+    if(p.classList.contains('ai-hide')){
+      p.classList.remove('ai-hide');
+      var b=aiBody(); if(b && !b.children.length) welcome();
+      var inp=$('aiInput'); if(inp) setTimeout(function(){ inp.focus(); },60);
+    } else p.classList.add('ai-hide');
+  };
+  window.__aiReset=function(){ S.mode=null;S.got={};setQuick(null);var b=aiBody();if(b){b.innerHTML='';}welcome(); };
+  window.__aiJump=function(mode){
+    var mod=MODS[mode]; if(!mod) return;
+    var view=mod.view;
+    if(view==='lib'){ var ls=$('libSimSelect'); if(ls) ls.value=mod.libSel; }
+    if(view==='toolbox'){ var ts=$('toolSelect'); if(ts){ ts.value=mod.toolSel; ts.dispatchEvent(new Event('change')); } }
+    if(typeof ZONE_KEYS!=='undefined' && ZONE_KEYS[view] && !isZoneUnlocked(view)){
+      openZoneLock(view,function(){ enterView(view); });
+      return;
+    }
+    enterView(view);
+  };
+  function initAI(){
+    var sendBtn=$('aiSend'), inputEl=$('aiInput');
+    if(sendBtn) sendBtn.addEventListener('click',function(){ var i=$('aiInput'); handle(i.value); i.value=''; });
+    if(inputEl) inputEl.addEventListener('keydown',function(e){ if(e.key==='Enter'){ handle(e.target.value); e.target.value=''; } });
+    var quickEl=$('aiQuick');
+    if(quickEl) quickEl.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      S.mode=b.dataset.m; S.got={}; setQuick(S.mode);
+      bot('已选择 <b>'+MODS[S.mode].name+'</b>。');
+      askMissing();
+    });
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', function(){ initAI(); });
+  } else {
+    initAI();
+  }
+})();
+
 })();
 </script>
+<style>
+#aiFab{position:fixed;right:16px;bottom:78px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0a7df0,#0057b3);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:9999;box-shadow:0 6px 20px rgba(10,125,240,.45);border:none;transition:transform .2s,box-shadow .2s;}
+#aiFab:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(10,125,240,.5);}
+#aiFab svg{width:26px;height:26px;}
+#aiPanel{position:fixed;right:12px;bottom:142px;width:min(400px,calc(100vw - 24px));max-height:min(600px,calc(100vh - 160px));display:flex;flex-direction:column;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);z-index:9998;overflow:hidden;transform-origin:bottom right;transition:transform .18s ease,opacity .18s ease;}
+#aiPanel.ai-hide{transform:scale(.55);opacity:0;pointer-events:none;}
+.ai-head{background:linear-gradient(135deg,#0a7df0,#0057b3);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.ai-head .ai-logo{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ai-head .ai-logo svg{width:18px;height:18px;}
+.ai-head .ai-t{font-size:15px;font-weight:700;line-height:1.2;}
+.ai-head .ai-s{font-size:11px;opacity:.85;margin-top:2px;}
+.ai-x{margin-left:auto;background:rgba(255,255,255,.18);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;}
+.ai-x:hover{background:rgba(255,255,255,.3);}
+.ai-quick{display:flex;flex-wrap:wrap;gap:6px;padding:9px 12px 0;background:#fff;border-bottom:1px solid #f0f2f5;flex-shrink:0;}
+.ai-quick button{font-size:12px;padding:5px 11px;border-radius:14px;border:1px solid #d8dee6;background:#fff;color:#475467;cursor:pointer;transition:all .15s;}
+.ai-quick button:hover{border-color:#0a7df0;color:#0a7df0;}
+.ai-quick button.on{background:#0a7df0;color:#fff;border-color:#0a7df0;}
+.ai-body{flex:1;overflow-y:auto;padding:12px;background:#f4f6f9;display:flex;flex-direction:column;gap:10px;min-height:180px;}
+.ai-m{max-width:90%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.7;word-break:break-word;white-space:pre-wrap;}
+.ai-m b{color:#0057b3;}
+.ai-m.bot{background:#fff;border:1px solid #e3e8ef;color:#1f2937;align-self:flex-start;border-top-left-radius:4px;}
+.ai-m.user{background:#0a7df0;color:#fff;align-self:flex-end;border-top-right-radius:4px;}
+.ai-m.user b{color:#fff;}
+.ai-m .ai-chip{display:inline-block;background:#eef4ff;color:#0057b3;border:1px solid #cfe0ff;border-radius:6px;padding:2px 8px;margin:3px 4px 0 0;font-size:12px;line-height:1.6;}
+.ai-m .ai-btn{display:inline-block;margin:8px 8px 0 0;padding:8px 16px;border-radius:8px;border:none;font-size:13px;cursor:pointer;line-height:1.4;transition:opacity .15s;}
+.ai-m .ai-btn:hover{opacity:.85;}
+.ai-m .ai-btn.pri{background:#0a7df0;color:#fff;}
+.ai-m .ai-btn.gho{background:#fff;color:#0a7df0;border:1px solid #0a7df0;}
+.ai-res{background:#f0f7ff;border:1px solid #cfe0ff;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px;line-height:1.9;}
+.ai-res .r-row{display:flex;justify-content:space-between;gap:8px;}
+.ai-res .r-k{color:#667085;font-size:12px;}
+.ai-res .r-v{font-weight:700;color:#0057b3;text-align:right;}
+.ai-inrow{display:flex;gap:8px;padding:10px;background:#fff;border-top:1px solid #eef0f3;flex-shrink:0;}
+.ai-inrow input{flex:1;min-width:0;border:1px solid #d8dee6;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;background:#fff;color:#1f2937;}
+.ai-inrow input:focus{border-color:#0a7df0;}
+.ai-inrow button{background:#0a7df0;color:#fff;border:none;border-radius:10px;padding:0 18px;font-size:14px;cursor:pointer;flex-shrink:0;}
+.ai-inrow button:hover{opacity:.9;}
+@media (max-width:480px){#aiPanel{right:8px;bottom:130px;width:calc(100vw - 16px);max-height:calc(100vh - 140px);} #aiFab{right:12px;bottom:72px;}}
+</style>
+<div id="aiFab" title="AI 焊接助手" onclick="window.__aiToggle&&window.__aiToggle()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="2" y="2" width="20" height="8" rx="2"/><path d="M2 14h20"/><path d="M2 20h20"/><path d="M6 14v6M10 14v6M14 14v6M18 14v6"/></svg>
+</div>
+
+<div id="aiPanel" class="ai-hide">
+  <div class="ai-head">
+    <div class="ai-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+    <div>
+      <div class="ai-t">AI 焊接助手</div>
+      <div class="ai-s">说出焊接需求 · 自动计算 · 本地模型</div>
+    </div>
+    <button class="ai-x" onclick="window.__aiToggle&&window.__aiToggle()">✕</button>
+  </div>
+  <div class="ai-quick" id="aiQuick">
+    <button data-m="wob">环形摆动</button>
+    <button data-m="weld">单光斑 CW</button>
+    <button data-m="qcw">QCW 脉冲</button>
+    <button data-m="fill">激光填丝</button>
+    <button data-m="mod">功率调制</button>
+  </div>
+  <div class="ai-body" id="aiBody"></div>
+  <div class="ai-inrow">
+    <input id="aiInput" placeholder="例：6061铝 环形摆动，内芯功率3000W 外环1500W，速度80mm/s…">
+    <button id="aiSend">发送</button>
+  </div>
+</div>
+
 </body>
 </html>
