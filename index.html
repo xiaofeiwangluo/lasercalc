@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.35</div>
+    <div class="splash-version">v1.4.36</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.35</span>
+        <span class="ar-value">v1.4.36</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.35</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.36</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,12 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.36</span><span class="cl-date">2026-09-19 · 联网使用限制</span></div>
+        <ul class="cl-list">
+          <li>联网模式新增每日限额：每台设备每天限使用 2 次 DeepSeek 联网问答，超出后提示次日再试（本地设备级限制）。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.35</span><span class="cl-date">2026-09-19 · 联网安全加固</span></div>
         <ul class="cl-list">
           <li>DeepSeek API Key 不再明文内置：首次开启联网时由授权用户手动粘贴，仅保存本机浏览器（localStorage），不随网页源码分发。</li>
@@ -15318,6 +15324,14 @@
     if(role==='user') d.textContent=html; else d.innerHTML=html;
     b.appendChild(d); b.scrollTop=b.scrollHeight;
   }
+  function netQuota(){
+    var ds=new Date(); var dk=ds.getFullYear()+'-'+(ds.getMonth()+1)+'-'+ds.getDate();
+    var q=null; try{ q=JSON.parse(localStorage.getItem('fslc_ai_net_quota')||'null'); }catch(e){}
+    if(!q||q.date!==dk){ q={date:dk,count:0}; }
+    return q;
+  }
+  function netQuotaSave(q){ try{ localStorage.setItem('fslc_ai_net_quota',JSON.stringify(q)); }catch(e){} }
+  function netQuotaLeft(){ var q=netQuota(); return Math.max(0,2-q.count); }
   function netBtn(){
     var b=document.getElementById('aiNetBtn'); if(!b) return;
     b.classList.toggle('on',window.__aiNetOn);
@@ -15337,7 +15351,7 @@
     var ip=c.querySelector('#netPw');
     function done(){
       if(ip.value!==NET_PW){ window.__aiNetOn=false; addMsg('bot','密码错误，联网未开启。'); z.remove(); netBtn(); return; }
-      if(NET_KEY){ window.__aiNetOn=true; addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可，例如：T2紫铜熔深0.2~1.4mm推荐配置。'); z.remove(); netBtn(); return; }
+      if(NET_KEY){ window.__aiNetOn=true; addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可，例如：T2紫铜熔深0.2~1.4mm推荐配置。<br><span class=\"ai-note\" style=\"display:block\">今日剩余使用次数：<b>'+(2-netQuota().count)+'</b> / 2</span>'); z.remove(); netBtn(); return; }
       z.remove(); keyModal();
     }
     function keyModal(){
@@ -15355,7 +15369,7 @@
       var kp=c2.querySelector('#netKey');
       function kdone(){
         var v=(kp.value||'').trim();
-        if(v){ try{ localStorage.setItem('fslc_ai_net_key',v); NET_KEY=v; }catch(e){} window.__aiNetOn=true; addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可。'); }
+        if(v){ try{ localStorage.setItem('fslc_ai_net_key',v); NET_KEY=v; }catch(e){} window.__aiNetOn=true; addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可。<br><span class=\"ai-note\" style=\"display:block\">今日剩余使用次数：<b>2</b> / 2</span>'); }
         else { window.__aiNetOn=false; addMsg('bot','未填写 API Key，联网未开启。'); }
         z2.remove(); netBtn();
       }
@@ -15374,6 +15388,8 @@
     netModal();
   };
   window.__aiAskNet=function(text){
+    var q0=netQuota();
+    if(q0.count>=2){ addMsg('bot','今日联网使用次数已达上限（每台设备每天限 <b>2</b> 次）。可关闭联网使用本地快速回答，或明天再试。'); return; }
     if(window.__aiNetBusy){ addMsg('bot','上一条还在联网回答中，稍等片刻…'); return; }
     window.__aiNetBusy=true;
     addMsg('user',text);
@@ -15384,7 +15400,7 @@
     ],stream:false,temperature:0.6};
     fetch('https://api.deepseek.com/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+NET_KEY},body:JSON.stringify(body)})
     .then(function(r){ if(!r.ok){ return r.text().then(function(t){ throw new Error('HTTP '+r.status+' '+t.slice(0,160)); }); } return r.json(); })
-    .then(function(d){ var c=d.choices&&d.choices[0]&&d.choices[0].message; if(c&&c.content){ addMsg('bot',c.content.replace(/\n/g,'<br>')); } else { addMsg('bot','联网返回异常，请重试。'); } })
+    .then(function(d){ var c=d.choices&&d.choices[0]&&d.choices[0].message; if(c&&c.content){ var q=netQuota(); q.count+=1; netQuotaSave(q); addMsg('bot',c.content.replace(/\n/g,'<br>')+'<br><span class=\"ai-note\" style=\"display:block\">今日剩余使用次数：<b>'+(2-q.count)+'</b> / 2</span>'); } else { addMsg('bot','联网返回异常，请重试。'); } })
     .catch(function(e){ addMsg('bot','联网失败：'+e.message+'。请检查网络，或关闭联网使用本地模式。'); })
     .finally(function(){ window.__aiNetBusy=false; });
   };
