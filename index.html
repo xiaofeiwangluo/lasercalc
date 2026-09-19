@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.36</div>
+    <div class="splash-version">v1.4.37</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.36</span>
+        <span class="ar-value">v1.4.37</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.36</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.37</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,12 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.37</span><span class="cl-date">2026-09-19 · 联网流程优化</span></div>
+        <ul class="cl-list">
+          <li>取消首次手动填写 API Key 环节：输入密码即可开启联网（Key 内置），保留每日 2 次限额与密码验证。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.36</span><span class="cl-date">2026-09-19 · 联网使用限制</span></div>
         <ul class="cl-list">
           <li>联网模式新增每日限额：每台设备每天限使用 2 次 DeepSeek 联网问答，超出后提示次日再试（本地设备级限制）。</li>
@@ -15314,7 +15320,7 @@
 
 <script>
 (function(){
-  var NET_KEY=(localStorage.getItem('fslc_ai_net_key')||'').trim();
+  var NET_KEY='sk-ca7832ef257d4514a0fe7c8c63c02cd7';
   var NET_PW='admin123';
   window.__aiNetOn=false;
   function addMsg(role,html){
@@ -15351,32 +15357,7 @@
     var ip=c.querySelector('#netPw');
     function done(){
       if(ip.value!==NET_PW){ window.__aiNetOn=false; addMsg('bot','密码错误，联网未开启。'); z.remove(); netBtn(); return; }
-      if(NET_KEY){ window.__aiNetOn=true; addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可，例如：T2紫铜熔深0.2~1.4mm推荐配置。<br><span class=\"ai-note\" style=\"display:block\">今日剩余使用次数：<b>'+(2-netQuota().count)+'</b> / 2</span>'); z.remove(); netBtn(); return; }
-      z.remove(); keyModal();
-    }
-    function keyModal(){
-      var z2=document.createElement('div');
-      z2.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:10002;display:flex;align-items:center;justify-content:center;';
-      var c2=document.createElement('div');
-      c2.style.cssText='background:#fff;border-radius:14px;padding:22px 20px;width:min(340px,88vw);box-shadow:0 12px 40px rgba(0,0,0,.3);text-align:center;box-sizing:border-box;';
-      c2.innerHTML='<div style="font-size:15px;font-weight:700;color:#1f2937;margin-bottom:6px">填写 DeepSeek API Key</div>'
-        +'<div style="font-size:12px;color:#667085;margin-bottom:4px">首次使用需粘贴 API Key（只保存在本机浏览器，不随网页分发）</div>'
-        +'<div style="font-size:11px;color:#b42318;margin-bottom:12px">注意：本机浏览器内仍可被开发者工具查看，请勿在公用电脑使用</div>'
-        +'<input id="netKey" type="password" placeholder="sk- 开头" style="width:100%;box-sizing:border-box;border:1px solid #d8dee6;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;margin-bottom:12px">'
-        +'<div style="display:flex;gap:10px"><button id="netKeyOk" style="flex:1;background:#0a7df0;color:#fff;border:none;border-radius:8px;padding:9px 0;font-size:14px;cursor:pointer">保存并开启</button>'
-        +'<button id="netKeyNo" style="flex:1;background:#f1f3f5;color:#475467;border:none;border-radius:8px;padding:9px 0;font-size:14px;cursor:pointer">取消</button></div>';
-      z2.appendChild(c2); document.body.appendChild(z2);
-      var kp=c2.querySelector('#netKey');
-      function kdone(){
-        var v=(kp.value||'').trim();
-        if(v){ try{ localStorage.setItem('fslc_ai_net_key',v); NET_KEY=v; }catch(e){} window.__aiNetOn=true; addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可。<br><span class=\"ai-note\" style=\"display:block\">今日剩余使用次数：<b>2</b> / 2</span>'); }
-        else { window.__aiNetOn=false; addMsg('bot','未填写 API Key，联网未开启。'); }
-        z2.remove(); netBtn();
-      }
-      c2.querySelector('#netKeyOk').onclick=kdone;
-      c2.querySelector('#netKeyNo').onclick=function(){ z2.remove(); };
-      kp.focus();
-      kp.addEventListener('keydown',function(e){ if(e.key==='Enter') kdone(); });
+      window.__aiNetOn=true; addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可，例如：T2紫铜熔深0.2~1.4mm推荐配置。<br><span class=\"ai-note\" style=\"display:block\">今日剩余使用次数：<b>'+(2-netQuota().count)+'</b> / 2</span>'); z.remove(); netBtn();
     }
     c.querySelector('#netOk').onclick=done;
     c.querySelector('#netNo').onclick=function(){ z.remove(); };
