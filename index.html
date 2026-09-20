@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.40</div>
+    <div class="splash-version">v1.4.41</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.40</span>
+        <span class="ar-value">v1.4.41</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.40</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.41</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,23 +4118,11 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
-        <div class="cl-head"><span class="cl-ver">v1.4.40</span><span class="cl-date">2026-09-20 · 更新弹窗修复</span></div>
+        <div class="cl-head"><span class="cl-ver">v1.4.41</span><span class="cl-date">2026-09-20 · 今日更新汇总：全站统计 + 欢迎语升级 + 弹窗修复</span></div>
         <ul class="cl-list">
-          <li>修复版本更新记录不显示的问题：更新弹窗改为按版本记录，每次发布新版本都会弹出更新说明（同一版本只提示一次）。</li>
-        </ul>
-      </div>
-<div class="cl-item">
-        <div class="cl-head"><span class="cl-ver">v1.4.39</span><span class="cl-date">2026-09-20 · 全站统计 + 欢迎语升级</span></div>
-        <ul class="cl-list">
-          <li>访问统计升级为全站统计：顶部显示所有用户累计总访问量与访客数（同一用户多次访问计入总访问量），不再局限于本机。</li>
-          <li>伊娃欢迎气泡语言多样化：12 种风格随机展示，每次打开软件都出现（不再仅首次）。</li>
-        </ul>
-      </div>
-<div class="cl-item">
-        <div class="cl-head"><span class="cl-ver">v1.4.38</span><span class="cl-date">2026-09-20 · 欢迎气泡 + 访问统计</span></div>
-        <ul class="cl-list">
-          <li>打开软件后伊娃显示欢迎气泡（随机欢迎语，数秒后自动消失）。</li>
-          <li>顶部标题下方新增访问次数统计（本机累计，同一用户多次访问也计数）。</li>
+          <li>访问统计升级为全站统计：顶部显示所有用户累计总访问量，同一用户多次访问也计数。</li>
+          <li>伊娃欢迎气泡语言多样化：多种风格随机展示，每次打开软件都出现。</li>
+          <li>修复版本更新记录不显示的问题：新版本自动弹出更新说明（同一版本只提示一次）。</li>
         </ul>
       </div>
 <div class="cl-item">
@@ -7865,10 +7853,33 @@
   function maybeShowUpdate() {
     try {
       const sv = document.querySelector('.splash-version');
-      const cur = sv ? sv.textContent.trim() : 'v1.4.40';
+      const cur = sv ? sv.textContent.trim() : 'v1.4.41';
       if (localStorage.getItem('fslc_seen_ver') === cur) return;
-      // 启动动画结束后再弹出
+      // 启动动画结束后再弹出（正文动态取最新版本更新记录）
       setTimeout(() => {
+        try {
+          var src = document.querySelector('#changelogModal .cl-item');
+          var card = document.querySelector('#updateModal .update-card');
+          if (src && card) {
+            var verEl = src.querySelector('.cl-ver');
+            var dateEl = src.querySelector('.cl-date');
+            var listEl = src.querySelector('.cl-list');
+            if (verEl && dateEl && listEl) {
+              card.className = 'update-card changelog-card';
+              card.innerHTML = '<h3>版本更新 <span class="vtag">' + verEl.textContent + '</span></h3>' +
+                '<div class="up-sub">' + dateEl.textContent + '</div>' +
+                listEl.outerHTML +
+                '<button class="up-btn" id="updateClose" style="margin-top:16px">开始使用</button>';
+              card.querySelector('#updateClose').addEventListener('click', function () {
+                document.getElementById('updateModal').classList.remove('show');
+                try {
+                  var sv2 = document.querySelector('.splash-version');
+                  localStorage.setItem('fslc_seen_ver', sv2 ? sv2.textContent.trim() : 'v1.4.41');
+                } catch (e) {}
+              });
+            }
+          }
+        } catch (e) {}
         $('updateModal').classList.add('show');
       }, 3600);
     } catch (e) { /* localStorage 不可用时静默跳过 */ }
@@ -7877,14 +7888,14 @@
     $('updateModal').classList.remove('show');
     try {
       const sv2 = document.querySelector('.splash-version');
-      localStorage.setItem('fslc_seen_ver', sv2 ? sv2.textContent.trim() : 'v1.4.40');
+      localStorage.setItem('fslc_seen_ver', sv2 ? sv2.textContent.trim() : 'v1.4.41');
     } catch (e) {}
   });
   $('updateModal').addEventListener('click', (e) => {
     if (e.target.id === 'updateModal') {
       $('updateModal').classList.remove('show');
       try { const sv2 = document.querySelector('.splash-version');
-      localStorage.setItem('fslc_seen_ver', sv2 ? sv2.textContent.trim() : 'v1.4.40'); } catch (e) {}
+      localStorage.setItem('fslc_seen_ver', sv2 ? sv2.textContent.trim() : 'v1.4.41'); } catch (e) {}
     }
   });
 
