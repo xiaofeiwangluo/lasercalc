@@ -2124,6 +2124,9 @@
   .fcat-c2 { background: #e8892e; }
   .fcat-c3 { background: #5aa878; }
   .fpin { display: inline-block; background: #8a63d2; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-right: 6px; vertical-align: 1px; }
+  .fr-name-row { margin-bottom: 8px; }
+  .fr-name-row input { width: 100%; box-sizing: border-box; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none; }
+  .fr-name-row input:focus { border-color: var(--cyan); }
   .fpost-title { font-size: 15px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; word-break: break-all; }
   .fpost-meta { font-size: 12px; color: var(--muted, #8a94a8); display: flex; gap: 10px; flex-wrap: wrap; }
   .fpost-thumbs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
@@ -4124,6 +4127,7 @@
       <div class="forum-post" id="forumPost"></div>
       <div class="forum-reply-box">
         <div class="fr-title">发表回复</div>
+        <div class="fr-name-row"><input id="forumReplyName" placeholder="昵称（默认匿名用户）" maxlength="16"></div>
         <textarea id="forumReplyText" placeholder="分享你的处理经验或建议…"></textarea>
         <div class="fr-toolbar">
           <label class="fr-img-btn">＋ 添加图片<input type="file" id="forumReplyImgs" accept="image/*" multiple style="display:none"></label>
@@ -15849,6 +15853,7 @@
     });
     loadReplies(id);
     el('forumReplyText').value = '';
+    el('forumReplyName').value = getAuthor().name;
     el('forumReplyPreview').innerHTML = '';
     el('forumReplyImgHint').textContent = '';
     replyImgs = [];
@@ -15934,13 +15939,15 @@
   function sendReply() {
     var content = el('forumReplyText').value.trim();
     if (!content || !curPostId) { toast('请先输入回复内容'); return; }
+    var name = el('forumReplyName').value.trim() || '匿名用户';
     var a = getAuthor();
+    try { a.name = name; localStorage.setItem('fslc_author', JSON.stringify(a)); } catch (e) {}
     var btn = el('forumReplySend');
     btn.disabled = true;
     uploadAll(replyImgs.map(function (i) { return i.blob; }), 0, [], function (urls) {
       sbFetch('/rest/v1/replies', {
         method: 'POST',
-        body: { post_id: curPostId, content: content, author_name: a.name, author_id: a.id, images: urls }
+        body: { post_id: curPostId, content: content, author_name: name, author_id: a.id, images: urls }
       }).then(function (r) {
         btn.disabled = false;
         if (r.ok) {
