@@ -2082,6 +2082,8 @@
   .lf-sym { font-size: 12.5px; line-height: 1.7; color: var(--text-2); }
   .lf-ref { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 11.5px; color: var(--info); }
 
+  #forumToast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%); background: rgba(18,24,32,.94); color: #fff; font-size: 13px; padding: 9px 18px; border-radius: 8px; z-index: 9999; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 86%; text-align: center; }
+  #forumToast.show { opacity: 1; }
   /* ===== 谈论专区 ===== */
   .forum-page { padding: 16px; max-width: 860px; margin: 0 auto; }
   .forum-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -4152,6 +4154,17 @@
   </div>
   <div class="forum-modal" id="forumImgModal">
     <div class="fim-wrap"><img id="forumImgView" alt=""><button class="fm-close fim-close" id="forumImgClose">×</button></div>
+  </div>
+  <div id="forumToast"></div>
+  <div class="forum-modal" id="forumConfirm">
+    <div class="forum-modal-card" style="max-width:340px">
+      <div class="fm-head"><h3>确认操作</h3><button class="fm-close" id="forumConfirmCancel">×</button></div>
+      <div id="forumConfirmMsg" style="padding:12px 2px 18px;font-size:14px;color:var(--text-2);line-height:1.6"></div>
+      <div style="display:flex;gap:10px">
+        <button class="forum-send" id="forumConfirmOk" style="flex:1;background:#d64545;margin:0">确认删除</button>
+        <button class="forum-send" id="forumConfirmNo" style="flex:1;background:#9aa3ad;margin:0">取消</button>
+      </div>
+    </div>
   </div>
   <div class="forum-modal" id="forumAdminModal">
     <div class="forum-modal-card">
@@ -15753,7 +15766,7 @@
   }
   function handleFiles(files, list, container, hintEl, maxN) {
     var remain = maxN - list.length;
-    if (remain <= 0) { alert('最多上传 ' + maxN + ' 张图片'); return; }
+    if (remain <= 0) { toast('最多上传 ' + maxN + ' 张图片'); return; }
     var arr = Array.prototype.slice.call(files).slice(0, remain);
     arr.forEach(function (f) {
       if (!f.type || f.type.indexOf('image') !== 0) return;
@@ -15865,6 +15878,22 @@
     el('forumImgView').src = src;
     el('forumImgModal').classList.add('show');
   }
+  var forumToastTimer = null;
+  function toast(msg) {
+    var t = document.getElementById('forumToast');
+    if (!t) { return; }
+    t.textContent = msg;
+    t.classList.add('show');
+    if (forumToastTimer) clearTimeout(forumToastTimer);
+    forumToastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+  var forumConfirmCb = null;
+  function confirmDlg(msg, cb) {
+    forumConfirmCb = cb;
+    el('forumConfirmMsg').textContent = msg;
+    el('forumConfirm').classList.add('show');
+  }
+  function hideConfirm() { el('forumConfirm').classList.remove('show'); forumConfirmCb = null; }
   function hideModal(id) { el(id).classList.remove('show'); }
   function openNewPost() {
     var a = getAuthor();
@@ -15882,7 +15911,7 @@
     var content = el('forumContent').value.trim();
     var name = el('forumAuthorName').value.trim() || '匿名用户';
     var a = getAuthor();
-    if (!title) { alert('请填写标题'); return; }
+    if (!title) { toast('请填写标题'); return; }
     var btn = el('forumPublish');
     btn.disabled = true;
     uploadAll(pendingImgs.map(function (i) { return i.blob; }), 0, [], function (urls) {
@@ -15895,16 +15924,16 @@
           try { a.name = name; localStorage.setItem('fslc_author', JSON.stringify(a)); } catch (e) {}
           hideModal('forumNewModal');
           loadPosts();
-          alert('发布成功，等待管理员审核后展示');
+          toast('发布成功，等待管理员审核后展示');
         } else {
-          r.json().then(function (j) { alert('发布失败：' + JSON.stringify(j).slice(0, 150)); }).catch(function () { alert('发布失败'); });
+          r.json().then(function (j) { toast('发布失败：' + JSON.stringify(j).slice(0, 150)); }).catch(function () { toast('发布失败'); });
         }
-      }).catch(function () { btn.disabled = false; alert('网络错误，发布失败'); });
+      }).catch(function () { btn.disabled = false; toast('网络错误，发布失败'); });
     });
   }
   function sendReply() {
     var content = el('forumReplyText').value.trim();
-    if (!content || !curPostId) { alert('请先输入回复内容'); return; }
+    if (!content || !curPostId) { toast('请先输入回复内容'); return; }
     var a = getAuthor();
     var btn = el('forumReplySend');
     btn.disabled = true;
@@ -15922,9 +15951,9 @@
           loadReplies(curPostId);
           loadPosts();
         } else {
-          r.json().then(function (j) { alert('回复失败：' + JSON.stringify(j).slice(0, 150)); }).catch(function () { alert('回复失败'); });
+          r.json().then(function (j) { toast('回复失败：' + JSON.stringify(j).slice(0, 150)); }).catch(function () { toast('回复失败'); });
         }
-      }).catch(function () { btn.disabled = false; alert('网络错误，回复失败'); });
+      }).catch(function () { btn.disabled = false; toast('网络错误，回复失败'); });
     });
   }
 
@@ -15947,7 +15976,7 @@
       try { sessionStorage.setItem('fslc_forum_admin', '1'); } catch (e) {}
       openAdmin();
     } else {
-      alert('密码错误');
+      toast('密码错误');
     }
   }
   function loadAdminList(mode) {
@@ -15985,7 +16014,13 @@
     });
   }
   function adminPost(id, status) {
-    if (status === 'delete' && !confirm('确认删除该帖及全部回复？此操作不可恢复')) return;
+    if (status === 'delete') {
+      confirmDlg('确认删除该帖及全部回复？此操作不可恢复', function () { doAdminPost(id, status); });
+      return;
+    }
+    doAdminPost(id, status);
+  }
+  function doAdminPost(id, status) {
     sbFetch('/rest/v1/rpc/admin_post_action', {
       method: 'POST',
       body: { p_pwd: ADMIN_PW, p_id: parseInt(id, 10), p_status: status }
@@ -15993,21 +16028,23 @@
       if (res === true) {
         loadAdminList(curAdminMode);
         loadPosts();
-        if (status !== 'pin' && status !== 'unpin') alert('操作成功');
+        if (status !== 'pin' && status !== 'unpin') toast('操作成功');
       } else {
-        alert('操作失败（密码不正确或服务异常）');
+        toast('操作失败（密码不正确或服务异常）');
       }
-    }).catch(function () { alert('网络错误'); });
+    }).catch(function () { toast('网络错误'); });
   }
   function adminReply(id) {
-    if (!confirm('确认删除该回复？')) return;
+    confirmDlg('确认删除该回复？', function () { doAdminReply(id); });
+  }
+  function doAdminReply(id) {
     sbFetch('/rest/v1/rpc/admin_reply_action', {
       method: 'POST',
       body: { p_pwd: ADMIN_PW, p_id: parseInt(id, 10), p_delete: true }
     }).then(function (r) { return r.json(); }).then(function (res) {
-      if (res === true) { loadReplies(curPostId); loadPosts(); alert('已删除'); }
-      else { alert('操作失败'); }
-    }).catch(function () { alert('网络错误'); });
+      if (res === true) { loadReplies(curPostId); loadPosts(); toast('已删除'); }
+      else { toast('操作失败'); }
+    }).catch(function () { toast('网络错误'); });
   }
 
   // 事件绑定
@@ -16045,6 +16082,10 @@
     el('forumImgClose').addEventListener('click', function () { hideModal('forumImgModal'); });
     el('forumImgModal').addEventListener('click', function (e) { if (e.target === this) hideModal('forumImgModal'); });
     el('forumAdminBtn').addEventListener('click', openAdmin);
+    el('forumConfirmOk').addEventListener('click', function () { if (forumConfirmCb) { var cb = forumConfirmCb; hideConfirm(); cb(); } });
+    el('forumConfirmNo').addEventListener('click', hideConfirm);
+    el('forumConfirmCancel').addEventListener('click', hideConfirm);
+    el('forumConfirm').addEventListener('click', function (e) { if (e.target === this) hideConfirm(); });
     el('forumAdminClose').addEventListener('click', function () { hideModal('forumAdminModal'); });
     el('forumAdminModal').addEventListener('click', function (e) { if (e.target === this) hideModal('forumAdminModal'); });
     el('forumAdminLogin').addEventListener('click', adminLogin);
