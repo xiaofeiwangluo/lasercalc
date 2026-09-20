@@ -15993,7 +15993,7 @@
       if (res === true) {
         loadAdminList(curAdminMode);
         loadPosts();
-        alert('操作成功');
+        if (status !== 'pin' && status !== 'unpin') alert('操作成功');
       } else {
         alert('操作失败（密码不正确或服务异常）');
       }
