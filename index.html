@@ -15811,7 +15811,7 @@
     });
   }
   function loadPosts() {
-    var q = '/rest/v1/posts?select=*&status=eq.approved&order=created_at.desc&limit=200';
+    var q = '/rest/v1/posts?select=*&status=eq.approved&order=approved_at.desc,created_at.desc&limit=200';
     el('forumLoading').style.display = 'block';
     sbFetch(q).then(function (r) { return r.json(); }).then(function (rows) {
       el('forumLoading').style.display = 'none';
