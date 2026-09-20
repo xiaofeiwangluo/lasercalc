@@ -2124,7 +2124,8 @@
   .fcat-c2 { background: #e8892e; }
   .fcat-c3 { background: #5aa878; }
   .fpin { display: inline-block; background: #8a63d2; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-right: 6px; vertical-align: 1px; }
-  .fr-name-row { margin-bottom: 8px; }
+  .fr-name-row { margin-bottom: 6px; }
+  .fr-name-tip { font-size: 11px; color: #e0862e; margin: 4px 0 8px; line-height: 1.4; }
   .fr-name-row input { width: 100%; box-sizing: border-box; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none; }
   .fr-name-row input:focus { border-color: var(--cyan); }
   .fpost-title { font-size: 15px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; word-break: break-all; }
@@ -4128,6 +4129,7 @@
       <div class="forum-reply-box">
         <div class="fr-title">发表回复</div>
         <div class="fr-name-row"><input id="forumReplyName" placeholder="昵称（默认匿名用户）" maxlength="16"></div>
+        <div class="fr-name-tip" id="forumReplyTip"></div>
         <textarea id="forumReplyText" placeholder="分享你的处理经验或建议…"></textarea>
         <div class="fr-toolbar">
           <label class="fr-img-btn">＋ 添加图片<input type="file" id="forumReplyImgs" accept="image/*" multiple style="display:none"></label>
@@ -4154,6 +4156,7 @@
         <input class="fm-name" id="forumAuthorName" placeholder="昵称（默认匿名用户）" maxlength="16">
         <button class="forum-send" id="forumPublish">发布</button>
       </div>
+      <div class="fr-name-tip" id="forumAuthorTip"></div>
     </div>
   </div>
   <div class="forum-modal" id="forumImgModal">
@@ -15854,7 +15857,7 @@
     loadReplies(id);
     el('forumReplyText').value = '';
     el('forumReplyName').value = getAuthor().name;
-    lockNameField(el('forumReplyName'));
+    lockNameField(el('forumReplyName'), 'forumReplyTip');
     el('forumReplyPreview').innerHTML = '';
     el('forumReplyImgHint').textContent = '';
     replyImgs = [];
@@ -15900,24 +15903,27 @@
     el('forumConfirm').classList.add('show');
   }
   function hideConfirm() { el('forumConfirm').classList.remove('show'); forumConfirmCb = null; }
-  function lockNameField(inp) {
+  function lockNameField(inp, tipId) {
     if (!inp) return;
+    var tip = tipId ? document.getElementById(tipId) : null;
     var a = getAuthor();
     if (a && a.name && a.name !== '匿名用户') {
       inp.readOnly = true;
       inp.style.opacity = '0.65';
       inp.title = '昵称已锁定，首次设置后不可修改';
+      if (tip) { tip.textContent = '昵称已锁定，不可修改'; tip.style.color = '#9aa3ad'; }
     } else {
       inp.readOnly = false;
       inp.style.opacity = '';
       inp.title = '';
+      if (tip) { tip.textContent = '首次设置后昵称将无法修改！'; tip.style.color = '#e0862e'; }
     }
   }
   function hideModal(id) { el(id).classList.remove('show'); }
   function openNewPost() {
     var a = getAuthor();
     el('forumAuthorName').value = a.name;
-    lockNameField(el('forumAuthorName'));
+    lockNameField(el('forumAuthorName'), 'forumAuthorTip');
     el('forumTitle').value = '';
     el('forumContent').value = '';
     el('forumPreview').innerHTML = '';
