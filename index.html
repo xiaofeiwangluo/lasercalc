@@ -15431,12 +15431,16 @@
     if(!sub) return;
     var d=document.createElement('div');
     d.className='visit-count';
-    d.innerHTML='全站总访问 <b id="gcTotal">…</b> 次';
+    d.innerHTML='全站总访问 <span id="gcTotal">…</span> 次';
     sub.parentNode.insertBefore(d,sub.nextSibling);
-    fetch('https://xiaofeiwangluo.goatcounter.com/counter/TOTAL.json',{mode:'cors'})
+    try{
+      var im=new Image();
+      im.src='https://xiaofeiwangluo.goatcounter.com/count?p='+encodeURIComponent(location.pathname||'/')+'&no_sessions=1';
+    }catch(e){}
+    fetch('https://xiaofeiwangluo.goatcounter.com/counter/TOTAL.json')
       .then(function(r){ return r.json(); })
       .then(function(j){ var e=document.getElementById('gcTotal'); if(e&&j&&typeof j.count!=='undefined'){ e.textContent=j.count; } })
-      .catch(function(){ var e=document.getElementById('gcTotal'); if(e) e.textContent='—'; });
+      .catch(function(){});
   }
   setTimeout(function(){
     showTip();
@@ -15455,7 +15459,6 @@
     <button id="aiSend">发送</button>
   </div>
 </div>
-<script data-goatcounter="https://xiaofeiwangluo.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 
 </body>
 </html>
