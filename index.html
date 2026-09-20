@@ -15429,18 +15429,14 @@
   function visitCount(){
     var sub=document.querySelector('.topbar-left .subtitle');
     if(!sub) return;
-    var d=document.createElement('div');
-    d.className='visit-count';
-    d.innerHTML='全站总访问 <span id="gcTotal">…</span> 次';
-    sub.parentNode.insertBefore(d,sub.nextSibling);
     try{
       var im=new Image();
       im.src='https://xiaofeiwangluo.goatcounter.com/count?p='+encodeURIComponent(location.pathname||'/')+'&no_sessions=1';
     }catch(e){}
-    fetch('https://xiaofeiwangluo.goatcounter.com/counter/TOTAL.json')
-      .then(function(r){ return r.json(); })
-      .then(function(j){ var e=document.getElementById('gcTotal'); if(e&&j&&typeof j.count!=='undefined'){ e.textContent=j.count; } })
-      .catch(function(){});
+    var d=document.createElement('div');
+    d.className='visit-count';
+    d.innerHTML='全站总访问 <img src="https://visitor-badge.laobi.icu/badge?page_id=xiaofeiwangluo.lasercalc" style="height:16px;vertical-align:middle;border-radius:4px;">';
+    sub.parentNode.insertBefore(d,sub.nextSibling);
   }
   setTimeout(function(){
     showTip();
