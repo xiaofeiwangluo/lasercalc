@@ -15661,7 +15661,7 @@
   var el = function (id) { return document.getElementById(id); };
 
   function isAdmin() {
-    try { return localStorage.getItem('fslc_forum_admin') === '1'; } catch (e) { return false; }
+    try { return sessionStorage.getItem('fslc_forum_admin') === '1'; } catch (e) { return false; }
   }
 
   function esc(s) {
@@ -15942,7 +15942,7 @@
   function adminLogin() {
     var pwd = el('forumAdminPwd').value;
     if (pwd === ADMIN_PW) {
-      try { localStorage.setItem('fslc_forum_admin', '1'); } catch (e) {}
+      try { sessionStorage.setItem('fslc_forum_admin', '1'); } catch (e) {}
       openAdmin();
     } else {
       alert('密码错误');
