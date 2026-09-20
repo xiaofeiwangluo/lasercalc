@@ -15854,6 +15854,7 @@
     loadReplies(id);
     el('forumReplyText').value = '';
     el('forumReplyName').value = getAuthor().name;
+    lockNameField(el('forumReplyName'));
     el('forumReplyPreview').innerHTML = '';
     el('forumReplyImgHint').textContent = '';
     replyImgs = [];
@@ -15899,10 +15900,24 @@
     el('forumConfirm').classList.add('show');
   }
   function hideConfirm() { el('forumConfirm').classList.remove('show'); forumConfirmCb = null; }
+  function lockNameField(inp) {
+    if (!inp) return;
+    var a = getAuthor();
+    if (a && a.name && a.name !== '匿名用户') {
+      inp.readOnly = true;
+      inp.style.opacity = '0.65';
+      inp.title = '昵称已锁定，首次设置后不可修改';
+    } else {
+      inp.readOnly = false;
+      inp.style.opacity = '';
+      inp.title = '';
+    }
+  }
   function hideModal(id) { el(id).classList.remove('show'); }
   function openNewPost() {
     var a = getAuthor();
     el('forumAuthorName').value = a.name;
+    lockNameField(el('forumAuthorName'));
     el('forumTitle').value = '';
     el('forumContent').value = '';
     el('forumPreview').innerHTML = '';
@@ -15916,6 +15931,7 @@
     var content = el('forumContent').value.trim();
     var name = el('forumAuthorName').value.trim() || '匿名用户';
     var a = getAuthor();
+    if (a && a.name && a.name !== '匿名用户') name = a.name;
     if (!title) { toast('请填写标题'); return; }
     var btn = el('forumPublish');
     btn.disabled = true;
@@ -15926,7 +15942,7 @@
       }).then(function (r) {
         btn.disabled = false;
         if (r.ok) {
-          try { a.name = name; localStorage.setItem('fslc_author', JSON.stringify(a)); } catch (e) {}
+          try { a.name = name; a.locked = true; localStorage.setItem('fslc_author', JSON.stringify(a)); } catch (e) {}
           hideModal('forumNewModal');
           loadPosts();
           toast('发布成功，等待管理员审核后展示');
@@ -15941,7 +15957,8 @@
     if (!content || !curPostId) { toast('请先输入回复内容'); return; }
     var name = el('forumReplyName').value.trim() || '匿名用户';
     var a = getAuthor();
-    try { a.name = name; localStorage.setItem('fslc_author', JSON.stringify(a)); } catch (e) {}
+    if (a && a.name && a.name !== '匿名用户') name = a.name;
+    try { a.name = name; a.locked = true; localStorage.setItem('fslc_author', JSON.stringify(a)); } catch (e) {}
     var btn = el('forumReplySend');
     btn.disabled = true;
     uploadAll(replyImgs.map(function (i) { return i.blob; }), 0, [], function (urls) {
