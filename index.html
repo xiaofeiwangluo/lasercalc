@@ -2089,6 +2089,23 @@
   .forum-sub { color: var(--muted, #8a94a8); font-size: 12px; margin-top: 2px; }
   .forum-new-btn { background: var(--laser); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 14px; cursor: pointer; }
   .forum-new-btn:active { transform: scale(0.97); }
+  .forum-hd-btns { display: flex; gap: 8px; }
+  .forum-admin-btn { background: none; border: 1px solid var(--border-2, var(--border)); color: var(--muted, #8a94a8); border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; }
+  .fa-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+  .fa-item { border: 1px solid var(--border-2, var(--border)); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--bg); }
+  .fa-item-head { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted, #8a94a8); margin-bottom: 4px; flex-wrap: wrap; }
+  .fa-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; word-break: break-all; }
+  .fa-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .fa-btn { border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; color: #fff; }
+  .fa-btn-ok { background: #2e9e5b; }
+  .fa-btn-no { background: #d88a2e; }
+  .fa-btn-del { background: #d64545; }
+  .fa-btn-res { background: #5b8def; }
+  .fstat { font-size: 11px; padding: 2px 8px; border-radius: 4px; color: #fff; }
+  .fstat-pending { background: #d88a2e; }
+  .fstat-approved { background: #2e9e5b; }
+  .fstat-rejected { background: #d64545; }
+  .freply-del { margin-left: 8px; background: none; border: 1px solid #d64545; color: #d64545; border-radius: 5px; font-size: 11px; padding: 1px 7px; cursor: pointer; }
   .forum-search-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .forum-chips { display: flex; gap: 6px; flex-wrap: wrap; }
   .fchip { background: var(--card); border: 1px solid var(--border-2, var(--border)); color: var(--text); border-radius: 20px; padding: 5px 13px; font-size: 13px; cursor: pointer; }
@@ -2181,7 +2198,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.42</div>
+    <div class="splash-version">v1.4.43</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4082,7 +4099,10 @@
           <h2>谈论专区</h2>
           <div class="forum-sub">焊接工艺 · 异常诊断 · 出谋划策</div>
         </div>
-        <button class="forum-new-btn" id="forumNewBtn">发帖</button>
+        <div class="forum-hd-btns">
+          <button class="forum-admin-btn" id="forumAdminBtn">管理</button>
+          <button class="forum-new-btn" id="forumNewBtn">发帖</button>
+        </div>
       </div>
       <div class="forum-search-row">
         <div class="forum-chips" id="forumChips">
@@ -4132,6 +4152,22 @@
   </div>
   <div class="forum-modal" id="forumImgModal">
     <div class="fim-wrap"><img id="forumImgView" alt=""><button class="fm-close fim-close" id="forumImgClose">×</button></div>
+  </div>
+  <div class="forum-modal" id="forumAdminModal">
+    <div class="forum-modal-card">
+      <div class="fm-head"><h3>管理员</h3><button class="fm-close" id="forumAdminClose">×</button></div>
+      <div id="forumAdminLoginBox">
+        <input class="fm-input" id="forumAdminPwd" type="password" placeholder="请输入管理密码" style="margin-bottom:10px">
+        <button class="forum-send" id="forumAdminLogin" style="width:100%;margin:0">进入管理模式</button>
+      </div>
+      <div id="forumAdminPanel" style="display:none">
+        <div class="fa-tabs">
+          <button class="fchip active" id="faTabPending">待审核</button>
+          <button class="fchip" id="faTabAll">全部帖子</button>
+        </div>
+        <div id="forumAdminList"></div>
+      </div>
+    </div>
   </div>
 </section>
   <!-- 底部导航 -->
@@ -4215,7 +4251,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.42</span>
+        <span class="ar-value">v1.4.43</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4231,7 +4267,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.42</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.43</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4255,6 +4291,13 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.43</span><span class="cl-date">2026-09-20 · 谈论专区管理员审核</span></div>
+        <ul class="cl-list">
+          <li>帖子发布后进入待审核状态，管理员通过后公开展示。</li>
+          <li>新增「管理」入口（密码 admin123）：待审核队列，支持通过 / 驳回 / 下架 / 删除帖子，删除不当回复。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.42</span><span class="cl-date">2026-09-20 · 谈论专区上线</span></div>
         <ul class="cl-list">
           <li>新增「谈论」专区：支持焊接工艺讨论与异常诊断求助，用户可发帖并上传多张异常图片，其他用户点击帖子参与讨论、出谋划策。</li>
@@ -15628,8 +15671,13 @@
   var BUCKET = 'post-images';
   var CATS = { '焊接工艺': 'c0', '异常诊断': 'c1', '参数求助': 'c2', '其他': 'c3' };
   var curCat = '全部', curSearch = '', curPostId = null;
-  var allPosts = [], pendingImgs = [], replyImgs = [];
+  var allPosts = [], pendingImgs = [], replyImgs = [], curAdminMode = 'pending';
+  var ADMIN_PW = 'admin123';
   var el = function (id) { return document.getElementById(id); };
+
+  function isAdmin() {
+    try { return localStorage.getItem('fslc_forum_admin') === '1'; } catch (e) { return false; }
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -15763,7 +15811,7 @@
     });
   }
   function loadPosts() {
-    var q = '/rest/v1/posts?select=*&order=created_at.desc&limit=200';
+    var q = '/rest/v1/posts?select=*&status=eq.approved&order=created_at.desc&limit=200';
     el('forumLoading').style.display = 'block';
     sbFetch(q).then(function (r) { return r.json(); }).then(function (rows) {
       el('forumLoading').style.display = 'none';
@@ -15811,12 +15859,16 @@
       if (!rows.length) { el('forumReplies').innerHTML = '<div class="forum-empty">还没有回复，快来抢沙发～</div>'; return; }
       el('forumReplies').innerHTML = rows.map(function (r) {
         var imgs = (r.images || []).map(function (u) { return '<img src="' + esc(u) + '" alt="">'; }).join('');
-        return '<div class="freply"><div class="freply-meta"><b>' + esc(r.author_name) + '</b> · ' + relTime(r.created_at) + '</div>' +
+        var delBtn = isAdmin() ? '<button class="freply-del" data-rid="' + r.id + '">删除</button>' : '';
+        return '<div class="freply"><div class="freply-meta"><b>' + esc(r.author_name) + '</b> · ' + relTime(r.created_at) + delBtn + '</div>' +
           '<div class="freply-body">' + esc(r.content) + '</div>' +
           (imgs ? '<div class="freply-imgs">' + imgs + '</div>' : '') + '</div>';
       }).join('');
       el('forumReplies').querySelectorAll('.freply-imgs img').forEach(function (im) {
         im.addEventListener('click', function () { showImg(im.src); });
+      });
+      el('forumReplies').querySelectorAll('.freply-del').forEach(function (b) {
+        b.addEventListener('click', function () { adminReply(b.getAttribute('data-rid')); });
       });
     }).catch(function () {
       el('forumReplies').innerHTML = '<div class="forum-empty">回复加载失败</div>';
@@ -15856,7 +15908,7 @@
           try { a.name = name; localStorage.setItem('fslc_author', JSON.stringify(a)); } catch (e) {}
           hideModal('forumNewModal');
           loadPosts();
-          alert('发布成功');
+          alert('发布成功，等待管理员审核后展示');
         } else {
           r.json().then(function (j) { alert('发布失败：' + JSON.stringify(j).slice(0, 150)); }).catch(function () { alert('发布失败'); });
         }
@@ -15887,6 +15939,87 @@
         }
       }).catch(function () { btn.disabled = false; alert('网络错误，回复失败'); });
     });
+  }
+
+  // 管理员功能
+  function openAdmin() {
+    if (isAdmin()) {
+      el('forumAdminLoginBox').style.display = 'none';
+      el('forumAdminPanel').style.display = 'block';
+      loadAdminList(curAdminMode);
+    } else {
+      el('forumAdminLoginBox').style.display = 'block';
+      el('forumAdminPanel').style.display = 'none';
+      el('forumAdminPwd').value = '';
+    }
+    el('forumAdminModal').classList.add('show');
+  }
+  function adminLogin() {
+    var pwd = el('forumAdminPwd').value;
+    if (pwd === ADMIN_PW) {
+      try { localStorage.setItem('fslc_forum_admin', '1'); } catch (e) {}
+      openAdmin();
+    } else {
+      alert('密码错误');
+    }
+  }
+  function loadAdminList(mode) {
+    curAdminMode = mode;
+    var q = '/rest/v1/posts?select=*&order=created_at.desc&limit=300';
+    if (mode === 'pending') q += '&status=eq.pending';
+    el('forumAdminList').innerHTML = '<div class="forum-loading">加载中…</div>';
+    sbFetch(q).then(function (r) { return r.json(); }).then(function (rows) {
+      if (!Array.isArray(rows)) { el('forumAdminList').innerHTML = '<div class="forum-err">加载失败</div>'; return; }
+      if (!rows.length) { el('forumAdminList').innerHTML = '<div class="forum-empty">暂无帖子</div>'; return; }
+      el('forumAdminList').innerHTML = rows.map(function (p) {
+        var st = '<span class="fstat fstat-' + (p.status || 'pending') + '">' + (p.status === 'approved' ? '已通过' : p.status === 'rejected' ? '已驳回' : '待审核') + '</span>';
+        var btns = '';
+        if (p.status === 'pending') {
+          btns += '<button class="fa-btn fa-btn-ok" data-act="approved" data-id="' + p.id + '">通过</button>';
+          btns += '<button class="fa-btn fa-btn-no" data-act="rejected" data-id="' + p.id + '">驳回</button>';
+        } else if (p.status === 'rejected') {
+          btns += '<button class="fa-btn fa-btn-res" data-act="approved" data-id="' + p.id + '">恢复</button>';
+        } else {
+          btns += '<button class="fa-btn fa-btn-no" data-act="pending" data-id="' + p.id + '">下架</button>';
+        }
+        btns += '<button class="fa-btn fa-btn-del" data-act="delete" data-id="' + p.id + '">删除</button>';
+        return '<div class="fa-item"><div class="fa-item-head">' + st + ' · ' + esc(p.category) + ' · ' + esc(p.author_name) + ' · ' + relTime(p.created_at) + ' · 💬 ' + (p.reply_count || 0) + '</div>' +
+          '<div class="fa-title">' + esc(p.title) + '</div>' +
+          '<div class="fa-actions">' + btns + '</div></div>';
+      }).join('');
+      el('forumAdminList').querySelectorAll('.fa-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          adminPost(b.getAttribute('data-id'), b.getAttribute('data-act'));
+        });
+      });
+    }).catch(function () {
+      el('forumAdminList').innerHTML = '<div class="forum-err">加载失败</div>';
+    });
+  }
+  function adminPost(id, status) {
+    if (status === 'delete' && !confirm('确认删除该帖及全部回复？此操作不可恢复')) return;
+    sbFetch('/rest/v1/rpc/admin_post_action', {
+      method: 'POST',
+      body: { p_pwd: ADMIN_PW, p_id: parseInt(id, 10), p_status: status }
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res === true) {
+        loadAdminList(curAdminMode);
+        loadPosts();
+        alert('操作成功');
+      } else {
+        alert('操作失败（密码不正确或服务异常）');
+      }
+    }).catch(function () { alert('网络错误'); });
+  }
+  function adminReply(id) {
+    if (!confirm('确认删除该回复？')) return;
+    sbFetch('/rest/v1/rpc/admin_reply_action', {
+      method: 'POST',
+      body: { p_pwd: ADMIN_PW, p_id: parseInt(id, 10), p_delete: true }
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res === true) { loadReplies(curPostId); loadPosts(); alert('已删除'); }
+      else { alert('操作失败'); }
+    }).catch(function () { alert('网络错误'); });
   }
 
   // 事件绑定
@@ -15923,6 +16056,19 @@
     el('forumReplySend').addEventListener('click', sendReply);
     el('forumImgClose').addEventListener('click', function () { hideModal('forumImgModal'); });
     el('forumImgModal').addEventListener('click', function (e) { if (e.target === this) hideModal('forumImgModal'); });
+    el('forumAdminBtn').addEventListener('click', openAdmin);
+    el('forumAdminClose').addEventListener('click', function () { hideModal('forumAdminModal'); });
+    el('forumAdminModal').addEventListener('click', function (e) { if (e.target === this) hideModal('forumAdminModal'); });
+    el('forumAdminLogin').addEventListener('click', adminLogin);
+    el('forumAdminPwd').addEventListener('keydown', function (e) { if (e.key === 'Enter') adminLogin(); });
+    el('faTabPending').addEventListener('click', function () {
+      el('faTabPending').classList.add('active'); el('faTabAll').classList.remove('active');
+      loadAdminList('pending');
+    });
+    el('faTabAll').addEventListener('click', function () {
+      el('faTabAll').classList.add('active'); el('faTabPending').classList.remove('active');
+      loadAdminList('all');
+    });
     // 进入谈论视图时刷新列表
     loadPosts();
   }
