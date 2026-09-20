@@ -2101,6 +2101,7 @@
   .fa-btn-no { background: #d88a2e; }
   .fa-btn-del { background: #d64545; }
   .fa-btn-res { background: #5b8def; }
+  .fa-btn-pin { background: #8a63d2; }
   .fstat { font-size: 11px; padding: 2px 8px; border-radius: 4px; color: #fff; }
   .fstat-pending { background: #d88a2e; }
   .fstat-approved { background: #2e9e5b; }
@@ -2120,6 +2121,7 @@
   .fcat-c1 { background: #e05656; }
   .fcat-c2 { background: #e8892e; }
   .fcat-c3 { background: #5aa878; }
+  .fpin { display: inline-block; background: #8a63d2; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 4px; margin-right: 6px; vertical-align: 1px; }
   .fpost-title { font-size: 15px; font-weight: 600; line-height: 1.4; margin-bottom: 4px; word-break: break-all; }
   .fpost-meta { font-size: 12px; color: var(--muted, #8a94a8); display: flex; gap: 10px; flex-wrap: wrap; }
   .fpost-thumbs { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
@@ -15657,7 +15659,7 @@
   var CATS = { '焊接工艺': 'c0', '异常诊断': 'c1', '参数求助': 'c2', '其他': 'c3' };
   var curCat = '全部', curSearch = '', curPostId = null;
   var allPosts = [], pendingImgs = [], replyImgs = [], curAdminMode = 'pending';
-  var ADMIN_PW = 'admin123';
+  var ADMIN_PW = 'admin1234';
   var el = function (id) { return document.getElementById(id); };
 
   function isAdmin() {
@@ -15784,7 +15786,7 @@
       }).join('');
       var cat = CATS[p.category] || 'c0';
       return '<div class="fpost" data-id="' + p.id + '">' +
-        '<div class="fpost-top"><span class="fcat ' + cat + '">' + esc(p.category) + '</span>' +
+        '<div class="fpost-top">' + (p.pinned ? '<span class="fpin">置顶</span>' : '') + '<span class="fcat ' + cat + '">' + esc(p.category) + '</span>' +
         '<span class="fpost-meta">' + esc(p.author_name) + ' · ' + relTime(p.created_at) + '</span>' +
         '<span class="fpost-count">💬 ' + (p.reply_count || 0) + '</span></div>' +
         '<div class="fpost-title">' + esc(p.title) + '</div>' +
@@ -15796,7 +15798,7 @@
     });
   }
   function loadPosts() {
-    var q = '/rest/v1/posts?select=*&status=eq.approved&order=approved_at.desc,created_at.desc&limit=200';
+    var q = '/rest/v1/posts?select=*&status=eq.approved&order=pinned.desc,approved_at.desc,created_at.desc&limit=200';
     el('forumLoading').style.display = 'block';
     sbFetch(q).then(function (r) { return r.json(); }).then(function (rows) {
       el('forumLoading').style.display = 'none';
@@ -15966,6 +15968,7 @@
           btns += '<button class="fa-btn fa-btn-res" data-act="approved" data-id="' + p.id + '">恢复</button>';
         } else {
           btns += '<button class="fa-btn fa-btn-no" data-act="pending" data-id="' + p.id + '">下架</button>';
+          btns += (p.pinned ? '<button class="fa-btn fa-btn-pin" data-act="unpin" data-id="' + p.id + '">取消置顶</button>' : '<button class="fa-btn fa-btn-pin" data-act="pin" data-id="' + p.id + '">置顶</button>');
         }
         btns += '<button class="fa-btn fa-btn-del" data-act="delete" data-id="' + p.id + '">删除</button>';
         return '<div class="fa-item"><div class="fa-item-head">' + st + ' · ' + esc(p.category) + ' · ' + esc(p.author_name) + ' · ' + relTime(p.created_at) + ' · 💬 ' + (p.reply_count || 0) + '</div>' +
