@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.38</div>
+    <div class="splash-version">v1.4.39</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.38</span>
+        <span class="ar-value">v1.4.39</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.38</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.39</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,13 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.39</span><span class="cl-date">2026-09-20 · 全站统计 + 欢迎语升级</span></div>
+        <ul class="cl-list">
+          <li>访问统计升级为全站统计：顶部显示所有用户累计总访问量与访客数（同一用户多次访问计入总访问量），不再局限于本机。</li>
+          <li>伊娃欢迎气泡语言多样化：12 种风格随机展示，每次打开软件都出现（不再仅首次）。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.38</span><span class="cl-date">2026-09-20 · 欢迎气泡 + 访问统计</span></div>
         <ul class="cl-list">
           <li>打开软件后伊娃显示欢迎气泡（随机欢迎语，数秒后自动消失）。</li>
@@ -15398,24 +15405,38 @@
     .catch(function(e){ addMsg('bot','联网失败：'+e.message+'。请检查网络，或关闭联网使用本地模式。'); })
     .finally(function(){ window.__aiNetBusy=false; });
   };
-  var WELCOME_POOL=['你好，我是你的专属 AI 助手，有什么问题快点击我提问吧！','嗨！我是伊娃，焊接问题尽管问我～','欢迎回来！想算什么焊接参数，点我就行','我是你的焊接小管家，点击我开始提问～'];
+  var WELCOME_POOL=[
+    '你好，我是你的专属 AI 助手，有什么问题快点击我提问吧！',
+    '嗨！我是伊娃，今天想焊点什么？尽管问我～',
+    '欢迎回来！参数拿不准？问我就对了。',
+    '我是你的焊接小管家，点击我开始提问～',
+    'Hi！想算熔深、熔宽还是点焊频率？点我试试。',
+    '叮咚～伊娃已上线，焊接问题随时为您服务。',
+    '你好呀，需要推荐焊接参数吗？点击我，三秒出结果。',
+    '我是伊娃，材料可焊性、缺陷处理、功率选型都在行，点我聊聊。',
+    '来了来了！今天也要元气满满地焊接哦，点我提问～',
+    '想省点调试时间？焊接参数直接问我，点击开始。',
+    'WELCOME！选好焊接方式、输入参数，我帮你算。',
+    '嗨，我是你的工艺小助手，遇到飞溅、气孔别慌，点我问。'
+  ];
   function showTip(){
     var t=document.getElementById('aiFabTip');
     if(!t) return;
-    if(localStorage.getItem('fslc_tip_shown')){ return; }
     t.innerHTML=WELCOME_POOL[Math.floor(Math.random()*WELCOME_POOL.length)];
     t.classList.add('show');
-    setTimeout(function(){ t.classList.remove('show'); }, 6500);
-    try{ localStorage.setItem('fslc_tip_shown','1'); }catch(e){}
+    setTimeout(function(){ t.classList.remove('show'); }, 7000);
   }
   function visitCount(){
     var sub=document.querySelector('.topbar-left .subtitle');
     if(!sub) return;
-    var n=1; try{ n=(parseInt(localStorage.getItem('fslc_visit_count')||'0',10)||0)+1; localStorage.setItem('fslc_visit_count',String(n)); }catch(e){}
     var d=document.createElement('div');
     d.className='visit-count';
-    d.textContent='累计访问 '+n+' 次（本机统计）';
+    d.innerHTML='全站总访问 <b id="gcTotal">…</b> 次';
     sub.parentNode.insertBefore(d,sub.nextSibling);
+    fetch('https://xiaofeiwangluo.goatcounter.com/counter/TOTAL.json',{mode:'cors'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ var e=document.getElementById('gcTotal'); if(e&&j&&typeof j.count!=='undefined'){ e.textContent=j.count; } })
+      .catch(function(){ var e=document.getElementById('gcTotal'); if(e) e.textContent='—'; });
   }
   setTimeout(function(){
     showTip();
@@ -15434,6 +15455,7 @@
     <button id="aiSend">发送</button>
   </div>
 </div>
+<script data-goatcounter="https://xiaofeiwangluo.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 
 </body>
 </html>
