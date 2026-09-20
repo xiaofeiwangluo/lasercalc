@@ -2111,7 +2111,7 @@
     </div>
     <div class="splash-sub">INNOVATION CONNECTS · SMART MANUFACTURING</div>
     <div class="splash-loader"><div class="bar"></div></div>
-    <div class="splash-version">v1.4.39</div>
+    <div class="splash-version">v1.4.40</div>
   </div>
 
   <!-- 顶部栏 -->
@@ -4078,7 +4078,7 @@
       </div>
       <div class="about-row">
         <span class="ar-label">版本</span>
-        <span class="ar-value">v1.4.39</span>
+        <span class="ar-value">v1.4.40</span>
       </div>
       <div class="about-row">
         <span class="ar-label">适用平台</span>
@@ -4094,7 +4094,7 @@
   <!-- 首次登录：v1.4.13 QCW 模型 v2.2 标定收敛 -->
   <div class="update-modal" id="updateModal">
     <div class="update-card">
-      <h3>版本更新 <span class="vtag">v1.4.39</span></h3>
+      <h3>版本更新 <span class="vtag">v1.4.40</span></h3>
       <div class="up-sub">测试专区新增 · 激光填丝补焊模拟</div>
       <div class="up-item">
         <span class="up-num">1</span>
@@ -4118,6 +4118,12 @@
       <h3>版本更新记录</h3>
       <div class="up-sub">光纤激光光斑计算器 · 发布人 肖飞</div>
       <div class="cl-item">
+        <div class="cl-head"><span class="cl-ver">v1.4.40</span><span class="cl-date">2026-09-20 · 更新弹窗修复</span></div>
+        <ul class="cl-list">
+          <li>修复版本更新记录不显示的问题：更新弹窗改为按版本记录，每次发布新版本都会弹出更新说明（同一版本只提示一次）。</li>
+        </ul>
+      </div>
+<div class="cl-item">
         <div class="cl-head"><span class="cl-ver">v1.4.39</span><span class="cl-date">2026-09-20 · 全站统计 + 欢迎语升级</span></div>
         <ul class="cl-list">
           <li>访问统计升级为全站统计：顶部显示所有用户累计总访问量与访客数（同一用户多次访问计入总访问量），不再局限于本机。</li>
@@ -7858,8 +7864,9 @@
   // ===== 首次登录更新说明（只显示一次） =====
   function maybeShowUpdate() {
     try {
-      const seen = localStorage.getItem('fslc_seen_v144');
-      if (seen) return;
+      const sv = document.querySelector('.splash-version');
+      const cur = sv ? sv.textContent.trim() : 'v1.4.40';
+      if (localStorage.getItem('fslc_seen_ver') === cur) return;
       // 启动动画结束后再弹出
       setTimeout(() => {
         $('updateModal').classList.add('show');
@@ -7869,13 +7876,15 @@
   $('updateClose').addEventListener('click', () => {
     $('updateModal').classList.remove('show');
     try {
-      localStorage.setItem('fslc_seen_v144', '1');
+      const sv2 = document.querySelector('.splash-version');
+      localStorage.setItem('fslc_seen_ver', sv2 ? sv2.textContent.trim() : 'v1.4.40');
     } catch (e) {}
   });
   $('updateModal').addEventListener('click', (e) => {
     if (e.target.id === 'updateModal') {
       $('updateModal').classList.remove('show');
-      try { localStorage.setItem('fslc_seen_v144', '1'); } catch (e) {}
+      try { const sv2 = document.querySelector('.splash-version');
+      localStorage.setItem('fslc_seen_ver', sv2 ? sv2.textContent.trim() : 'v1.4.40'); } catch (e) {}
     }
   });
 
