@@ -7139,7 +7139,9 @@ document.addEventListener('DOMContentLoaded', function(){
     const theoryMat = theoryCapped * lambda;
     // 离焦-熔深
     const fDef = defocusModel(def);
-    const estDef = estMat * fDef;
+    var estDef = estMat * fDef;
+    // 环形光斑CW：外环预热使熔深比纯内芯增加约12%（文献：TRUMPF RingFlex / IPG YLS-Ring）
+    if(state.weldSimMode === 'ringcw'){ var P_ring = state.rcPring || 0; var P_tot = P + P_ring; var ringBoost = 1.0 + 0.12 * (P_ring / Math.max(P_tot,1)); estDef = estDef * ringBoost; }
     const theoryDef = theoryMat * fDef;
 
     // 单光束熔宽估算（mm）：光斑直径贡献 + 深熔热扩展贡献
@@ -7970,7 +7972,6 @@ document.addEventListener('DOMContentLoaded', function(){
 
   function startWeldSim() {
     if (weldAnimId) return;
-    var rp=document.getElementById('ringCwParams'); if(rp) rp.style.display=(e.target.value==='ringcw')?'':'none'; var tp=document.getElementById('wP'); if(tp) tp.closest('.input-group').style.display=(e.target.value==='ringcw')?'none':'';
     resizeWeldCanvas();
     resizeWeld3D();
     lastWeldTime = performance.now();
@@ -7986,7 +7987,6 @@ document.addEventListener('DOMContentLoaded', function(){
       const el = $(sims[k]);
       if (el) el.style.display = (k === v) ? '' : 'none';
     });
-    var rp=document.getElementById('ringCwParams'); if(rp) rp.style.display=(e.target.value==='ringcw')?'':'none'; var tp=document.getElementById('wP'); if(tp) tp.closest('.input-group').style.display=(e.target.value==='ringcw')?'none':'';
     resizeWeldCanvas();
     resizeWeld3D();
     if (weldAnimId) { cancelAnimationFrame(weldAnimId); weldAnimId = null; }
