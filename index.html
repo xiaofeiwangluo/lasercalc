@@ -3155,6 +3155,10 @@ document.addEventListener('DOMContentLoaded', function(){
           <div class="wh-label">预估熔深 · 工艺修正参考</div>
           <div class="wh-value"><span id="weldEst">0</span><span class="unit"> mm</span></div>
         </div>
+        <div class="wh-mid">
+          <div class="wh-sub-label">预估熔宽</div>
+          <div class="wh-sub"><span id="weldWidthOut">0</span> mm</div>
+        </div>
         <div class="wh-right">
           <div class="wh-sub-label">纯理论推演</div>
           <div class="wh-sub"><span id="weldTheory">0</span> mm</div>
@@ -3214,11 +3218,11 @@ document.addEventListener('DOMContentLoaded', function(){
             <input type="number" id="wPNum" value="5500" min="100" max="50000">
           </div>
         </div>
-        <div class="input-group">
+        <div class="input-group" id="wCoreGroup">
           <div class="input-label"><span>光纤芯径 D_core</span><span class="unit">μm</span></div>
           <div class="input-row">
-            <input type="range" id="wCore" min="20" max="600" value="50" step="10">
-            <input type="number" id="wCoreNum" value="50" min="5" max="2000">
+            <input type="range" id="wCoreSingle" min="20" max="600" value="50" step="10">
+            <input type="number" id="wCoreSingleNum" value="50" min="5" max="2000">
           </div>
         </div>
         <div class="input-group">
@@ -3240,6 +3244,13 @@ document.addEventListener('DOMContentLoaded', function(){
       <!-- 环形光斑 CW 专属参数 -->
       <div class="card" id="ringCwParams" style="display:none;">
         <div class="card-title">环形光斑参数（双光束）</div>
+        <div class="input-group">
+          <div class="input-label"><span>内环光纤芯径 D_core</span><span class="unit">μm</span></div>
+          <div class="input-row">
+            <input type="range" id="wCore" min="20" max="600" value="50" step="10">
+            <input type="number" id="wCoreNum" value="50" min="5" max="2000">
+          </div>
+        </div>
         <div class="input-group">
           <div class="input-label"><span>内芯功率 P_core</span><span class="unit">W</span></div>
           <div class="input-row">
@@ -7225,6 +7236,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   bindWeldInput('wP', 'wPNum', 'wP');
   bindWeldInput('wCore', 'wCoreNum', 'wCore');
+  bindWeldInput('wCoreSingle', 'wCoreSingleNum', 'wCore');
   bindWeldInput('wFc', 'wFcNum', 'wFc');
   bindWeldInput('wFf', 'wFfNum', 'wFf');
   bindWeldInput('wV', 'wVNum', 'wV');
@@ -7994,6 +8006,8 @@ document.addEventListener('DOMContentLoaded', function(){
     if (rp) rp.style.display = (v === 'ringcw') ? '' : 'none';
     var tp = document.getElementById('wP');
     if (tp && tp.closest('.input-group')) tp.closest('.input-group').style.display = (v === 'ringcw') ? 'none' : '';
+    var cg = document.getElementById('wCoreGroup');
+    if (cg) cg.style.display = (v === 'ringcw') ? 'none' : '';
     resizeWeldCanvas();
     resizeWeld3D();
     if (weldAnimId) { cancelAnimationFrame(weldAnimId); weldAnimId = null; }
