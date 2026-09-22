@@ -15612,7 +15612,7 @@ document.addEventListener('DOMContentLoaded', function(){
   window.__aiFabHide=function(){ var t=document.getElementById('aiFabTip'); if(t) t.classList.remove('show'); };
   window.__aiNetToggle=function(){
     if(window.__aiNetOn){ window.__aiNetOn=false; netBtn(); addMsg('bot','已关闭联网模式，恢复本地快速回答。'); return; }
-    netModal();
+    window.__aiNetOn=true; netBtn(); addMsg('bot','<b>联网模式已开启</b>（DeepSeek 大模型）。直接输入你的焊接问题即可。<br><span class="ai-note" style="display:block">今日剩余使用次数：<b>'+(2-netQuota().count)+'</b> / 2</span>');
   };
   window.__aiAskNet=function(text){
     var q0=netQuota();
