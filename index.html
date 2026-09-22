@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -8,6 +8,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="光斑计算">
 <meta name="mobile-web-app-capable" content="yes">
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.addEventListener('focusin', function(e){
+    var t = e.target;
+    if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')){
+      t.setAttribute('autocomplete','off');
+      t.setAttribute('autocorrect','off');
+      t.setAttribute('autocapitalize','off');
+      t.setAttribute('spellcheck','false');
+    }
+  }, true);
+});
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-1024.png">
 <link rel="icon" type="image/png" href="icon-1024.png">
