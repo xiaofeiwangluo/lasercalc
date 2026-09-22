@@ -2192,7 +2192,26 @@ document.addEventListener('DOMContentLoaded', function(){
   .fim-close { position: absolute; top: -30px; right: 0; color: #fff; font-size: 26px; }
   .forum-err { background: var(--card); border: 1px solid #e05656; color: #e05656; border-radius: 10px; padding: 16px; text-align: center; font-size: 14px; }
 
-  </style>
+  
+  /* ===== 手机端排版优化 ===== */
+  @media (max-width: 600px) {
+    .weld-hero { flex-wrap: wrap; padding: 12px; gap: 8px; }
+    .weld-hero .wh-left { flex: 1 1 100%; }
+    .weld-hero .wh-left .wh-value { font-size: 26px; }
+    .weld-hero .wh-mid, .weld-hero .wh-right { flex: 1; text-align: center; }
+    .weld-hero .wh-right { text-align: right; }
+    .weld-hero .wh-mid .wh-sub, .weld-hero .wh-right .wh-sub { font-size: 16px; }
+    .weld-hero .wh-label, .weld-hero .wh-sub-label { font-size: 10px !important; }
+    .card { padding: 12px !important; margin-bottom: 10px; }
+    .input-label { font-size: 12px !important; }
+    .input-row input[type=number] { width: 70px !important; font-size: 13px; }
+    .card-title { font-size: 13px !important; }
+    .weld-mode-badge { font-size: 10px !important; padding: 3px 8px !important; }
+    nav button { font-size: 10px !important; padding: 6px 4px !important; }
+    .hero-title { font-size: 18px !important; }
+    .sub-title { font-size: 11px !important; }
+  }
+</style>
 </head>
 <body>
 <div class="app">
@@ -7175,6 +7194,7 @@ document.addEventListener('DOMContentLoaded', function(){
   function updateWeld() {
     const r = weldCalculate();
     $('weldEst').textContent = fmt(r.estDef, 2);
+    var _ww = document.getElementById('weldWidthOut'); if(_ww) _ww.textContent = fmt(r.width, 2);
     // 纯理论推演：与预估同条件（功率封顶+当前离焦），差异仅来自低速修正，避免数量级离谱
     $('weldTheory').textContent = fmt(r.theoryDef, 2);
     $('wSpot').textContent = fmt(r.d, 1);
