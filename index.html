@@ -7987,6 +7987,10 @@ document.addEventListener('DOMContentLoaded', function(){
       const el = $(sims[k]);
       if (el) el.style.display = (k === v) ? '' : 'none';
     });
+    var rp = document.getElementById('ringCwParams');
+    if (rp) rp.style.display = (v === 'ringcw') ? '' : 'none';
+    var tp = document.getElementById('wP');
+    if (tp && tp.closest('.input-group')) tp.closest('.input-group').style.display = (v === 'ringcw') ? 'none' : '';
     resizeWeldCanvas();
     resizeWeld3D();
     if (weldAnimId) { cancelAnimationFrame(weldAnimId); weldAnimId = null; }
