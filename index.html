@@ -3135,7 +3135,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <div class="weld-sim-selector">
         <span class="wss-label">焊接仿真</span>
         <select id="weldSimSelect" class="wss-select">
-          <option value="single">单光斑焊接仿真</option>
+          <option value="single">单光斑焊接仿真</option>`n          <option value="ringcw">环形光斑 CW 焊接仿真</option>
         </select>
       </div>
 
@@ -3234,6 +3234,34 @@ document.addEventListener('DOMContentLoaded', function(){
         </div>
       </div>
 
+      <!-- 环形光斑 CW 专属参数 -->
+      <div class="card" id="ringCwParams" style="display:none;">
+        <div class="card-title">环形光斑参数（双光束）</div>
+        <div class="input-group">
+          <div class="input-label"><span>内芯功率 P_core</span><span class="unit">W</span></div>
+          <div class="input-row">
+            <input type="range" id="rcPcore" min="100" max="15000" value="3000" step="100">
+            <input type="number" id="rcPcoreNum" value="3000" min="50" max="30000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>外环功率 P_ring</span><span class="unit">W</span></div>
+          <div class="input-row">
+            <input type="range" id="rcPring" min="0" max="10000" value="1500" step="100">
+            <input type="number" id="rcPringNum" value="1500" min="0" max="20000">
+          </div>
+        </div>
+        <div class="input-group">
+          <div class="input-label"><span>外环光纤芯径 D_ring</span><span class="unit">μm</span></div>
+          <div class="input-row">
+            <input type="range" id="rcDring" min="50" max="800" value="200" step="10">
+            <input type="number" id="rcDringNum" value="200" min="20" max="2000">
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.5;">
+          内芯高斯光束主导深熔匙孔，外环环形光束预热熔池、扩大熔宽、抑制气孔。参考：TRUMPF TruDisk RingFlex / IPG YLS-Ring 系列。
+        </div>
+      </div>
       <!-- 运动学与工件材质 -->
       <div class="card">
         <div class="card-title">运动学与工件材质</div>
@@ -4613,6 +4641,7 @@ document.addEventListener('DOMContentLoaded', function(){
     simTime: 0,
     // 焊接仿真参数
     wP: 5500,           // W
+    rcPcore: 3000, rcPring: 1500, rcDring: 200, weldSimMode: 'single',
     wCore: 50,          // μm
     wFc: 60,            // mm
     wFf: 300,           // mm
@@ -7051,7 +7080,8 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function weldCalculate() {
-    const P = state.wP;
+    var P, dRing = 0;
+    if(state.weldSimMode === 'ringcw'){ P = state.rcPcore || 3000; dRing = (state.rcDring || 200) * (state.wFf) / (state.wFc); } else { P = state.wP; }
     const core = state.wCore;
     const fc = state.wFc;
     const ff = state.wFf;
@@ -7114,7 +7144,9 @@ document.addEventListener('DOMContentLoaded', function(){
 
     // 单光束熔宽估算（mm）：光斑直径贡献 + 深熔热扩展贡献
     // 深熔焊熔宽 ≈ (1.2~1.5)×光斑 + (15~20%)×熔深
-    const width = Math.max((d / 1000) * 1.3 + estDef * 0.18, 0.1);
+    var widthBase = (d / 1000) * 1.3 + estDef * 0.18;
+    if(state.weldSimMode === 'ringcw' && dRing > 0){ widthBase += (dRing/1000)*0.6; }
+    const width = Math.max(widthBase, 0.1);
 
     return {
       d, density, heat, keyhole, theory, theoryMat, theoryDef,
@@ -7193,6 +7225,9 @@ document.addEventListener('DOMContentLoaded', function(){
   bindWeldInput('wV', 'wVNum', 'wV');
   bindWeldInput('wEta', 'wEtaNum', 'wEta');
   bindWeldInput('wDefocus', 'wDefocusNum', 'wDefocus');
+  bindWeldInput('rcPcore', 'rcPcoreNum', 'rcPcore');
+  bindWeldInput('rcPring', 'rcPringNum', 'rcPring');
+  bindWeldInput('rcDring', 'rcDringNum', 'rcDring');
 
   // 材料选择：自动设置推荐吸收率并更新显示
   function applyMaterial(mid) {
@@ -7935,6 +7970,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   function startWeldSim() {
     if (weldAnimId) return;
+    var rp=document.getElementById('ringCwParams'); if(rp) rp.style.display=(e.target.value==='ringcw')?'':'none'; var tp=document.getElementById('wP'); if(tp) tp.closest('.input-group').style.display=(e.target.value==='ringcw')?'none':'';
     resizeWeldCanvas();
     resizeWeld3D();
     lastWeldTime = performance.now();
@@ -7945,11 +7981,12 @@ document.addEventListener('DOMContentLoaded', function(){
   // 焊接仿真类型下拉切换（单光斑焊接仿真 / 预留扩展）
   $('weldSimSelect').addEventListener('change', (e) => {
     const v = e.target.value;
-    const sims = { single: 'weldSimSingle' };
+    state.weldSimMode = e.target.value; const sims = { single: 'weldSimSingle', ringcw: 'weldSimSingle' };
     Object.keys(sims).forEach(k => {
       const el = $(sims[k]);
       if (el) el.style.display = (k === v) ? '' : 'none';
     });
+    var rp=document.getElementById('ringCwParams'); if(rp) rp.style.display=(e.target.value==='ringcw')?'':'none'; var tp=document.getElementById('wP'); if(tp) tp.closest('.input-group').style.display=(e.target.value==='ringcw')?'none':'';
     resizeWeldCanvas();
     resizeWeld3D();
     if (weldAnimId) { cancelAnimationFrame(weldAnimId); weldAnimId = null; }
@@ -13374,7 +13411,9 @@ document.addEventListener('DOMContentLoaded', function(){
     const cap = p.P / 400;
     const est = Math.min(theory * correction, cap);
     const estDef = est * doeDefocusModel(p.def || 0);
-    const width = Math.max((d / 1000) * 1.3 + estDef * 0.18, 0.1);
+    var widthBase = (d / 1000) * 1.3 + estDef * 0.18;
+    if(state.weldSimMode === 'ringcw' && dRing > 0){ widthBase += (dRing/1000)*0.6; }
+    const width = Math.max(widthBase, 0.1);
     return { depth: estDef, width };
   }
   // 摆动焊接（与测试专区摆动焊接 wobCalculate 同公式）
